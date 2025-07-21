@@ -1,0 +1,38 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main, dev ]           # run on these branches
+  pull_request:                       # and on every PR
+
+jobs:
+  analyze_and_test:
+    runs-on: ubuntu-latest            # Linux runner is fastest & free
+
+    steps:
+      # 1. Check out code
+      - uses: actions/checkout@v4
+
+      # 2. Install Flutter (stable)
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true                 # caches the SDK between builds
+
+      # 3. Get dependencies
+      - name: 📦  flutter pub get
+        run: flutter pub get
+
+      # 4. Static analysis
+      - name: 🔍  flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      # 5. Run tests (with coverage)
+      - name: 🧪  flutter test
+        run: flutter test --coverage
+
+      # 6. Archive coverage report (optional)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
