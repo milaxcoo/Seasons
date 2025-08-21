@@ -1,0 +1,82 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+
+jobs:
+  analyze_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out code
+      - name:  checkout
+        uses: actions/checkout@v4
+
+      # 2. Install Flutter
+      - name: 🐦 setup flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # 3. Get dependencies
+      - name: 📦 flutter pub get
+        run: flutter pub get
+
+      # 4. FIXED: Configure Firebase
+      # This step installs the Firebase CLI and uses your secret token
+      # to generate the firebase_options.dart file.
+      - name: 🔥 configure firebase
+        run: |
+          npm install -g firebase-tools
+          flutterfire configure --project=pfur-seasons --yes --token=${{ secrets.FIREBASE_CI_TOKEN }}
+        # IMPORTANT: Replace 'pfur-seasons' with your actual Firebase Project ID if it's different.
+
+      # 5. Static analysis
+      - name: 🔍 flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      # 6. Run tests
+      - name: 🧪 flutter test
+        run: flutter test --coverage
+
+      # 7. Archive coverage report (optional)
+      - name: 💾 upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+
+  build_apk:
+    runs-on: ubuntu-latest
+    needs: analyze_and_test # This job runs only after the tests pass
+
+    steps:
+      # 1. Check out code
+      - name:  checkout
+        uses: actions/checkout@v4
+
+      # 2. Install Flutter
+      - name: 🐦 setup flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # 3. Get dependencies
+      - name: 📦 flutter pub get
+        run: flutter pub get
+
+      # 4. FIXED: Configure Firebase
+      # This step is also needed here because each job runs on a fresh machine.
+      - name: 🔥 configure firebase
+        run: |
+          npm install -g firebase-tools
+          flutterfire configure --project=pfur-seasons --yes --token=${{ secrets.FIREBASE_CI_TOKEN }}
+        # IMPORTANT: Replace 'pfur-seasons' with your actual Firebase Project ID if it's different.
+
+      # 5. Build the Android APK
+      - name: 🏗️ build apk
+        run: flutter build apk --debug
