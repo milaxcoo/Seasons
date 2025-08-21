@@ -1,0 +1,57 @@
+name: seasons
+description: "Flutter-based application for voting in PFUR University"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+# ------------------ APP DEPENDENCIES ------------------
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # For iOS style icons
+  cupertino_icons: ^1.0.8
+
+  # State Management (BLoC)
+  flutter_bloc: ^9.1.1      # BLoC pattern implementation
+  equatable: ^2.0.5         # For value equality in BLoC states
+
+  # UI & Styling
+  google_fonts: ^6.2.1      # For using custom fonts like Montserrat
+  fl_chart: ^1.0.0         # For creating beautiful result charts
+  intl: ^0.20.2             # For date formatting
+
+  # Secure Storage
+  flutter_secure_storage: ^9.2.2  # For securely storing the auth token
+
+  # Firebase for Push Notifications
+  firebase_core: ^4.0.0           # Required to use any Firebase service
+  firebase_messaging: ^16.0.0     # For handling push notifications
+
+# ----------------- DEV DEPENDENCIES -----------------
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # For generating app launcher icons
+  flutter_launcher_icons: ^0.14.4
+
+  # Recommended lints for good coding practices
+  flutter_lints: ^6.0.0
+
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.3
+
+# ----------------- FLUTTER CONFIG -----------------
+flutter:
+  uses-material-design: true
+
+# ------------- LAUNCHER ICON CONFIG -------------
+flutter_launcher_icons:
+  image_path: "icon.png"
+  ios: true
+  android: true
+  remove_alpha_ios: true
+  min_sdk_android: 24

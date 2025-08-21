@@ -1,2 +1,2 @@
-# votepfurapp
+# Seasons
 Flutter-based application for voting in PFUR University.
