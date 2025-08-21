@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:seasons/core/push_notification_service.dart';
 import 'package:seasons/core/theme.dart';
 import 'package:seasons/data/repositories/mock_voting_repository.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
-import 'package:seasons/presentation/bloc/auth/auth_event.dart';
-import 'package:seasons/presentation/bloc/auth/auth_state.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
 
@@ -17,6 +16,9 @@ void main() async {
 
   // Initialize Firebase for services like push notifications.
   await Firebase.initializeApp();
+
+  // Initialize the Push Notification Service.
+  await PushNotificationService().initialize();
 
   // Run the root widget of the application.
   runApp(const SeasonsApp());

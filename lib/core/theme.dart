@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package.google_fonts/google_fonts.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // This class holds the centralized theme data for the entire application.
 // It ensures a consistent visual identity (colors, fonts, component styles)
@@ -48,7 +48,7 @@ class AppTheme {
       ),
 
       // Card Theme
-      cardTheme: CardThemeData( 
+      cardTheme: CardThemeData( // Corrected from CardTheme to CardThemeData
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12.0),

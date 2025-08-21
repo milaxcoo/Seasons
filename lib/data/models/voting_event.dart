@@ -1,7 +1,16 @@
 import 'package:equatable/equatable.dart';
 
-enum VotingStatus { registration, active, completed }
+// FIXED: The VotingStatus enum is defined here, in the same file as the model that uses it.
+// This makes it available to the VotingEvent class and resolves the 'undefined_class' error.
+enum VotingStatus {
+  registration,
+  active,
+  completed,
+}
 
+// This class represents a single voting event.
+// It extends Equatable to allow for easy value-based comparisons,
+// which is crucial for the BLoC state management to work efficiently.
 class VotingEvent extends Equatable {
   final String id;
   final String title;
@@ -21,6 +30,8 @@ class VotingEvent extends Equatable {
     required this.votingEndDate,
   });
 
+  // The 'props' getter is required by the Equatable package.
+  // It lists all the properties that should be considered when checking for equality.
   @override
   List<Object> get props => [
         id,

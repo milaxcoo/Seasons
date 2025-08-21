@@ -1,56 +1,58 @@
-
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+// A dedicated service class to manage all Firebase Cloud Messaging (FCM) logic.
+// This keeps the notification code organized and decoupled from the UI.
 class PushNotificationService {
+  // Get an instance of the FirebaseMessaging service.
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
   Future<void> initialize() async {
-    // Request permissions for iOS and web
+    // --- 1. Request Permissions ---
+    // On iOS, the user must explicitly grant permission to receive notifications.
+    // This has no effect on Android, where permission is granted by default.
     NotificationSettings settings = await _fcm.requestPermission(
       alert: true,
-      announcement: false,
       badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
       sound: true,
+      provisional: false,
     );
 
-    print('User granted permission: ${settings.authorizationStatus}');
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('User granted permission for notifications.');
+    } else {
+      print('User declined or has not accepted permission.');
+    }
 
-    // Get the FCM token
+    // --- 2. Get the FCM Token ---
+    // This unique token identifies the device. In a real application, you would
+    // send this token to your backend server to associate it with the user.
     final fcmToken = await _fcm.getToken();
-    print('FCM Token: $fcmToken');
+    print('Firebase Cloud Messaging Token: $fcmToken');
 
-    // Listen for token refreshes
-    _fcm.onTokenRefresh.listen((newToken) {
-      print('FCM Token Refreshed: $newToken');
-      // In a real app, send this new token to your server
-    });
+    // --- 3. Set up Message Handlers ---
+    // These listeners handle incoming messages in different app states.
 
-    // Handle foreground messages
+    // FORGROUND: When the app is open and in view.
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
-
-      if (message.notification!= null) {
-        print('Message also contained a notification: ${message.notification}');
+      if (message.notification != null) {
+        print('Message also contained a notification: ${message.notification!.title}');
       }
     });
 
-    // Handle notification tap when app is in background
+    // BACKGROUND: When the app is in the background (but not terminated) and the user
+    // taps on the notification.
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('A new onMessageOpenedApp event was published!');
-      print('Message data: ${message.data}');
-      // Here you can navigate to a specific screen based on message data
+      print('Message opened from background: ${message.notification!.title}');
+      // Here you could navigate to a specific screen based on message data.
     });
 
-    // Handle notification tap when app is terminated
+    // TERMINATED: When the app has been closed completely and is opened by the user
+    // tapping on the notification.
     final initialMessage = await _fcm.getInitialMessage();
-    if (initialMessage!= null) {
-      print('App was opened from a terminated state by a notification');
-      print('Message data: ${initialMessage.data}');
-      // Handle initial message
+    if (initialMessage != null) {
+      print('Message opened from terminated state: ${initialMessage.notification!.title}');
+      // Handle the initial message here as well.
     }
   }
 }
