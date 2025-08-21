@@ -6,22 +6,27 @@ import 'package:seasons/core/theme.dart';
 import 'package:seasons/data/repositories/mock_voting_repository.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_bloc.dart'; // Import VotingBloc
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
+import 'firebase_options.dart';
 
-// The main entry point for the application.
 void main() async {
-  // Ensure that Flutter bindings are initialized before any Flutter code is executed.
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    // Ensure that Flutter bindings are initialized before any Flutter code is executed.
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase for services like push notifications.
-  await Firebase.initializeApp();
+    // Initialize Firebase for services like push notifications.
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Initialize the Push Notification Service.
-  await PushNotificationService().initialize();
-
-  // Run the root widget of the application.
-  runApp(const SeasonsApp());
+    // Run the root widget of the application.
+    runApp(const SeasonsApp());
+  } catch (e) {
+    // If any error occurs during initialization, print it to the console.
+    print('Failed to initialize app: $e');
+  }
 }
 
 class SeasonsApp extends StatelessWidget {
@@ -42,6 +47,12 @@ class SeasonsApp extends StatelessWidget {
               votingRepository: RepositoryProvider.of<VotingRepository>(context),
             )..add(AppStarted()),
           ),
+          // FIXED: Added the BlocProvider for VotingBloc so HomeScreen can access it.
+          BlocProvider<VotingBloc>(
+            create: (context) => VotingBloc(
+              votingRepository: RepositoryProvider.of<VotingRepository>(context),
+            ),
+          ),
         ],
         child: MaterialApp(
           title: 'Seasons',
@@ -60,6 +71,8 @@ class SeasonsApp extends StatelessWidget {
               }
               // If a token is found, the user is authenticated. Show HomeScreen.
               if (state is AuthAuthenticated) {
+                // Initialize the notification service after a successful login.
+                PushNotificationService().initialize();
                 return const HomeScreen();
               }
               // If no token is found or logout occurs, show LoginScreen.

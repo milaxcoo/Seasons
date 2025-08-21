@@ -1,3 +1,4 @@
+import 'dart:math' as math; // Added for label rotation
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,7 +37,7 @@ class _ResultsView extends StatelessWidget {
         title: Text('${event.title} - Results'),
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+        padding: const EdgeInsets.all(24.0), // Increased padding for better layout
         child: BlocBuilder<VotingBloc, VotingState>(
           builder: (context, state) {
             if (state is VotingLoadInProgress) {
@@ -100,10 +101,14 @@ class _HorizontalBarChart extends StatelessWidget {
               showTitles: true,
               getTitlesWidget: (double value, TitleMeta meta) {
                 final text = results[value.toInt()].nomineeName;
+                // FIXED: Rotated the label to prevent overlapping.
                 return SideTitleWidget(
                   meta: meta,
                   space: 8.0,
-                  child: Text(text, style: const TextStyle(fontSize: 12)),
+                  child: Transform.rotate(
+                    angle: -math.pi / 4,
+                    child: Text(text, style: const TextStyle(fontSize: 12)),
+                  ),
                 );
               },
               reservedSize: 120,

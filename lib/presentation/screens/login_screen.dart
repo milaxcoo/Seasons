@@ -80,11 +80,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Award Nomination Voting',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
                     const SizedBox(height: 48),
 
                     // Login Text Field
