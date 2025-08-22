@@ -8,16 +8,7 @@ import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 
-// Mock classes for the BLoCs used by the HomeScreen.
-class MockAuthBloc extends Mock implements AuthBloc {
-  @override
-  AuthState get state => const AuthAuthenticated(userLogin: 'testuser');
-}
-
-class MockVotingBloc extends Mock implements VotingBloc {
-  @override
-  VotingState get state => VotingInitial();
-}
+import '../../mocks.dart'; // Import the mock classes
 
 void main() {
   late MockAuthBloc mockAuthBloc;
@@ -26,6 +17,9 @@ void main() {
   setUp(() {
     mockAuthBloc = MockAuthBloc();
     mockVotingBloc = MockVotingBloc();
+
+    // Stub the initial state for the AuthBloc for all tests
+    when(() => mockAuthBloc.state).thenReturn(const AuthAuthenticated(userLogin: 'testuser'));
   });
 
   // Helper function to build the widget tree with necessary providers.
@@ -45,6 +39,7 @@ void main() {
     testWidgets('renders TabBar with correct tabs', (tester) async {
       // Arrange: Set the BLoC to an initial state.
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(VotingInitial()));
 
       // Act: Build the widget.
       await tester.pumpWidget(createTestWidget());
@@ -57,8 +52,9 @@ void main() {
     });
 
     testWidgets('renders CircularProgressIndicator when state is VotingLoadInProgress', (tester) async {
-      // Arrange: Set the BLoC to the loading state.
+      // Arrange: Stub the BLoC stream to emit the loading state.
       when(() => mockVotingBloc.state).thenReturn(VotingLoadInProgress());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(VotingLoadInProgress()));
 
       // Act
       await tester.pumpWidget(createTestWidget());
@@ -68,7 +64,7 @@ void main() {
     });
 
     testWidgets('renders list of events when state is VotingEventsLoadSuccess', (tester) async {
-      // Arrange: Create mock data and set the BLoC to the success state.
+      // Arrange
       final events = [
         model.VotingEvent(
           id: 'reg-01',
@@ -80,22 +76,28 @@ void main() {
           votingEndDate: DateTime.now(),
         ),
       ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(events: events));
+      final state = VotingEventsLoadSuccess(events: events);
+      when(() => mockVotingBloc.state).thenReturn(state);
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(state));
 
       // Act
       await tester.pumpWidget(createTestWidget());
+      await tester.pump(); // Allow the UI to rebuild with the new state
 
-      // Assert: Verify that the event card is rendered.
+      // Assert
       expect(find.text('Best Mobile App'), findsOneWidget);
       expect(find.byType(Card), findsOneWidget);
     });
 
     testWidgets('renders error message when state is VotingFailure', (tester) async {
-      // Arrange: Set the BLoC to the failure state.
-      when(() => mockVotingBloc.state).thenReturn(const VotingFailure(error: 'Failed to load'));
+      // Arrange
+      final state = const VotingFailure(error: 'Failed to load');
+      when(() => mockVotingBloc.state).thenReturn(state);
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(state));
 
       // Act
       await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
       // Assert
       expect(find.text('Error: Failed to load'), findsOneWidget);
