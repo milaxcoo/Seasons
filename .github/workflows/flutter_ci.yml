@@ -30,7 +30,7 @@ jobs:
         run: |
           npm install -g firebase-tools
           dart pub global activate flutterfire_cli
-          flutterfire configure --project=pfur-seasons --yes --token=${{ secrets.FIREBASE_CI_TOKEN }}
+          flutterfire configure --project=pfur-seasons --platforms="android,ios" --yes --token=${{ secrets.FIREBASE_CI_TOKEN }}
         # IMPORTANT: Replace 'pfur-seasons' with your actual Firebase Project ID if it's different.
 
       # 5. Static analysis
@@ -73,7 +73,7 @@ jobs:
         run: |
           npm install -g firebase-tools
           dart pub global activate flutterfire_cli
-          flutterfire configure --project=pfur-seasons --yes --token=${{ secrets.FIREBASE_CI_TOKEN }}
+          flutterfire configure --project=pfur-seasons --platforms="android,ios" --yes --token=${{ secrets.FIREBASE_CI_TOKEN }}
         # IMPORTANT: Replace 'pfur-seasons' with your actual Firebase Project ID if it's different.
 
       # 5. Build the Android APK
