@@ -9,12 +9,13 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 
-import '../../mocks.dart'; // Import the mock classes
+import '../../mocks.dart'; // Import the mock classes from a central file
 
 void main() {
   late MockVotingBloc mockVotingBloc;
   late model.VotingEvent testEvent;
 
+  // setUp is called once before each test case.
   setUp(() {
     mockVotingBloc = MockVotingBloc();
     testEvent = model.VotingEvent(
@@ -26,14 +27,16 @@ void main() {
       votingStartDate: DateTime.now(),
       votingEndDate: DateTime.now(),
     );
-    // Register a fallback value for the event for mocktail verification
+
+    // Register a fallback value for mocktail's 'verify' to work with custom event objects.
     registerFallbackValue(const SubmitVote(eventId: '', nomineeId: ''));
 
-    // FIXED: Stub the close method to prevent the dispose error.
-    // This tells the mock BLoC how to handle being closed by the BlocProvider.
+    // Stub the close method to prevent a dispose error when the test finishes.
+    // This is a crucial fix for the TypeError you were seeing.
     when(() => mockVotingBloc.close()).thenAnswer((_) async {});
   });
 
+  // A helper function to create the widget under test with all necessary providers.
   Widget createTestWidget() {
     return MaterialApp(
       home: BlocProvider<VotingBloc>.value(
@@ -45,32 +48,37 @@ void main() {
 
   group('VotingDetailsScreen', () {
     testWidgets('renders CircularProgressIndicator when state is VotingLoadInProgress', (tester) async {
-      // Arrange
+      // Arrange: Set up the mock BLoC to be in the loading state and stream it.
       when(() => mockVotingBloc.state).thenReturn(VotingLoadInProgress());
       when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(VotingLoadInProgress()));
 
-      // Act
+      // Act: Build the widget.
       await tester.pumpWidget(createTestWidget());
 
-      // Assert
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Assert: Verify that the loading indicator is displayed.
+      // DEBUG: This is intentionally changed to fail with a custom message.
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsNothing,
+        reason: "DEBUG: If you see this message, the new test file is running.",
+      );
     });
 
     testWidgets('renders list of nominees when state is VotingNomineesLoadSuccess', (tester) async {
-      // Arrange
+      // Arrange: Define mock data and set up the BLoC to stream the success state.
       final nominees = [
         const Nominee(id: 'nom-01', name: 'Project Alpha'),
         const Nominee(id: 'nom-02', name: 'Team Innovate'),
       ];
-      final state = VotingNomineesLoadSuccess(nominees: nominees);
-      when(() => mockVotingBloc.state).thenReturn(state);
-      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(state));
+      final successState = VotingNomineesLoadSuccess(nominees: nominees);
+      when(() => mockVotingBloc.state).thenReturn(successState);
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(successState));
 
-      // Act
+      // Act: Build the widget and let it settle.
       await tester.pumpWidget(createTestWidget());
-      await tester.pump();
+      await tester.pump(); // Allow the UI to rebuild with the streamed state.
 
-      // Assert
+      // Assert: Verify that the nominee names and radio buttons are rendered.
       expect(find.text('Project Alpha'), findsOneWidget);
       expect(find.text('Team Innovate'), findsOneWidget);
       expect(find.byType(RadioListTile<String>), findsNWidgets(2));
@@ -79,9 +87,9 @@ void main() {
     testWidgets('enables submit button only when a nominee is selected', (tester) async {
       // Arrange
       final nominees = [const Nominee(id: 'nom-01', name: 'Project Alpha')];
-      final state = VotingNomineesLoadSuccess(nominees: nominees);
-      when(() => mockVotingBloc.state).thenReturn(state);
-      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(state));
+      final successState = VotingNomineesLoadSuccess(nominees: nominees);
+      when(() => mockVotingBloc.state).thenReturn(successState);
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(successState));
 
       // Act
       await tester.pumpWidget(createTestWidget());
@@ -93,7 +101,7 @@ void main() {
 
       // Act: Tap on a nominee to select it.
       await tester.tap(find.text('Project Alpha'));
-      await tester.pump(); // Rebuild the widget after state change.
+      await tester.pump(); // Rebuild the widget after the local state change.
 
       // Assert: After selection, the button should be enabled.
       expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNotNull);
@@ -102,10 +110,10 @@ void main() {
     testWidgets('dispatches SubmitVote event when submit button is tapped', (tester) async {
       // Arrange
       final nominees = [const Nominee(id: 'nom-01', name: 'Project Alpha')];
-      final state = VotingNomineesLoadSuccess(nominees: nominees);
-      when(() => mockVotingBloc.state).thenReturn(state);
-      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(state));
-      when(() => mockVotingBloc.add(any())).thenReturn(null);
+      final successState = VotingNomineesLoadSuccess(nominees: nominees);
+      when(() => mockVotingBloc.state).thenReturn(successState);
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(successState));
+      when(() => mockVotingBloc.add(any())).thenReturn(null); // Stub the 'add' method.
 
       // Act
       await tester.pumpWidget(createTestWidget());
@@ -117,7 +125,7 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Submit Vote'));
       await tester.pump();
 
-      // Assert: Verify that the SubmitVote event was added to the BLoC.
+      // Assert: Verify that the correct SubmitVote event was added to the BLoC.
       verify(() => mockVotingBloc.add(const SubmitVote(eventId: 'active-01', nomineeId: 'nom-01'))).called(1);
     });
   });
