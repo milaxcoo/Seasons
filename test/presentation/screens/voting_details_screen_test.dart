@@ -5,6 +5,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/nominee.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
+import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_event.dart';
+import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 
 import '../../mocks.dart'; // Import the mock classes from a central file
@@ -113,7 +116,11 @@ void main() {
       await tester.tap(find.text('Project Alpha'));
       await tester.pump();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Submit Vote'));
-      await tester.pumpAndSettle(); // Allow dialog to appear.
+      
+      // FIXED: We need one pump to process the state change from the BLoC,
+      // and then pumpAndSettle to wait for the dialog animation.
+      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Assert: Verify that the confirmation dialog is shown.
       expect(find.text('Vote Submitted'), findsOneWidget);
