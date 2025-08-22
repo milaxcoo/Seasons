@@ -117,10 +117,10 @@ void main() {
       await tester.pump();
       await tester.tap(find.widgetWithText(ElevatedButton, 'Submit Vote'));
       
-      // FIXED: We need one pump to process the state change from the BLoC,
-      // and then pumpAndSettle to wait for the dialog animation.
+      // FIXED: We need one pump to process the BLoC's state change,
+      // and then another to handle the dialog appearing.
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert: Verify that the confirmation dialog is shown.
       expect(find.text('Vote Submitted'), findsOneWidget);
