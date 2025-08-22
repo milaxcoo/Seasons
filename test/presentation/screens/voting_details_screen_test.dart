@@ -28,6 +28,10 @@ void main() {
     );
     // Register a fallback value for the event for mocktail verification
     registerFallbackValue(const SubmitVote(eventId: '', nomineeId: ''));
+
+    // FIXED: Stub the close method to prevent the dispose error.
+    // This tells the mock BLoC how to handle being closed by the BlocProvider.
+    when(() => mockVotingBloc.close()).thenAnswer((_) async {});
   });
 
   Widget createTestWidget() {
