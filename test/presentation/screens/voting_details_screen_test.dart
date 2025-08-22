@@ -5,9 +5,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/nominee.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
-import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
-import 'package:seasons/presentation/bloc/voting/voting_event.dart';
-import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 
 import '../../mocks.dart'; // Import the mock classes from a central file
