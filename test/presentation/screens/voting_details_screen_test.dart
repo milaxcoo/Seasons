@@ -56,7 +56,12 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       // Assert: Verify that the loading indicator is displayed.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // DEBUG: This is intentionally changed to fail with a custom message.
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsNothing,
+        reason: "DEBUG: If you see this message, the new test file is running.",
+      );
     });
 
     testWidgets('renders list of nominees when state is VotingNomineesLoadSuccess', (tester) async {
