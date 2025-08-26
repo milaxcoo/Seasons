@@ -1,5 +1,5 @@
 name: seasons
-description: "Flutter-based application for voting in PFUR University"
+description: "Flutter-based application for voting at PFUR University"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -47,6 +47,9 @@ dev_dependencies:
 # ----------------- FLUTTER CONFIG -----------------
 flutter:
   uses-material-design: true
+  assets:
+    - assets/
+  
 
 # ------------- LAUNCHER ICON CONFIG -------------
 flutter_launcher_icons:
