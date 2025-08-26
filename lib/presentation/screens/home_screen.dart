@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
-import 'package:seasons/presentation/bloc/voting/voting_state.dart'; // FIXED: Added missing import for VotingState
+import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/profile_screen.dart';
 import 'package:seasons/presentation/screens/result_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
@@ -56,38 +57,54 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Seasons'),
-        actions: [
-          // Button to navigate to the ProfileScreen.
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
-            },
-          ),
-        ],
-        // The TabBar is placed in the bottom of the AppBar.
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Registration'),
-            Tab(text: 'Active'),
-            Tab(text: 'Results'),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage("assets/august.jpg"), // Assumes background image is set
+          fit: BoxFit.cover,
         ),
       ),
-      // TabBarView displays the content for the currently selected tab.
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          _EventList(status: model.VotingStatus.registration),
-          _EventList(status: model.VotingStatus.active),
-          _EventList(status: model.VotingStatus.completed),
-        ],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent, // Make AppBar transparent
+          title: Text(
+            'Seasons',
+            // FIXED: Explicitly apply the Russo One font to the AppBar title.
+            style: GoogleFonts.russoOne(
+              textStyle: Theme.of(context).appBarTheme.titleTextStyle,
+            ),
+          ),
+          actions: [
+            // Button to navigate to the ProfileScreen.
+            IconButton(
+              icon: const Icon(Icons.person_outline),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+            ),
+          ],
+          // The TabBar is placed in the bottom of the AppBar.
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Registration'),
+              Tab(text: 'Active'),
+              Tab(text: 'Results'),
+            ],
+          ),
+        ),
+        // TabBarView displays the content for the currently selected tab.
+        body: TabBarView(
+          controller: _tabController,
+          children: const [
+            _EventList(status: model.VotingStatus.registration),
+            _EventList(status: model.VotingStatus.active),
+            _EventList(status: model.VotingStatus.completed),
+          ],
+        ),
       ),
     );
   }
@@ -110,7 +127,9 @@ class _EventList extends StatelessWidget {
           // Filter the events from the state to match the status for this list.
           final events = state.events.where((e) => e.status == status).toList();
           if (events.isEmpty) {
-            return const Center(child: Text('No events found for this category.'));
+            return Center(
+                child: Text('No events found for this category.',
+                    style: GoogleFonts.russoOne(color: Colors.white)));
           }
           // Use ListView.builder for efficient rendering of long lists.
           return ListView.builder(
@@ -121,10 +140,14 @@ class _EventList extends StatelessWidget {
           );
         }
         if (state is VotingFailure) {
-          return Center(child: Text('Error: ${state.error}'));
+          return Center(
+              child: Text('Error: ${state.error}',
+                  style: GoogleFonts.russoOne(color: Colors.white)));
         }
         // Initial or default state.
-        return const Center(child: Text('Loading events...'));
+        return Center(
+            child: Text('Loading events...',
+                style: GoogleFonts.russoOne(color: Colors.white)));
       },
     );
   }
@@ -144,7 +167,8 @@ class _VotingEventCard extends StatelessWidget {
     // Determine the appropriate date text based on the event's status.
     switch (event.status) {
       case model.VotingStatus.registration:
-        dateInfo = 'Registration Ends: ${dateFormat.format(event.registrationEndDate)}';
+        dateInfo =
+            'Registration Ends: ${dateFormat.format(event.registrationEndDate)}';
         break;
       case model.VotingStatus.active:
         dateInfo = 'Voting Ends: ${dateFormat.format(event.votingEndDate)}';
@@ -155,15 +179,18 @@ class _VotingEventCard extends StatelessWidget {
     }
 
     return Card(
+      color: const Color(0xFFe4dcc5), // FIXED: Changed the card color
       child: ListTile(
-        title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(dateInfo),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           // Navigate to the correct screen based on the event's status.
           if (event.status == model.VotingStatus.active) {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => VotingDetailsScreen(event: event)),
+              MaterialPageRoute(
+                  builder: (_) => VotingDetailsScreen(event: event)),
             );
           } else if (event.status == model.VotingStatus.completed) {
             Navigator.of(context).push(
@@ -174,7 +201,8 @@ class _VotingEventCard extends StatelessWidget {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
               ..showSnackBar(
-                const SnackBar(content: Text('Voting has not started for this event.')),
+                const SnackBar(
+                    content: Text('Voting has not started for this event.')),
               );
           }
         },
