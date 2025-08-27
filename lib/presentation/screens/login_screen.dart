@@ -26,31 +26,24 @@ class _LoginScreenState extends State<LoginScreen> {
               shadows: [], // Removes any potential shadows from the theme
             ),
           ),
-          content: SingleChildScrollView(
+          content: const SingleChildScrollView(
             child: Text(
               "Вы будете перенаправлены на сайт авторизации с помощью РУДН ID.\n\n"
               "Пользователям, не являющимся сотрудниками РУДН и не имеющим "
               "корпоративный аккаунт, необходимо пройти единовременную регистрацию, "
               "нажав на кнопку «Создать аккаунт в РУДН ID» на следующей странице, а "
               "затем выполнить повторный вход в систему.",
-              style: GoogleFonts.russoOne(),
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: Text(
-                "Отмена",
-                style: GoogleFonts.russoOne(),
-              ),
+              child: const Text("Отмена"),
               onPressed: () {
                 Navigator.of(dialogContext).pop(); // Close the dialog
               },
             ),
             ElevatedButton(
-              child: Text(
-                "Продолжить",
-                style: GoogleFonts.russoOne(),
-              ),
+              child: const Text("Продолжить"),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 context.read<AuthBloc>().add(const LoggedIn(login: "rudn_user", password: "password"));
@@ -65,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AppBackground(
+      imagePath: "assets/august.jpg",
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: BlocListener<AuthBloc, AuthState>(
@@ -92,11 +86,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Text(
                           'Seasons',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.russoOne(
-                            fontSize: 50,
-                            color: const Color(0xFF42445A), // Dark text color
-                            fontWeight: FontWeight.bold,
-                          ),
+                          // FIXED: Inherits HemiHead from the theme
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                fontSize: 52,
+                                color: const Color(0xFF42445A),
+                                fontWeight:FontWeight.bold
+                              ),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -113,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: GoogleFonts.russoOne(
                                 fontSize: 36,
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.normal,
                               ),
                             ),
                             const SizedBox(width: 15),
@@ -137,14 +132,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // This will use HemiHead
                       Text(
                         '© RUDN University 2025',
-                        style: GoogleFonts.russoOne(color: Colors.white, fontSize: 16),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 8),
+                      // This will use HemiHead
                       Text(
                         'seasons-helpdesk@rudn.ru',
-                        style: GoogleFonts.russoOne(color: Colors.white, fontSize: 16),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
                       ),
                     ],
                   ),
