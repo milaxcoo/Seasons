@@ -26,24 +26,31 @@ class _LoginScreenState extends State<LoginScreen> {
               shadows: [], // Removes any potential shadows from the theme
             ),
           ),
-          content: const SingleChildScrollView(
+          content: SingleChildScrollView(
             child: Text(
               "Вы будете перенаправлены на сайт авторизации с помощью РУДН ID.\n\n"
               "Пользователям, не являющимся сотрудниками РУДН и не имеющим "
               "корпоративный аккаунт, необходимо пройти единовременную регистрацию, "
               "нажав на кнопку «Создать аккаунт в РУДН ID» на следующей странице, а "
               "затем выполнить повторный вход в систему.",
+              style: GoogleFonts.russoOne(),
             ),
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text("Отмена"),
+              child: Text(
+                "Отмена",
+                style: GoogleFonts.russoOne(),
+              ),
               onPressed: () {
                 Navigator.of(dialogContext).pop(); // Close the dialog
               },
             ),
             ElevatedButton(
-              child: const Text("Продолжить"),
+              child: Text(
+                "Продолжить",
+                style: GoogleFonts.russoOne(),
+              ),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
                 context.read<AuthBloc>().add(const LoggedIn(login: "rudn_user", password: "password"));
@@ -78,44 +85,48 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.all(40.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    // FIXED: Changed from .stretch to .center to allow containers to size themselves.
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // "Seasons" Title
                       _SkewedContainer(
+                        reverse: true, // FIXED: Reversed the skew direction
                         color: const Color(0xFFD9D9D9), // Light grey
                         child: Text(
                           'Seasons',
                           textAlign: TextAlign.center,
-                          // FIXED: Inherits HemiHead from the theme
                           style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                fontSize: 52,
                                 color: const Color(0xFF42445A),
-                                fontWeight:FontWeight.bold
+                                fontWeight: FontWeight.bold,
+                                fontSize: 40
                               ),
                         ),
                       ),
                       const SizedBox(height: 10),
                       // "Войти" Button
                       _SkewedContainer(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 30), // FIXED: Made padding smaller
                         color: const Color(0xFF4A5C7A), // Dark blue/grey
                         onTap: () => _showRudnIdDialog(context),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          // FIXED: Added this line to make the row only as wide as its children.
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'Войти',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.russoOne(
-                                fontSize: 36,
-                                color: Colors.white,
-                                fontWeight: FontWeight.normal,
-                              ),
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                    fontSize: 30, // FIXED: Made font smaller
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
-                            const SizedBox(width: 15),
+                            const SizedBox(width: 12),
                             const Icon(
                               Icons.arrow_forward_ios,
                               color: Colors.white,
-                              size: 30,
+                              size: 24, // FIXED: Made icon smaller
                             )
                           ],
                         ),
@@ -160,26 +171,29 @@ class _SkewedContainer extends StatelessWidget {
   final Widget child;
   final Color color;
   final VoidCallback? onTap;
+  final bool reverse;
+  final EdgeInsetsGeometry padding;
 
   const _SkewedContainer({
     required this.child,
     required this.color,
     this.onTap,
+    this.reverse = false,
+    this.padding = const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
   });
 
   @override
   Widget build(BuildContext context) {
+    final skewValue = reverse ? 0.26 : -0.26;
     return GestureDetector(
       onTap: onTap,
       child: Transform(
-        // Skew the container by -15 degrees horizontally
-        transform: Matrix4.skewX(-0.26), // -15 degrees in radians
+        transform: Matrix4.skewX(skewValue), // Use the dynamic skew value
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
+          padding: padding, // Use the dynamic padding
           color: color,
           child: Transform(
-            // Un-skew the child content so it's not distorted
-            transform: Matrix4.skewX(0.26),
+            transform: Matrix4.skewX(-skewValue), // Un-skew the content
             child: child,
           ),
         ),
