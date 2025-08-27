@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.displaySmall?.copyWith(
                                 color: const Color(0xFF42445A),
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
                                 fontSize: 40
                               ),
                         ),
@@ -117,9 +117,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               'Войти',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontSize: 30, // FIXED: Made font smaller
+                                    fontSize: 26, // FIXED: Made font smaller
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w100,
                                   ),
                             ),
                             const SizedBox(width: 12),
