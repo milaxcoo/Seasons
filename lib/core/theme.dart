@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // --- COLOR PALETTE (from your CSS) ---
+  // --- COLOR PALETTE ---
   static const Color primaryColor = Color(0xFF3A4D89);
   static const Color secondaryColor = Color(0xFFEE8224);
   static const Color tertiaryColor = Color(0xFFA5D4F7);
@@ -11,7 +11,6 @@ class AppTheme {
 
   // --- THEME GETTER ---
   static ThemeData get lightTheme {
-    // Define the base text style with the shadow you requested.
     const TextStyle shadowTextStyle = TextStyle(
       shadows: [
         Shadow(
@@ -95,8 +94,11 @@ class AppTheme {
     );
 
     // --- TYPOGRAPHY ---
+    // FIXED: Apply HemiHead as the primary font and Russo One as the fallback.
     return baseTheme.copyWith(
-      textTheme: GoogleFonts.russoOneTextTheme(baseTheme.textTheme).apply(
+      textTheme: baseTheme.textTheme.apply(
+        fontFamily: 'HemiHead',
+        fontFamilyFallback: [GoogleFonts.russoOne().fontFamily!],
         bodyColor: textColor,
         displayColor: textColor,
       ).copyWith(
