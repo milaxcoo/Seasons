@@ -7,7 +7,8 @@ import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
-import 'package:seasons/presentation/screens/result_screen.dart';
+import 'package:seasons/presentation/screens/registration_details_screen.dart';
+import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 
@@ -161,7 +162,8 @@ class _Header extends StatelessWidget {
                   color: Colors.white,
                   shadows: [const Shadow(blurRadius: 8, color: Colors.black54)],
                   fontWeight: FontWeight.w100,
-                  fontSize: 20
+                  fontSize: 16,
+                  letterSpacing: 6
                 ),
           ),
         ],
@@ -324,7 +326,7 @@ class _VotingEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat.yMMMd();
+    final dateFormat = DateFormat.yMMMd('ru');
     String dateInfo;
     switch (event.status) {
       case model.VotingStatus.registration:
@@ -346,7 +348,9 @@ class _VotingEventCard extends StatelessWidget {
         subtitle: Text(dateInfo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54)),
         trailing: const Icon(Icons.chevron_right, color: Colors.black54),
         onTap: () {
-          if (event.status == model.VotingStatus.active) {
+          if (event.status == model.VotingStatus.registration) {
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationDetailsScreen(event: event)));
+          } else if (event.status == model.VotingStatus.active) {
             Navigator.of(context).push(MaterialPageRoute(builder: (_) => VotingDetailsScreen(event: event)));
           } else if (event.status == model.VotingStatus.completed) {
             Navigator.of(context).push(MaterialPageRoute(builder: (_) => ResultsScreen(event: event)));
