@@ -34,6 +34,25 @@ class MockVotingRepository implements VotingRepository {
       votingStartDate: DateTime.now().add(const Duration(days: 6)),
       votingEndDate: DateTime.now().add(const Duration(days: 15)),
     ),
+    VotingEvent(
+      id: 'reg-03',
+      title: 'Номанация на лучшего преподавателя химии',
+      description: 'A showcase of the best student projects from the past semester.',
+      status: VotingStatus.registration,
+      registrationEndDate: DateTime.now().add(const Duration(days: 7)),
+      votingStartDate: DateTime.now().add(const Duration(days: 8)),
+      votingEndDate: DateTime.now().add(const Duration(days: 15)),
+    ),
+    VotingEvent(
+      id: 'reg-04',
+      title: 'Номанация на лучшего преподавателя астрономии',
+      description: 'A showcase of the best student projects from the past semester.',
+      status: VotingStatus.registration,
+      registrationEndDate: DateTime.now().add(const Duration(days: 7)),
+      votingStartDate: DateTime.now().add(const Duration(days: 8)),
+      votingEndDate: DateTime.now().add(const Duration(days: 15)),
+    ),
+
     // Active Events
     VotingEvent(
       id: 'active-01',

@@ -1,4 +1,5 @@
-import 'dart:math' as math; // Added for label rotation
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +10,7 @@ import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
+import 'package:seasons/presentation/widgets/app_background.dart';
 
 class ResultsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -32,25 +34,50 @@ class _ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${event.title} - Results'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0), // Increased padding for better layout
-        child: BlocBuilder<VotingBloc, VotingState>(
-          builder: (context, state) {
-            if (state is VotingLoadInProgress) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state is VotingResultsLoadSuccess) {
-              return _HorizontalBarChart(results: state.results);
-            }
-            if (state is VotingFailure) {
-              return Center(child: Text('Error loading results: ${state.error}'));
-            }
-            return const Center(child: Text('Loading results...'));
-          },
+    return AppBackground(
+      imagePath: 'assets/august.jpg',
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: Container(
+          color: Colors.black.withOpacity(0.2), // Optional: darken the background slightly
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: Text(
+                event.title,
+                style: const TextStyle(color: Colors.white),
+                ),
+            ),
+            body: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: BlocBuilder<VotingBloc, VotingState>(
+                builder: (context, state) {
+                  if (state is VotingLoadInProgress) {
+                    return const Center(child: CircularProgressIndicator(color: Colors.white));
+                  }
+                  if (state is VotingResultsLoadSuccess) {
+                    return _HorizontalBarChart(results: state.results);
+                  }
+                  if (state is VotingFailure) {
+                    return Center(
+                      child: Text(
+                        'Ошибка загрузки результатов: ${state.error}',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                      ),
+                    );
+                  }
+                  return Center(
+                    child: Text(
+                      'Загрузка результатов...',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -101,13 +128,12 @@ class _HorizontalBarChart extends StatelessWidget {
               showTitles: true,
               getTitlesWidget: (double value, TitleMeta meta) {
                 final text = results[value.toInt()].nomineeName;
-                // FIXED: Rotated the label to prevent overlapping.
                 return SideTitleWidget(
                   meta: meta,
                   space: 8.0,
                   child: Transform.rotate(
                     angle: -math.pi / 4,
-                    child: Text(text, style: const TextStyle(fontSize: 12)),
+                    child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
                   ),
                 );
               },
@@ -120,7 +146,7 @@ class _HorizontalBarChart extends StatelessWidget {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 if (value % 20 == 0) {
-                  return Text('${value.toInt()}%');
+                  return Text('${value.toInt()}%', style: const TextStyle(color: Colors.white70));
                 }
                 return const Text('');
               },
