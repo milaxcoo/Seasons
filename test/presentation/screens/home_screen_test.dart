@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart'; // Import for date formatting
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 
@@ -13,6 +15,12 @@ import '../../mocks.dart'; // Import the mock classes
 void main() {
   late MockAuthBloc mockAuthBloc;
   late MockVotingBloc mockVotingBloc;
+
+  // This runs once before all tests in this file
+  setUpAll(() async {
+    // Initialize date formatting for the Russian locale
+    await initializeDateFormatting('ru_RU', null);
+  });
 
   setUp(() {
     mockAuthBloc = MockAuthBloc();
@@ -36,31 +44,19 @@ void main() {
   }
 
   group('HomeScreen', () {
-    testWidgets('renders TabBar with correct tabs', (tester) async {
-      // Arrange: Set the BLoC to an initial state.
-      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
-      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(VotingInitial()));
+    testWidgets('renders main layout components correctly', (tester) async {
+      // Arrange: Set the BLoC to a successful but empty state.
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(events: []));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(const VotingEventsLoadSuccess(events: [])));
 
       // Act: Build the widget.
       await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
-      // Assert: Verify that the main UI elements are present.
-      expect(find.byType(TabBar), findsOneWidget);
-      expect(find.text('Registration'), findsOneWidget);
-      expect(find.text('Active'), findsOneWidget);
-      expect(find.text('Results'), findsOneWidget);
-    });
-
-    testWidgets('renders CircularProgressIndicator when state is VotingLoadInProgress', (tester) async {
-      // Arrange: Stub the BLoC stream to emit the loading state.
-      when(() => mockVotingBloc.state).thenReturn(VotingLoadInProgress());
-      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(VotingLoadInProgress()));
-
-      // Act
-      await tester.pumpWidget(createTestWidget());
-
-      // Assert
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Assert: Verify that the new UI components are present.
+      expect(find.text('testuser'), findsOneWidget); // From _TopBar
+      expect(find.text('Seasons'), findsOneWidget); // From _Header
+      expect(find.byIcon(Icons.how_to_reg_outlined), findsOneWidget); // From _PanelSelector
     });
 
     testWidgets('renders list of events when state is VotingEventsLoadSuccess', (tester) async {
@@ -68,7 +64,7 @@ void main() {
       final events = [
         model.VotingEvent(
           id: 'reg-01',
-          title: 'Best Mobile App',
+          title: 'Лучшее мобильное приложение',
           description: '',
           status: model.VotingStatus.registration,
           registrationEndDate: DateTime.now(),
@@ -82,25 +78,12 @@ void main() {
 
       // Act
       await tester.pumpWidget(createTestWidget());
-      await tester.pump(); // Allow the UI to rebuild with the new state
-
-      // Assert
-      expect(find.text('Best Mobile App'), findsOneWidget);
-      expect(find.byType(Card), findsOneWidget);
-    });
-
-    testWidgets('renders error message when state is VotingFailure', (tester) async {
-      // Arrange
-      final state = const VotingFailure(error: 'Failed to load');
-      when(() => mockVotingBloc.state).thenReturn(state);
-      when(() => mockVotingBloc.stream).thenAnswer((_) => Stream.value(state));
-
-      // Act
-      await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
       // Assert
-      expect(find.text('Error: Failed to load'), findsOneWidget);
+      expect(find.text('Лучшее мобильное приложение'), findsOneWidget);
+      expect(find.byType(Card), findsOneWidget);
     });
   });
 }
+

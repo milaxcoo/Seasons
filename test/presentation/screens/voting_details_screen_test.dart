@@ -27,7 +27,7 @@ void main() {
   });
 
   // A helper function to create the widget under test.
-  // It now provides the MockVotingRepository, which the screen needs to create its BLoC.
+  // It provides the MockVotingRepository, which the screen needs to create its BLoC.
   Widget createTestWidget() {
     return RepositoryProvider<VotingRepository>.value(
       value: mockVotingRepository,
@@ -86,7 +86,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Initially, the button should be disabled.
-      final submitButton = find.widgetWithText(ElevatedButton, 'Submit Vote');
+      // FIXED: Look for the Russian text on the button.
+      final submitButton = find.widgetWithText(ElevatedButton, 'Проголосовать');
       expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNull);
 
       // Act: Tap on a nominee to select it.
@@ -112,16 +113,17 @@ void main() {
       // Select a nominee and tap the submit button.
       await tester.tap(find.text('Project Alpha'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Submit Vote'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Проголосовать'));
       
-      // FIXED: We need one pump to process the BLoC's state change,
+      // We need one pump to process the BLoC's state change,
       // and then another to handle the dialog appearing.
       await tester.pump();
       await tester.pump();
 
       // Assert: Verify that the confirmation dialog is shown.
-      expect(find.text('Vote Submitted'), findsOneWidget);
-      expect(find.text('Thank you for your participation!'), findsOneWidget);
+      // FIXED: Look for the Russian text in the dialog.
+      expect(find.text('Голос принят'), findsOneWidget);
+      expect(find.text('Спасибо за участие!'), findsOneWidget);
     });
   });
 }
