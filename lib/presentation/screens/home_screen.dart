@@ -7,6 +7,7 @@ import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
+import 'package:seasons/presentation/screens/profile_screen.dart';
 import 'package:seasons/presentation/screens/registration_details_screen.dart';
 import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
@@ -122,7 +123,15 @@ class _TopBar extends StatelessWidget {
           ),
           Row(
             children: [
-              Text(userLogin, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white)),
+              // FIXED: Wrapped the username Text in a GestureDetector to make it tappable
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                },
+                child: Text(userLogin, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white)),
+              ),
               IconButton(
                 icon: const Icon(Icons.exit_to_app, color: Colors.white),
                 onPressed: () {
