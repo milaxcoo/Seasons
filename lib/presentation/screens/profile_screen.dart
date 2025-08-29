@@ -1,76 +1,99 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
-import 'package:seasons/presentation/screens/login_screen.dart';
+import 'package:seasons/presentation/widgets/app_background.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Access the current authentication state to get user information.
-    // Using context.watch will cause this widget to rebuild if the AuthState changes.
-    final authState = context.watch<AuthBloc>().state;
-    String userLogin = 'User'; // Default value
+    final userData = {
+      'Фамилия': 'Лебедев',
+      'Имя': 'Михаил',
+      'Отчество': 'Александрович',
+      'Электронная почта': 'lebedev_ma@pfur.ru',
+      'Должность': 'Студент',
+    };
 
-    if (authState is AuthAuthenticated) {
-      userLogin = authState.userLogin;
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
-      // BlocListener is used for side-effects like navigation.
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          // When the state becomes unauthenticated (after logout), navigate back to the login screen.
-          if (state is AuthUnauthenticated) {
-            // pushAndRemoveUntil clears the entire navigation stack, so the user
-            // cannot press the back button to return to the authenticated part of the app.
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Display user's login name.
-              Text(
-                'Logged in as:',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium,
+    return AppBackground(
+      imagePath: 'assets/august.jpg',
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: Container(
+          color: Colors.black.withOpacity(0.2),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: true,
+              title: Text(
+                'Данные пользователя',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.normal,
+                    ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                userLogin,
-                textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            body: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  // Create a list of user info rows from the map data
+                  ...userData.entries.map((entry) {
+                    return _UserInfoRow(
+                      label: entry.key,
+                      value: entry.value,
+                    );
+                  }).toList(),
+                ],
               ),
-              const SizedBox(height: 48),
-              // Logout Button
-              ElevatedButton(
-                onPressed: () {
-                  // Dispatch the LoggedOut event to the AuthBloc.
-                  context.read<AuthBloc>().add(LoggedOut());
-                },
-                // Use a different style for destructive actions.
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[700],
-                ),
-                child: const Text('Logout'),
-              ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// A reusable widget for displaying a single row of user information.
+class _UserInfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _UserInfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label column
+          SizedBox(
+            width: 120, // Fixed width for the label column for alignment
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white.withOpacity(0.8),
+                    fontWeight: FontWeight.w100,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 24),
+          // Value column (expands to fill the remaining space)
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }

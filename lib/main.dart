@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:seasons/core/push_notification_service.dart';
+import 'package:intl/date_symbol_data_local.dart'; // 1. Add this import
+import 'package:seasons/core/push_notification_service.dart'; // Corrected path
 import 'package:seasons/core/theme.dart';
 import 'package:seasons/data/repositories/mock_voting_repository.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
-import 'package:seasons/presentation/bloc/voting/voting_bloc.dart'; // Import VotingBloc
+import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
 import 'firebase_options.dart';
@@ -15,6 +16,9 @@ void main() async {
   try {
     // Ensure that Flutter bindings are initialized before any Flutter code is executed.
     WidgetsFlutterBinding.ensureInitialized();
+
+    // 2. Initialize date formatting for the Russian locale.
+    await initializeDateFormatting('ru_RU', null);
 
     // Initialize Firebase for services like push notifications.
     await Firebase.initializeApp(
@@ -47,7 +51,7 @@ class SeasonsApp extends StatelessWidget {
               votingRepository: RepositoryProvider.of<VotingRepository>(context),
             )..add(AppStarted()),
           ),
-          // FIXED: Added the BlocProvider for VotingBloc so HomeScreen can access it.
+          // Added the BlocProvider for VotingBloc so HomeScreen can access it.
           BlocProvider<VotingBloc>(
             create: (context) => VotingBloc(
               votingRepository: RepositoryProvider.of<VotingRepository>(context),
