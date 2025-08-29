@@ -65,6 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return AppBackground(
+      imagePath: "assets/august.jpg",
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: BlocListener<AuthBloc, AuthState>(
@@ -84,43 +85,48 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.all(40.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    // FIXED: Changed from .stretch to .center to allow containers to size themselves.
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // "Seasons" Title
                       _SkewedContainer(
+                        reverse: true, // FIXED: Reversed the skew direction
                         color: const Color(0xFFD9D9D9), // Light grey
                         child: Text(
                           'Seasons',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.russoOne(
-                            fontSize: 50,
-                            color: const Color(0xFF42445A), // Dark text color
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                color: const Color(0xFF42445A),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 40
+                              ),
                         ),
                       ),
                       const SizedBox(height: 10),
                       // "Войти" Button
                       _SkewedContainer(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 30), // FIXED: Made padding smaller
                         color: const Color(0xFF4A5C7A), // Dark blue/grey
                         onTap: () => _showRudnIdDialog(context),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          // FIXED: Added this line to make the row only as wide as its children.
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'Войти',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.russoOne(
-                                fontSize: 36,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                    fontSize: 26, // FIXED: Made font smaller
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w100,
+                                  ),
                             ),
-                            const SizedBox(width: 15),
+                            const SizedBox(width: 12),
                             const Icon(
                               Icons.arrow_forward_ios,
                               color: Colors.white,
-                              size: 30,
+                              size: 24, // FIXED: Made icon smaller
                             )
                           ],
                         ),
@@ -137,14 +143,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // This will use HemiHead
                       Text(
                         '© RUDN University 2025',
-                        style: GoogleFonts.russoOne(color: Colors.white, fontSize: 16),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 8),
+                      // This will use HemiHead
                       Text(
                         'seasons-helpdesk@rudn.ru',
-                        style: GoogleFonts.russoOne(color: Colors.white, fontSize: 16),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
                       ),
                     ],
                   ),
@@ -163,26 +171,29 @@ class _SkewedContainer extends StatelessWidget {
   final Widget child;
   final Color color;
   final VoidCallback? onTap;
+  final bool reverse;
+  final EdgeInsetsGeometry padding;
 
   const _SkewedContainer({
     required this.child,
     required this.color,
     this.onTap,
+    this.reverse = false,
+    this.padding = const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
   });
 
   @override
   Widget build(BuildContext context) {
+    final skewValue = reverse ? 0.26 : -0.26;
     return GestureDetector(
       onTap: onTap,
       child: Transform(
-        // Skew the container by -15 degrees horizontally
-        transform: Matrix4.skewX(-0.26), // -15 degrees in radians
+        transform: Matrix4.skewX(skewValue), // Use the dynamic skew value
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
+          padding: padding, // Use the dynamic padding
           color: color,
           child: Transform(
-            // Un-skew the child content so it's not distorted
-            transform: Matrix4.skewX(0.26),
+            transform: Matrix4.skewX(-skewValue), // Un-skew the content
             child: child,
           ),
         ),

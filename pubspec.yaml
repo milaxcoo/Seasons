@@ -15,20 +15,20 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # State Management (BLoC)
-  flutter_bloc: ^9.1.1      # BLoC pattern implementation
-  equatable: ^2.0.5         # For value equality in BLoC states
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.5
 
   # UI & Styling
-  google_fonts: ^6.2.1      # For using custom fonts like Montserrat
-  fl_chart: ^1.0.0         # For creating beautiful result charts
-  intl: ^0.20.2             # For date formatting
+  google_fonts: ^6.2.1
+  fl_chart: ^1.0.0
+  intl: ^0.20.2
 
   # Secure Storage
-  flutter_secure_storage: ^9.2.2  # For securely storing the auth token
+  flutter_secure_storage: ^9.2.2
 
   # Firebase for Push Notifications
-  firebase_core: ^4.0.0           # Required to use any Firebase service
-  firebase_messaging: ^16.0.0     # For handling push notifications
+  firebase_core: ^4.0.0
+  firebase_messaging: ^16.0.0
 
 # ----------------- DEV DEPENDENCIES -----------------
 dev_dependencies:
@@ -47,9 +47,15 @@ dev_dependencies:
 # ----------------- FLUTTER CONFIG -----------------
 flutter:
   uses-material-design: true
+
   assets:
     - assets/
-  
+    - assets/fonts/
+
+  fonts:
+    - family: HemiHead
+      fonts:
+        - asset: assets/fonts/Hemi Head Bd It.otf
 
 # ------------- LAUNCHER ICON CONFIG -------------
 flutter_launcher_icons:

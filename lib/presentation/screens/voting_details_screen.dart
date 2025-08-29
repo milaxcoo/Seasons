@@ -1,10 +1,13 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:seasons/core/theme.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
+import 'package:seasons/presentation/widgets/app_background.dart';
 
 class VotingDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -13,7 +16,6 @@ class VotingDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Create a new, scoped BLoC instance for this screen.
-    // This is good practice for screens that manage their own specific data.
     return BlocProvider(
       create: (context) => VotingBloc(
         votingRepository: RepositoryProvider.of<VotingRepository>(context),
@@ -32,9 +34,7 @@ class _VotingDetailsView extends StatefulWidget {
 }
 
 class _VotingDetailsViewState extends State<_VotingDetailsView> {
-  // Local state to track the selected nominee's ID.
   String? _selectedNomineeId;
-  // Local state to prevent re-voting after a successful submission.
   bool _voteSubmitted = false;
 
   void _submitVote() {
@@ -43,7 +43,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(
-          content: Text('Please select a nominee before submitting.'),
+          content: Text('Пожалуйста, выберите номинанта перед отправкой.'),
           backgroundColor: Colors.orange,
         ));
       return;
@@ -60,94 +60,126 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.event.title),
-      ),
-      body: BlocConsumer<VotingBloc, VotingState>(
-        listener: (context, state) {
-          if (state is VotingSubmissionSuccess) {
-            // On successful submission, update local state and show a confirmation dialog.
-            setState(() {
-              _voteSubmitted = true;
-            });
-            showDialog(
-              context: context,
-              barrierDismissible: false, // User must tap button to close.
-              builder: (dialogContext) => AlertDialog(
-                title: const Text('Vote Submitted'),
-                content: const Text('Thank you for your participation!'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
+    return AppBackground(
+      imagePath: 'assets/august.jpg',
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: Container(
+          color: Colors.black.withOpacity(0.2),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: Text(
+                widget.event.title,
+                style: const TextStyle(color: Colors.white), // Set title color to white
               ),
-            );
-          } else if (state is VotingFailure) {
-            // On failure, show an error message.
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(
-                content: Text('Error: ${state.error}'),
-                backgroundColor: Colors.redAccent,
-              ));
-          }
-        },
-        builder: (context, state) {
-          if (state is VotingLoadInProgress && !_voteSubmitted) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is VotingNomineesLoadSuccess) {
-            return Column(
-              children: [
-                // Use Expanded to make the ListView fill the available space.
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: state.nominees.length,
-                    itemBuilder: (context, index) {
-                      final nominee = state.nominees[index];
-                      // Use RadioListTile for a large, easy-to-tap selection area.
-                      return RadioListTile<String>(
-                        title: Text(nominee.name),
-                        value: nominee.id,
-                        groupValue: _selectedNomineeId,
-                        // Disable the radio buttons after a vote has been submitted.
-                        onChanged: _voteSubmitted
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  _selectedNomineeId = value;
-                                });
-                              },
-                      );
-                    },
-                  ),
-                ),
-                // Submit Button Area
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      // Disable the button if no nominee is selected or if the vote is submitted.
-                      onPressed: (_selectedNomineeId == null || _voteSubmitted)
-                          ? null
-                          : _submitVote,
-                      child: Text(_voteSubmitted ? 'Vote Submitted' : 'Submit Vote'),
+            ),
+            body: BlocConsumer<VotingBloc, VotingState>(
+              listener: (context, state) {
+                if (state is VotingSubmissionSuccess) {
+                  setState(() {
+                    _voteSubmitted = true;
+                  });
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Голос принят'),
+                      content: const Text('Спасибо за участие!'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            // First, pop the dialog
+                            Navigator.of(dialogContext).pop();
+                            // Then, pop the screen to go back
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('OK'),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ],
-            );
-          }
-          if (state is VotingFailure) {
-            return Center(child: Text('Failed to load nominees: ${state.error}'));
-          }
-          // Fallback view, handles VotingInitial and other states.
-          return const Center(child: CircularProgressIndicator());
-        },
+                  );
+                } else if (state is VotingFailure) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(SnackBar(
+                      content: Text('Ошибка: ${state.error}'),
+                      backgroundColor: Colors.redAccent,
+                    ));
+                }
+              },
+              builder: (context, state) {
+                if (state is VotingLoadInProgress && !_voteSubmitted) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                }
+                if (state is VotingNomineesLoadSuccess) {
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: state.nominees.length,
+                          itemBuilder: (context, index) {
+                            final nominee = state.nominees[index];
+                            return Card(
+                              color: Colors.black.withOpacity(0.3),
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              child: RadioListTile<String>(
+                                title: Text(
+                                  nominee.name,
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                                ),
+                                value: nominee.id,
+                                groupValue: _selectedNomineeId,
+                                activeColor: Colors.white,
+                                onChanged: _voteSubmitted
+                                    ? null
+                                    : (value) {
+                                        setState(() {
+                                          _selectedNomineeId = value;
+                                        });
+                                      },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onPressed: (_selectedNomineeId == null || _voteSubmitted)
+                                ? null
+                                : _submitVote,
+                            child: Text(
+                              _voteSubmitted ? 'Голос принят' : 'Проголосовать',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                if (state is VotingFailure) {
+                  return Center(
+                    child: Text(
+                      'Не удалось загрузить номинантов: ${state.error}',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                    ),
+                  );
+                }
+                return const Center(child: CircularProgressIndicator(color: Colors.white));
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
