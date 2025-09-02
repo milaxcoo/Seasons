@@ -46,7 +46,7 @@ class ProfileScreen extends StatelessWidget {
                       label: entry.key,
                       value: entry.value,
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
