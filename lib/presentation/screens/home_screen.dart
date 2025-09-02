@@ -12,6 +12,7 @@ import 'package:seasons/presentation/screens/registration_details_screen.dart';
 import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
+import 'package:seasons/presentation/widgets/custom_icons.dart'; // FIXED: Added import for custom icons
 
 // Data for the monthly theme
 class MonthlyTheme {
@@ -123,7 +124,6 @@ class _TopBar extends StatelessWidget {
           ),
           Row(
             children: [
-              // FIXED: Wrapped the username Text in a GestureDetector to make it tappable
               GestureDetector(
                 onTap: () {
                   Navigator.of(context).push(
@@ -199,18 +199,19 @@ class _PanelSelector extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
+          // FIXED: Using the custom SVG icons
           _PanelButton(
-            icon: Icons.how_to_reg_outlined,
+            icon: RegistrationIcon(isSelected: selectedIndex == 0),
             isSelected: selectedIndex == 0,
             onTap: () => onPanelSelected(0),
           ),
           _PanelButton(
-            icon: Icons.touch_app_outlined,
+            icon: ActiveVotingIcon(isSelected: selectedIndex == 1),
             isSelected: selectedIndex == 1,
             onTap: () => onPanelSelected(1),
           ),
           _PanelButton(
-            icon: Icons.bar_chart_outlined,
+            icon: ResultsIcon(isSelected: selectedIndex == 2),
             isSelected: selectedIndex == 2,
             onTap: () => onPanelSelected(2),
           ),
@@ -221,7 +222,8 @@ class _PanelSelector extends StatelessWidget {
 }
 
 class _PanelButton extends StatelessWidget {
-  final IconData icon;
+  // FIXED: Changed from IconData to Widget to accept custom icons
+  final Widget icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -234,11 +236,8 @@ class _PanelButton extends StatelessWidget {
       child: CircleAvatar(
         radius: 25,
         backgroundColor: isSelected ? Colors.white.withOpacity(0.9) : Colors.transparent,
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.black87 : Colors.white,
-          size: 30,
-        ),
+        // FIXED: The child is now the icon widget itself
+        child: icon,
       ),
     );
   }
@@ -369,3 +368,4 @@ class _VotingEventCard extends StatelessWidget {
     );
   }
 }
+
