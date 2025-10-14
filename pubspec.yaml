@@ -19,7 +19,7 @@ dependencies:
   equatable: ^2.0.5
 
   # UI & Styling
-  google_fonts: ^6.2.1
+  google_fonts: ^6.3.2
   fl_chart: ^1.0.0
   intl: ^0.20.2
 
@@ -27,7 +27,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
 
   # Firebase for Push Notifications
-  firebase_core: ^4.0.0
+  firebase_core: ^4.1.1
   firebase_messaging: ^16.0.0
   flutter_svg: ^2.2.1
 
