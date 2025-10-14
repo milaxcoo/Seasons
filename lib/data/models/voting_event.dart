@@ -1,16 +1,8 @@
 import 'package:equatable/equatable.dart';
 
-// FIXED: The VotingStatus enum is defined here, in the same file as the model that uses it.
-// This makes it available to the VotingEvent class and resolves the 'undefined_class' error.
-enum VotingStatus {
-  registration,
-  active,
-  completed,
-}
+// Enum для представления статуса голосования
+enum VotingStatus { registration, active, completed }
 
-// This class represents a single voting event.
-// It extends Equatable to allow for easy value-based comparisons,
-// which is crucial for the BLoC state management to work efficiently.
 class VotingEvent extends Equatable {
   final String id;
   final String title;
@@ -19,6 +11,8 @@ class VotingEvent extends Equatable {
   final DateTime registrationEndDate;
   final DateTime votingStartDate;
   final DateTime votingEndDate;
+  // FIXED: Добавлено новое поле для хранения статуса регистрации
+  final bool isRegistered;
 
   const VotingEvent({
     required this.id,
@@ -28,10 +22,43 @@ class VotingEvent extends Equatable {
     required this.registrationEndDate,
     required this.votingStartDate,
     required this.votingEndDate,
+    required this.isRegistered,
   });
 
-  // The 'props' getter is required by the Equatable package.
-  // It lists all the properties that should be considered when checking for equality.
+  factory VotingEvent.fromJson(Map<String, dynamic> json) {
+    VotingStatus status;
+    switch (json['status'] as String?) {
+      case 'active':
+      case 'ongoing':
+        status = VotingStatus.active;
+        break;
+      case 'completed':
+      case 'finished':
+        status = VotingStatus.completed;
+        break;
+      default:
+        status = VotingStatus.registration;
+    }
+
+    DateTime parseDate(String? dateString) {
+      return dateString != null && dateString.isNotEmpty 
+          ? DateTime.parse(dateString) 
+          : DateTime.now();
+    }
+
+    return VotingEvent(
+      id: json['id'] as String? ?? 'unknown_id',
+      title: json['name'] as String? ?? 'Без названия', 
+      description: json['description'] as String? ?? 'Описание отсутствует.',
+      status: status,
+      registrationEndDate: parseDate(json['end_registration_at'] as String?),
+      votingStartDate: parseDate(json['registration_started_at'] as String?),
+      votingEndDate: parseDate(json['voting_end_at'] as String?),
+      // FIXED: Читаем поле 'registered' из JSON. '1' означает true, все остальное - false.
+      isRegistered: json['registered'] == 1,
+    );
+  }
+
   @override
   List<Object> get props => [
         id,
@@ -41,5 +68,7 @@ class VotingEvent extends Equatable {
         registrationEndDate,
         votingStartDate,
         votingEndDate,
+        isRegistered, // Добавлено в props для сравнения объектов
       ];
 }
+

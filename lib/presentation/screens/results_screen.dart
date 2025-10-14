@@ -1,9 +1,8 @@
 import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui'; // Import for ImageFilter
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:seasons/core/theme.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
@@ -14,69 +13,37 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 
 class ResultsScreen extends StatelessWidget {
   final model.VotingEvent event;
-  const ResultsScreen({super.key, required this.event});
+  // FIXED: Added imagePath to receive the background from HomeScreen
+  final String imagePath;
+
+  const ResultsScreen({
+    super.key,
+    required this.event,
+    required this.imagePath,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Provide a scoped BLoC instance for this screen.
     return BlocProvider(
       create: (context) => VotingBloc(
         votingRepository: RepositoryProvider.of<VotingRepository>(context),
       )..add(FetchResults(eventId: event.id)),
-      child: _ResultsView(event: event),
-    );
-  }
-}
-
-class _ResultsView extends StatelessWidget {
-  final model.VotingEvent event;
-  const _ResultsView({required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBackground(
-      imagePath: 'assets/august.jpg',
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-        child: Container(
-          color: Colors.black.withOpacity(0.2), // Optional: darken the background slightly
+      child: AppBackground(
+        // FIXED: Use the passed imagePath
+        imagePath: imagePath,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
           child: Scaffold(
-            backgroundColor: Colors.transparent,
+            backgroundColor: Colors.black.withOpacity(0.2),
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
               title: Text(
-                event.title,
-                style: const TextStyle(color: Colors.white),
-                ),
-            ),
-            body: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: BlocBuilder<VotingBloc, VotingState>(
-                builder: (context, state) {
-                  if (state is VotingLoadInProgress) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.white));
-                  }
-                  if (state is VotingResultsLoadSuccess) {
-                    return _HorizontalBarChart(results: state.results);
-                  }
-                  if (state is VotingFailure) {
-                    return Center(
-                      child: Text(
-                        'Ошибка загрузки результатов: ${state.error}',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
-                      ),
-                    );
-                  }
-                  return Center(
-                    child: Text(
-                      'Загрузка результатов...',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
-                    ),
-                  );
-                },
+                '${event.title} - Результаты',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
               ),
             ),
+            body: _ResultsView(),
           ),
         ),
       ),
@@ -84,7 +51,34 @@ class _ResultsView extends StatelessWidget {
   }
 }
 
-// A dedicated widget for rendering the bar chart.
+class _ResultsView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: BlocBuilder<VotingBloc, VotingState>(
+        builder: (context, state) {
+          if (state is VotingLoadInProgress) {
+            return const Center(child: CircularProgressIndicator(color: Colors.white));
+          }
+          if (state is VotingResultsLoadSuccess) {
+            return _HorizontalBarChart(results: state.results);
+          }
+          if (state is VotingFailure) {
+            return Center(
+              child: Text(
+                'Ошибка загрузки результатов: ${state.error}',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+              ),
+            );
+          }
+          return const Center(child: Text('Загрузка результатов...', style: TextStyle(color: Colors.white)));
+        },
+      ),
+    );
+  }
+}
+
 class _HorizontalBarChart extends StatelessWidget {
   final List<VoteResult> results;
   const _HorizontalBarChart({required this.results});
@@ -94,7 +88,7 @@ class _HorizontalBarChart extends StatelessWidget {
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: 100, // Assuming percentages, so max is 100.
+        maxY: 100,
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
@@ -133,7 +127,7 @@ class _HorizontalBarChart extends StatelessWidget {
                   space: 8.0,
                   child: Transform.rotate(
                     angle: -math.pi / 4,
-                    child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
+                    child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)), // Text color to white
                   ),
                 );
               },
@@ -146,7 +140,7 @@ class _HorizontalBarChart extends StatelessWidget {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 if (value % 20 == 0) {
-                  return Text('${value.toInt()}%', style: const TextStyle(color: Colors.white70));
+                  return Text('${value.toInt()}%', style: const TextStyle(color: Colors.white70)); // Text color to white
                 }
                 return const Text('');
               },
@@ -162,7 +156,7 @@ class _HorizontalBarChart extends StatelessWidget {
             barRods: [
               BarChartRodData(
                 toY: result.votePercentage,
-                color: AppTheme.primaryColor,
+                color: Theme.of(context).colorScheme.primary,
                 width: 22,
                 borderRadius: const BorderRadius.all(Radius.circular(4)),
               ),
