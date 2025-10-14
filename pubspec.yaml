@@ -19,8 +19,8 @@ dependencies:
   equatable: ^2.0.5
 
   # UI & Styling
-  google_fonts: ^6.3.2
-  fl_chart: ^1.0.0
+  google_fonts: ^6.2.1
+  fl_chart: ^1.1.1
   intl: ^0.20.2
 
   # Secure Storage
