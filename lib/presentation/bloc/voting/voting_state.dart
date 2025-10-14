@@ -3,8 +3,6 @@ import 'package:seasons/data/models/nominee.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 
-// FIXED: This is now a standalone library, not part of another file.
-
 abstract class VotingState extends Equatable {
   const VotingState();
 
@@ -20,7 +18,6 @@ class VotingLoadInProgress extends VotingState {}
 
 // State representing a successful fetch of a list of voting events.
 class VotingEventsLoadSuccess extends VotingState {
-  // This now correctly and unambiguously refers to the data model.
   final List<VotingEvent> events;
 
   const VotingEventsLoadSuccess({required this.events});
@@ -57,6 +54,24 @@ class VotingFailure extends VotingState {
   final String error;
 
   const VotingFailure({required this.error});
+
+  @override
+  List<Object> get props => [error];
+}
+
+// ========== REGISTRATION STATES ==========
+
+// State indicating that a registration operation is in progress.
+class RegistrationInProgress extends VotingState {}
+
+// State indicating that a registration has been successfully completed.
+class RegistrationSuccess extends VotingState {}
+
+// State representing a failure during a registration operation.
+class RegistrationFailure extends VotingState {
+  final String error;
+
+  const RegistrationFailure({required this.error});
 
   @override
   List<Object> get props => [error];

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
@@ -12,29 +13,7 @@ import 'package:seasons/presentation/screens/registration_details_screen.dart';
 import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
-import 'package:seasons/presentation/widgets/custom_icons.dart'; // FIXED: Added import for custom icons
-
-// Data for the monthly theme
-class MonthlyTheme {
-  final String imagePath;
-  final String poem;
-  final String author;
-
-  MonthlyTheme({required this.imagePath, required this.poem, required this.author});
-}
-
-// Map of months to their themes
-final Map<int, MonthlyTheme> monthlyThemes = {
-  1: MonthlyTheme(imagePath: 'assets/january.jpg', poem: "...", author: "January Author"),
-  // ... add themes for other months
-  8: MonthlyTheme(
-    imagePath: 'assets/august.jpg',
-    poem: "Как ясен август, нежный и спокойный,\nСознавший мимолетность красоты.\nПозолотив древесные листы,\nОн чувства заключил в порядок стройный.\nВ нем кажется ошибкой полдень знойный,\nС ним больше сродны грустные мечты,\nПрохлада, прелесть тихой простоты\nИ отдыха от жизни беспокойной.\n",
-    author: "Константин Бальмонт",
-  ),
-  // ...
-};
-
+import 'package:seasons/presentation/widgets/custom_icons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[8]!;
+    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!; // Октябрь по умолчанию
 
     return AppBackground(
       imagePath: theme.imagePath,
@@ -89,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     model.VotingStatus.active,
                     model.VotingStatus.completed,
                   ][_selectedPanelIndex],
+                  // FIXED: Передаем путь к фону в список
+                  imagePath: theme.imagePath,
                 ),
               ),
               _Footer(poem: theme.poem, author: theme.author),
@@ -100,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// --- Reusable Widgets for the New HomeScreen ---
+// --- Вспомогательные виджеты ---
 
 class _TopBar extends StatelessWidget {
   @override
@@ -162,7 +143,7 @@ class _Header extends StatelessWidget {
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   color: Colors.white,
                   shadows: [const Shadow(blurRadius: 10, color: Colors.black54)],
-                  fontWeight: FontWeight.w900
+                  fontWeight: FontWeight.w900,
                 ),
           ),
           Text(
@@ -172,7 +153,7 @@ class _Header extends StatelessWidget {
                   shadows: [const Shadow(blurRadius: 8, color: Colors.black54)],
                   fontWeight: FontWeight.w100,
                   fontSize: 16,
-                  letterSpacing: 6
+                  letterSpacing: 6,
                 ),
           ),
         ],
@@ -199,7 +180,6 @@ class _PanelSelector extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // FIXED: Using the custom SVG icons
           _PanelButton(
             icon: RegistrationIcon(isSelected: selectedIndex == 0),
             isSelected: selectedIndex == 0,
@@ -222,7 +202,6 @@ class _PanelSelector extends StatelessWidget {
 }
 
 class _PanelButton extends StatelessWidget {
-  // FIXED: Changed from IconData to Widget to accept custom icons
   final Widget icon;
   final bool isSelected;
   final VoidCallback onTap;
@@ -236,7 +215,6 @@ class _PanelButton extends StatelessWidget {
       child: CircleAvatar(
         radius: 25,
         backgroundColor: isSelected ? Colors.white.withOpacity(0.9) : Colors.transparent,
-        // FIXED: The child is now the icon widget itself
         child: icon,
       ),
     );
@@ -280,11 +258,12 @@ class _Footer extends StatelessWidget {
   }
 }
 
-// --- Event List ---
-
 class _EventList extends StatelessWidget {
   final model.VotingStatus status;
-  const _EventList({required this.status});
+  // FIXED: Добавляем поле для получения пути к фону
+  final String imagePath;
+
+  const _EventList({required this.status, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +283,7 @@ class _EventList extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'Нет регистраций на голосования',
+                  'Нет голосований в данной секции',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
@@ -315,7 +294,8 @@ class _EventList extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
-              return _VotingEventCard(event: state.events[index]);
+              // FIXED: Передаем путь к фону в карточку
+              return _VotingEventCard(event: state.events[index], imagePath: imagePath);
             },
           );
         }
@@ -330,7 +310,10 @@ class _EventList extends StatelessWidget {
 
 class _VotingEventCard extends StatelessWidget {
   final model.VotingEvent event;
-  const _VotingEventCard({required this.event});
+  // FIXED: Добавляем поле для получения пути к фону
+  final String imagePath;
+
+  const _VotingEventCard({required this.event, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
@@ -356,12 +339,13 @@ class _VotingEventCard extends StatelessWidget {
         subtitle: Text(dateInfo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54)),
         trailing: const Icon(Icons.chevron_right, color: Colors.black54),
         onTap: () {
+          // FIXED: Передаем путь к фону при навигации на все экраны деталей
           if (event.status == model.VotingStatus.registration) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationDetailsScreen(event: event)));
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationDetailsScreen(event: event, imagePath: imagePath)));
           } else if (event.status == model.VotingStatus.active) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => VotingDetailsScreen(event: event)));
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => VotingDetailsScreen(event: event, imagePath: imagePath)));
           } else if (event.status == model.VotingStatus.completed) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => ResultsScreen(event: event)));
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => ResultsScreen(event: event, imagePath: imagePath)));
           }
         },
       ),

@@ -1,12 +1,8 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
-
-// FIXED: Import the standalone event and state files.
 import 'voting_event.dart';
 import 'voting_state.dart';
-
-// Note: The 'part' directives have been removed.
 
 class VotingBloc extends Bloc<VotingEvent, VotingState> {
   final VotingRepository _votingRepository;
@@ -19,6 +15,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     on<FetchNominees>(_onFetchNominees);
     on<SubmitVote>(_onSubmitVote);
     on<FetchResults>(_onFetchResults);
+    on<RegisterForEvent>(_onRegisterForEvent);
   }
 
   // Handler for fetching the main list of events for the HomeScreen tabs.
@@ -65,6 +62,18 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       emit(VotingResultsLoadSuccess(results: results));
     } catch (e) {
       emit(VotingFailure(error: e.toString()));
+    }
+  }
+
+  // Handler for registering a user for a voting event.
+  Future<void> _onRegisterForEvent(
+      RegisterForEvent event, Emitter<VotingState> emit) async {
+    emit(RegistrationInProgress());
+    try {
+      await _votingRepository.registerForEvent(event.eventId);
+      emit(RegistrationSuccess());
+    } catch (e) {
+      emit(RegistrationFailure(error: e.toString()));
     }
   }
 }
