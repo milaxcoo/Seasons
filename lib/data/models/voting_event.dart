@@ -51,19 +51,12 @@ class VotingEvent extends Equatable {
         status = VotingStatus.registration;
     }
 
-    // FIXED: Эта функция теперь правильно обрабатывает время
     DateTime? parseDate(String? dateString) {
       if (dateString == null || dateString.isEmpty) return null;
       try {
-        // Добавляем 'Z' в конец строки, чтобы Dart понял, что это время в UTC
         final utcDateTime = DateTime.parse('${dateString}Z');
-        // Затем конвертируем его в локальное время устройства
         return utcDateTime.toLocal();
       } catch (e) {
-        // Если формат даты неожиданный, возвращаем null, чтобы избежать сбоя
-        if (kDebugMode) {
-          print('Ошибка парсинга даты "$dateString": $e');
-        }
         return null;
       }
     }
@@ -138,4 +131,3 @@ class VotingEvent extends Equatable {
         results,
       ];
 }
-
