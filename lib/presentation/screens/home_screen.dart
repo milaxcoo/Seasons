@@ -285,7 +285,7 @@ class _EventList extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'Нет голосований в данной секции',
+                  'Нет активных голосований',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
