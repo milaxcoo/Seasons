@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!; // Октябрь по умолчанию
+    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
 
     return AppBackground(
       imagePath: theme.imagePath,
@@ -63,13 +64,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Expanded(
                 child: _EventList(
+                  key: ValueKey(_selectedPanelIndex),
                   status: [
                     model.VotingStatus.registration,
                     model.VotingStatus.active,
                     model.VotingStatus.completed,
                   ][_selectedPanelIndex],
-                  // FIXED: Передаем путь к фону в список
                   imagePath: theme.imagePath,
+                  onRefresh: () => _fetchEventsForPanel(_selectedPanelIndex),
                 ),
               ),
               _Footer(poem: theme.poem, author: theme.author),
@@ -260,10 +262,10 @@ class _Footer extends StatelessWidget {
 
 class _EventList extends StatelessWidget {
   final model.VotingStatus status;
-  // FIXED: Добавляем поле для получения пути к фону
   final String imagePath;
+  final VoidCallback onRefresh;
 
-  const _EventList({required this.status, required this.imagePath});
+  const _EventList({super.key, required this.status, required this.imagePath, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -294,8 +296,11 @@ class _EventList extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
-              // FIXED: Передаем путь к фону в карточку
-              return _VotingEventCard(event: state.events[index], imagePath: imagePath);
+              return _VotingEventCard(
+                event: state.events[index],
+                imagePath: imagePath,
+                onActionComplete: onRefresh,
+              );
             },
           );
         }
@@ -310,24 +315,35 @@ class _EventList extends StatelessWidget {
 
 class _VotingEventCard extends StatelessWidget {
   final model.VotingEvent event;
-  // FIXED: Добавляем поле для получения пути к фону
   final String imagePath;
+  final VoidCallback onActionComplete;
 
-  const _VotingEventCard({required this.event, required this.imagePath});
+  const _VotingEventCard({
+    required this.event,
+    required this.imagePath,
+    required this.onActionComplete,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat.yMMMd('ru');
     String dateInfo;
+
     switch (event.status) {
       case model.VotingStatus.registration:
-        dateInfo = 'Регистрация до: ${dateFormat.format(event.registrationEndDate)}';
+        dateInfo = event.registrationEndDate != null
+            ? 'Регистрация до: ${dateFormat.format(event.registrationEndDate!)}'
+            : 'Регистрация открыта';
         break;
       case model.VotingStatus.active:
-        dateInfo = 'Голосование до: ${dateFormat.format(event.votingEndDate)}';
+        dateInfo = event.votingEndDate != null
+            ? 'Голосование до: ${dateFormat.format(event.votingEndDate!)}'
+            : 'Голосование активно';
         break;
       case model.VotingStatus.completed:
-        dateInfo = 'Завершено: ${dateFormat.format(event.votingEndDate)}';
+        dateInfo = event.votingEndDate != null
+            ? 'Завершено: ${dateFormat.format(event.votingEndDate!)}'
+            : 'Завершено';
         break;
     }
 
@@ -338,14 +354,32 @@ class _VotingEventCard extends StatelessWidget {
         title: Text(event.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87)),
         subtitle: Text(dateInfo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54)),
         trailing: const Icon(Icons.chevron_right, color: Colors.black54),
-        onTap: () {
-          // FIXED: Передаем путь к фону при навигации на все экраны деталей
-          if (event.status == model.VotingStatus.registration) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => RegistrationDetailsScreen(event: event, imagePath: imagePath)));
-          } else if (event.status == model.VotingStatus.active) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => VotingDetailsScreen(event: event, imagePath: imagePath)));
-          } else if (event.status == model.VotingStatus.completed) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => ResultsScreen(event: event, imagePath: imagePath)));
+        onTap: () async {
+          // --- DEBUG: Добавляем отладочные сообщения ---
+          if (kDebugMode) {
+            print('\n--- DEBUG [HomeScreen]: Нажата карточка "${event.title}" ---');
+            print('--- DEBUG [HomeScreen]: Статус объекта event: ${event.status} ---');
+          }
+
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) {
+                if (event.status == model.VotingStatus.registration) {
+                  if (kDebugMode) print('--- DEBUG [HomeScreen]: Навигация -> RegistrationDetailsScreen ---');
+                  return RegistrationDetailsScreen(event: event, imagePath: imagePath);
+                } else if (event.status == model.VotingStatus.active) {
+                  if (kDebugMode) print('--- DEBUG [HomeScreen]: Навигация -> VotingDetailsScreen ---');
+                  return VotingDetailsScreen(event: event, imagePath: imagePath);
+                } else { // Это должен быть completed
+                  if (kDebugMode) print('--- DEBUG [HomeScreen]: Навигация -> ResultsScreen ---');
+                  return ResultsScreen(event: event, imagePath: imagePath);
+                }
+              },
+            ),
+          );
+
+          if (result == true) {
+            onActionComplete();
           }
         },
       ),

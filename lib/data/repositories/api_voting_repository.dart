@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:seasons/data/models/nominee.dart';
+import 'package:seasons/data/models/question.dart';
+import 'package:seasons/data/models/subject.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
@@ -61,6 +63,26 @@ class ApiVotingRepository implements VotingRepository {
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedBody = json.decode(response.body);
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
+
+        String statusString;
+         switch(status){
+            case VotingStatus.registration:
+              statusString = 'registration';
+              break;
+            case VotingStatus.active:
+              statusString = 'active';
+              break;
+            case VotingStatus.completed:
+              statusString = 'completed';
+              break;
+         }
+
+        for (var votingJson in data) {
+          if (votingJson is Map<String, dynamic> && votingJson['status'] == null) {
+            votingJson['status'] = statusString;
+          }
+        }
+        
         return data.map((json) => VotingEvent.fromJson(json)).toList();
       } else {
         throw Exception('Не удалось загрузить события. Код ответа: ${response.statusCode}');
@@ -80,6 +102,7 @@ class ApiVotingRepository implements VotingRepository {
     final body = {'voting_id': eventId};
     try {
       final response = await http.post(url, headers: headers, body: body);
+      
       if (kDebugMode) {
         print('--- ЗАПРОС РЕГИСТРАЦИИ ---');
         print('URL: $url');
@@ -89,7 +112,11 @@ class ApiVotingRepository implements VotingRepository {
         print('Тело: ${response.body}');
         print('--------------------');
       }
-      if (response.statusCode != 200) {
+
+      // FIXED: Теперь мы проверяем на "registered", как и присылает сервер.
+      if (response.statusCode == 200 && response.body.contains('"status":"registered"')) {
+        return; // Успех!
+      } else {
         throw Exception('Ошибка регистрации. Сервер ответил: ${response.body}');
       }
     } catch (e) {
@@ -97,22 +124,46 @@ class ApiVotingRepository implements VotingRepository {
     }
   }
 
-  // FIXED: Возвращаем недостающие методы с пустой реализацией
+  @override
+  Future<VotingEvent> getEventDetails(String eventId) async {
+    // Этот метод пока не используется
+    throw UnimplementedError();
+  }
+
   @override
   Future<List<Nominee>> getNomineesForEvent(String eventId) async {
-    // TODO: Реализовать получение номинантов
+    // Этот метод больше не используется
     return [];
   }
 
   @override
-  Future<List<VoteResult>> getResultsForEvent(String eventId) async {
-    // TODO: Реализовать получение результатов
-    return [];
+  Future<void> submitVote(String eventId, Map<String, String> answers) async {
+     final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
+    final headers = {
+      ..._baseHeaders,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    final body = <String, String>{'voting_id': eventId};
+    int index = 0;
+    answers.forEach((subjectId, answerId) {
+      body['data[$index][name]'] = 'subject::$subjectId';
+      body['data[$index][value]'] = answerId;
+      index++;
+    });
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+      if (response.statusCode != 200 || !response.body.contains('"status":"voted"')) {
+        throw Exception('Ошибка при отправке голоса. Сервер ответил: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Не удалось проголосовать: $e');
+    }
   }
 
   @override
-  Future<void> submitVote(String eventId, String nomineeId) async {
-    // TODO: Реализовать отправку голоса
+  Future<List<QuestionResult>> getResultsForEvent(String eventId) async {
+    // Этот метод больше не используется
+    return [];
   }
 }
 
