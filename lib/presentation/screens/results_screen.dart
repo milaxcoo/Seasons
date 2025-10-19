@@ -143,7 +143,7 @@ class _ResultsTable extends StatelessWidget {
 
   Widget _buildDataTable(BuildContext context, List<SubjectResult> data) {
     return DataTable(
-      headingRowColor: MaterialStateProperty.all(Colors.black.withOpacity(0.1)),
+      headingRowColor: WidgetStateProperty.all(Colors.black.withOpacity(0.1)),
       dataRowHeight: 40,
       headingRowHeight: 40,
       horizontalMargin: 0,

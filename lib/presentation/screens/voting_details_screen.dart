@@ -282,7 +282,7 @@ class _QuestionCard extends StatelessWidget {
                   }
                 },
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -320,7 +320,7 @@ class _SubjectWidget extends StatelessWidget {
               groupValue: groupValue,
               onChanged: onChanged,
             );
-          }).toList(),
+          }),
         ],
       ),
     );
