@@ -11,35 +11,30 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 
 class RegistrationDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
-  // FIXED: Добавлено поле для получения пути к фону
   final String imagePath;
 
   const RegistrationDetailsScreen({
-    super.key, 
+    super.key,
     required this.event,
-    required this.imagePath, // Сделано обязательным параметром
+    required this.imagePath,
   });
 
   @override
   Widget build(BuildContext context) {
+    // BlocProvider нужен только для отправки события регистрации, а не для загрузки.
     return BlocProvider(
       create: (context) => VotingBloc(
         votingRepository: RepositoryProvider.of<VotingRepository>(context),
       ),
-      // FIXED: Используем переданный imagePath
       child: AppBackground(
         imagePath: imagePath,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
           child: Scaffold(
-            backgroundColor: Colors.black.withOpacity(0.2),
+            backgroundColor: Colors.transparent,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
-              title: Text(
-                'Детали события',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
-              ),
             ),
             body: _RegistrationDetailsView(event: event),
           ),
@@ -55,17 +50,26 @@ class _RegistrationDetailsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat.yMMMd('ru');
+    // Форматируем даты в нужный нам вид
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
+    
+    // Проверяем, установлена ли дата. Если нет - пишем "Не установлено".
+    final startDate = event.votingStartDate != null 
+        ? dateFormat.format(event.votingStartDate!) 
+        : 'Не установлено';
+        
+    final endDate = event.registrationEndDate != null 
+        ? dateFormat.format(event.registrationEndDate!) 
+        : 'Не установлено';
 
-    // BlocListener отслеживает изменения состояния для выполнения действий (например, показ уведомления).
     return BlocListener<VotingBloc, VotingState>(
       listener: (context, state) {
         if (state is RegistrationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Вы были успешно зарегистрированы!'), backgroundColor: Colors.green),
           );
-          // Возвращаемся на предыдущий экран после успешной регистрации.
-          Navigator.of(context).pop();
+          // Возвращаем true, чтобы HomeScreen мог обновиться
+          Navigator.of(context).pop(true);
         }
         if (state is RegistrationFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -73,97 +77,121 @@ class _RegistrationDetailsView extends StatelessWidget {
           );
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Заголовок
-            Text(
-              event.title,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+      child: Center(
+        child: SingleChildScrollView( // Добавлено для избежания переполнения на маленьких экранах
+          child: Container(
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE4DCC5), // Цвет фона карточки
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 16),
-            // Описание
-            Text(
-              event.description,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white.withOpacity(0.9), height: 1.5),
-            ),
-            const Spacer(), // Занимает все свободное место, прижимая контент ниже к низу
-            // Даты
-            _InfoRow(
-              icon: Icons.event_available,
-              label: 'Регистрация до:',
-              value: dateFormat.format(event.registrationEndDate),
-            ),
-            const SizedBox(height: 12),
-            _InfoRow(
-              icon: Icons.how_to_vote,
-              label: 'Голосование с:',
-              value: dateFormat.format(event.votingStartDate),
-            ),
-            const SizedBox(height: 32),
-            // Кнопка регистрации с BlocBuilder
-            SizedBox(
-              width: double.infinity,
-              child: BlocBuilder<VotingBloc, VotingState>(
-                builder: (context, state) {
-                  // Если идет регистрация, показываем индикатор загрузки.
-                  if (state is RegistrationInProgress) {
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  event.title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 16),
+                Text(
+                  event.description,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 24),
+                _InfoRow(label: 'Начало\nрегистрации', value: startDate),
+                const Divider(),
+                _InfoRow(label: 'Завершение\nрегистрации', value: endDate),
+                const Divider(),
+                _InfoRow(
+                  label: 'Статус',
+                  value: event.isRegistered ? 'Зарегистрирован' : 'Не зарегистрирован',
+                  valueColor: event.isRegistered ? const Color(0xFF00A94F) : Colors.red,
+                ),
+                const SizedBox(height: 32),
+                BlocBuilder<VotingBloc, VotingState>(
+                  builder: (context, state) {
+                    // Если идет регистрация, показываем надпись "Идет регистрация..."
+                    if (state is RegistrationInProgress) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Идет регистрация...',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    // Основная кнопка
                     return ElevatedButton(
-                      onPressed: null, // Кнопка неактивна во время загрузки
                       style: ElevatedButton.styleFrom(
+                        side: BorderSide(color: event.isRegistered ? Colors.grey : const Color(0xFF6A9457), width: 2),
+                        backgroundColor: event.isRegistered ? Colors.grey.shade300 : Colors.transparent,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const CircularProgressIndicator(color: Colors.white),
+                      onPressed: event.isRegistered ? null : () {
+                        context.read<VotingBloc>().add(RegisterForEvent(eventId: event.id));
+                      },
+                      child: Text(
+                        event.isRegistered ? 'Вы уже зарегистрированы' : 'Зарегистрироваться',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: event.isRegistered ? Colors.black54 : const Color(0xFF6A9457),
+                        ),
+                      ),
                     );
-                  }
-                  // В остальных случаях показываем кнопку, зависящую от статуса регистрации.
-                  return ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      // Если уже зарегистрирован, делаем кнопку серой.
-                      backgroundColor: event.isRegistered ? Colors.grey : Theme.of(context).colorScheme.primary,
-                    ),
-                    // Если уже зарегистрирован, отключаем кнопку.
-                    onPressed: event.isRegistered ? null : () {
-                      // При нажатии отправляем событие в BLoC.
-                      context.read<VotingBloc>().add(RegisterForEvent(eventId: event.id));
-                    },
-                    child: Text(
-                      // Меняем текст на кнопке в зависимости от статуса регистрации.
-                      event.isRegistered ? 'Вы уже зарегистрированы' : 'Зарегистрироваться',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
-                    ),
-                  );
-                },
-              ),
+                  },
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// Вспомогательный виджет для отображения строк информации.
+// Вспомогательный виджет для отображения строк
 class _InfoRow extends StatelessWidget {
-  final IconData icon;
   final String label;
   final String value;
+  final Color? valueColor;
 
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white70, size: 20),
-        const SizedBox(width: 12),
-        Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white70)),
-        const Spacer(),
-        Text(value, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.black54)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: valueColor ?? Colors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,19 +1,32 @@
 import 'package:equatable/equatable.dart';
 
-// This class represents the final result for a single nominee
-// in a completed voting event.
-// It extends Equatable to ensure efficient state comparisons in the BLoC.
-class VoteResult extends Equatable {
-  final String nomineeName;
-  final double votePercentage;
+// Представляет одну строку в таблице результатов (например, "vvv")
+class SubjectResult extends Equatable {
+  final String name;
+  final int forVotes;
+  final int againstVotes;
 
-  // A const constructor for performance benefits.
-  const VoteResult({
-    required this.nomineeName,
-    required this.votePercentage,
+  const SubjectResult({
+    required this.name,
+    required this.forVotes,
+    required this.againstVotes,
   });
 
-  // The list of properties for value-based equality checking.
   @override
-  List<Object> get props => [nomineeName, votePercentage];
+  List<Object?> get props => [name, forVotes, againstVotes];
 }
+
+// Представляет один вопрос с его результатами (например, "1. zzz")
+class QuestionResult extends Equatable {
+  final String name;
+  final List<SubjectResult> subjectResults;
+
+  const QuestionResult({
+    required this.name,
+    required this.subjectResults,
+  });
+
+  @override
+  List<Object?> get props => [name, subjectResults];
+}
+
