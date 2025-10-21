@@ -20,15 +20,15 @@ dependencies:
 
   # UI & Styling
   google_fonts: ^6.2.1
-  fl_chart: ^1.0.0
+  fl_chart: ^1.1.1
   intl: ^0.20.2
 
   # Secure Storage
   flutter_secure_storage: ^9.2.2
 
   # Firebase for Push Notifications
-  firebase_core: ^4.0.0
-  firebase_messaging: ^16.0.0
+  firebase_core: ^4.2.0
+  firebase_messaging: ^16.0.2
   flutter_svg: ^2.2.0
   http: ^1.5.0
   html: ^0.15.6
