@@ -1,8 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 
-// This is a standalone library, not part of another file.
-
 abstract class VotingEvent extends Equatable {
   const VotingEvent();
 
@@ -10,44 +8,29 @@ abstract class VotingEvent extends Equatable {
   List<Object> get props => [];
 }
 
-// Dispatched to fetch the list of events for a specific tab (status).
 class FetchEventsByStatus extends VotingEvent {
-  // This now correctly and unambiguously refers to the data model's enum.
   final model.VotingStatus status;
-
   const FetchEventsByStatus({required this.status});
-
-  @override
-  List<Object> get props => [status];
 }
 
-// Dispatched to fetch the nominees for a specific "Active" event.
-class FetchNominees extends VotingEvent {
+class RegisterForEvent extends VotingEvent {
   final String eventId;
-
-  const FetchNominees({required this.eventId});
-
-  @override
-  List<Object> get props => [eventId];
+  const RegisterForEvent({required this.eventId});
 }
 
-// Dispatched when the user submits their vote.
+// FIXED: SubmitVote теперь принимает Map<String, String> ответов,
+// где ключ - это ID субъекта, а значение - ID выбранного ответа.
 class SubmitVote extends VotingEvent {
   final String eventId;
-  final String nomineeId;
-
-  const SubmitVote({required this.eventId, required this.nomineeId});
+  final Map<String, String> answers;
+  const SubmitVote({required this.eventId, required this.answers});
 
   @override
-  List<Object> get props => [eventId, nomineeId];
+  List<Object> get props => [eventId, answers];
 }
 
-// Dispatched to fetch the results for a specific "Completed" event.
 class FetchResults extends VotingEvent {
   final String eventId;
-
   const FetchResults({required this.eventId});
-
-  @override
-  List<Object> get props => [eventId];
 }
+

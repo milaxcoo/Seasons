@@ -1,39 +1,144 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
+import 'package:seasons/data/models/question.dart';
+import 'package:seasons/data/models/vote_result.dart'; // Импортируем нашу модель результатов
 
-// FIXED: The VotingStatus enum is defined here, in the same file as the model that uses it.
-// This makes it available to the VotingEvent class and resolves the 'undefined_class' error.
-enum VotingStatus {
-  registration,
-  active,
-  completed,
-}
+enum VotingStatus { registration, active, completed }
 
-// This class represents a single voting event.
-// It extends Equatable to allow for easy value-based comparisons,
-// which is crucial for the BLoC state management to work efficiently.
 class VotingEvent extends Equatable {
   final String id;
   final String title;
   final String description;
   final VotingStatus status;
-  final DateTime registrationEndDate;
-  final DateTime votingStartDate;
-  final DateTime votingEndDate;
+  final DateTime? registrationEndDate;
+  final DateTime? votingStartDate;
+  final DateTime? votingEndDate;
+  final bool isRegistered;
+  final List<Question> questions;
+  final bool hasVoted;
+  final List<QuestionResult> results;
 
   const VotingEvent({
     required this.id,
     required this.title,
     required this.description,
     required this.status,
-    required this.registrationEndDate,
-    required this.votingStartDate,
-    required this.votingEndDate,
+    this.registrationEndDate,
+    this.votingStartDate,
+    this.votingEndDate,
+    required this.isRegistered,
+    required this.questions,
+    required this.hasVoted,
+    required this.results,
   });
 
-  // The 'props' getter is required by the Equatable package.
-  // It lists all the properties that should be considered when checking for equality.
+  factory VotingEvent.fromJson(Map<String, dynamic> json) {
+    // Вложенный JSON для основного события может быть в ключе 'voting' или в корне
+    final votingData = json['voting'] as Map<String, dynamic>? ?? json;
+
+    VotingStatus status;
+    final statusString = json['status'] as String? ?? votingData['status'] as String?;
+    
+    switch (statusString) {
+      case 'active':
+      case 'ongoing':
+        status = VotingStatus.active;
+        break;
+      case 'completed':
+      case 'finished':
+        status = VotingStatus.completed;
+        break;
+      default:
+        status = VotingStatus.registration;
+    }
+
+    DateTime? parseDate(String? dateString) {
+      if (dateString == null || dateString.isEmpty) return null;
+      try {
+        // Добавляем 'Z' в конец строки, чтобы Dart понял, что это время в UTC
+        final utcDateTime = DateTime.parse('${dateString}Z');
+        // Затем конвертируем его в локальное время устройства
+        return utcDateTime.toLocal();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    List<Question> parsedQuestions = [];
+    try {
+      if (votingData['questions'] != null && votingData['questions'] is List) {
+        parsedQuestions = (votingData['questions'] as List)
+            .map((qJson) => Question.fromJson(qJson as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Ошибка парсинга вопросов: $e');
+      }
+    }
+
+    // FIXED: Полностью переписана логика для парсинга сложной структуры результатов
+    List<QuestionResult> parsedResults = [];
+    try {
+      if (json['resultsData']?['results'] is Map) {
+        final resultsMap = json['resultsData']['results'] as Map<String, dynamic>;
+        
+        resultsMap.forEach((questionName, questionData) {
+          final questionValue = questionData as Map<String, dynamic>;
+          final questionType = questionValue['type'] as String? ?? 'unknown';
+          final List<SubjectResult> subjectResults = [];
+
+          if (questionValue['results'] is Map) {
+            final subjectsMap = questionValue['results'] as Map<String, dynamic>;
+
+            // Проверяем, есть ли вложенный ключ 'details' (для multiple_variants)
+            if (subjectsMap['details'] is Map) {
+                final details = subjectsMap['details'] as Map<String, dynamic>;
+                details.forEach((variantName, voteCount) {
+                    subjectResults.add(SubjectResult(
+                        name: variantName,
+                        voteCounts: {variantName: voteCount as int? ?? 0},
+                    ));
+                });
+            } else {
+              // Стандартный парсинг для yes_no, yes_no_abstained, subject_oriented
+              subjectsMap.forEach((subjectName, subjectData) {
+                final details = subjectData['details'] as Map<String, dynamic>? ?? {};
+                final voteCounts = details.map((key, value) => MapEntry(key, value as int? ?? 0));
+                
+                subjectResults.add(SubjectResult(
+                  name: subjectName,
+                  voteCounts: voteCounts,
+                ));
+              });
+            }
+          }
+          parsedResults.add(QuestionResult(name: questionName, type: questionType, subjectResults: subjectResults));
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Ошибка парсинга результатов: $e');
+      }
+    }
+
+    return VotingEvent(
+      id: votingData['id'] as String? ?? 'unknown_id',
+      title: votingData['name'] as String? ?? 'Без названия',
+      description: votingData['description'] as String? ?? 'Описание отсутствует.',
+      status: status,
+      registrationEndDate: parseDate(votingData['end_registration_at'] as String?) ?? parseDate(votingData['registration_ended_at'] as String?),
+      votingStartDate: parseDate(votingData['registration_started_at'] as String?) ?? parseDate(votingData['voting_started_at'] as String?),
+      votingEndDate: parseDate(votingData['end_voting_at'] as String?) ?? parseDate(votingData['voting_ended_at'] as String?),
+      isRegistered: votingData['registered'] == 1,
+      questions: parsedQuestions,
+      hasVoted: votingData['voted'] == 1,
+      results: parsedResults, // Передаем распарсенные результаты
+    );
+  }
+
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         id,
         title,
         description,
@@ -41,5 +146,9 @@ class VotingEvent extends Equatable {
         registrationEndDate,
         votingStartDate,
         votingEndDate,
+        isRegistered,
+        questions,
+        hasVoted,
+        results, // Добавлено в props
       ];
 }

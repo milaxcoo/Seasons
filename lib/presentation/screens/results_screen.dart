@@ -1,29 +1,35 @@
-import 'dart:math' as math;
 import 'dart:ui';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:seasons/core/theme.dart';
+import 'package:intl/intl.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
-import 'package:seasons/data/repositories/voting_repository.dart';
-import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
-import 'package:seasons/presentation/bloc/voting/voting_event.dart';
-import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 
 class ResultsScreen extends StatelessWidget {
   final model.VotingEvent event;
-  const ResultsScreen({super.key, required this.event});
+  final String imagePath;
+
+  const ResultsScreen({
+    super.key,
+    required this.event,
+    required this.imagePath,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Provide a scoped BLoC instance for this screen.
-    return BlocProvider(
-      create: (context) => VotingBloc(
-        votingRepository: RepositoryProvider.of<VotingRepository>(context),
-      )..add(FetchResults(eventId: event.id)),
-      child: _ResultsView(event: event),
+    return AppBackground(
+      imagePath: imagePath,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+          body: _ResultsView(event: event),
+        ),
+      ),
     );
   }
 }
@@ -31,148 +37,196 @@ class ResultsScreen extends StatelessWidget {
 class _ResultsView extends StatelessWidget {
   final model.VotingEvent event;
   const _ResultsView({required this.event});
-
+  
   @override
   Widget build(BuildContext context) {
-    return AppBackground(
-      imagePath: 'assets/august.jpg',
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-        child: Container(
-          color: Colors.black.withOpacity(0.2), // Optional: darken the background slightly
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              title: Text(
-                event.title,
-                style: const TextStyle(color: Colors.white),
-                ),
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
+    final startDate = event.votingStartDate != null ? dateFormat.format(event.votingStartDate!) : 'Не установлено';
+    final endDate = event.votingEndDate != null ? dateFormat.format(event.votingEndDate!) : 'Не установлено';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE4DCC5),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              event.title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-            body: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: BlocBuilder<VotingBloc, VotingState>(
-                builder: (context, state) {
-                  if (state is VotingLoadInProgress) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.white));
-                  }
-                  if (state is VotingResultsLoadSuccess) {
-                    return _HorizontalBarChart(results: state.results);
-                  }
-                  if (state is VotingFailure) {
-                    return Center(
-                      child: Text(
-                        'Ошибка загрузки результатов: ${state.error}',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
-                      ),
-                    );
-                  }
-                  return Center(
-                    child: Text(
-                      'Загрузка результатов...',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
-                    ),
-                  );
-                },
+            const SizedBox(height: 8),
+            const Divider(),
+            _InfoRow(label: 'Описание', value: event.description),
+            _InfoRow(label: 'Начало голосования', value: startDate),
+            _InfoRow(label: 'Завершение голосования', value: endDate),
+            const SizedBox(height: 24),
+            _ResultsTable(results: event.results),
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  'Заседание завершено',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-// A dedicated widget for rendering the bar chart.
-class _HorizontalBarChart extends StatelessWidget {
-  final List<VoteResult> results;
-  const _HorizontalBarChart({required this.results});
+// Виджет для всей секции с результатами
+class _ResultsTable extends StatelessWidget {
+  final List<QuestionResult> results;
+  const _ResultsTable({required this.results});
 
   @override
   Widget build(BuildContext context) {
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: 100, // Assuming percentages, so max is 100.
-        barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(
-                '${results[groupIndex].nomineeName}\n',
-                const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-                children: <TextSpan>[
-                  TextSpan(
-                    text: '${rod.toY.toStringAsFixed(1)}%',
-                    style: const TextStyle(
-                      color: Colors.yellow,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+    if (results.isEmpty) {
+      return const Text("Результаты для этого голосования отсутствуют.");
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD9D3BF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Результаты голосования',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          ...results.asMap().entries.map((entry) {
+            int index = entry.key;
+            QuestionResult questionResult = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(top: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${index + 1}. ${questionResult.name}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  // Оборачиваем таблицу в SingleChildScrollView для горизонтальной прокрутки
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: _buildDataTable(context, questionResult),
                   ),
                 ],
-              );
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                final text = results[value.toInt()].nomineeName;
-                return SideTitleWidget(
-                  meta: meta,
-                  space: 8.0,
-                  child: Transform.rotate(
-                    angle: -math.pi / 4,
-                    child: Text(text, style: const TextStyle(fontSize: 12, color: Colors.white)),
-                  ),
-                );
-              },
-              reservedSize: 120,
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                if (value % 20 == 0) {
-                  return Text('${value.toInt()}%', style: const TextStyle(color: Colors.white70));
-                }
-                return const Text('');
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        barGroups: results.asMap().entries.map((entry) {
-          int index = entry.key;
-          VoteResult result = entry.value;
-          return BarChartGroupData(
-            x: index,
-            barRods: [
-              BarChartRodData(
-                toY: result.votePercentage,
-                color: AppTheme.primaryColor,
-                width: 22,
-                borderRadius: const BorderRadius.all(Radius.circular(4)),
               ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataTable(BuildContext context, QuestionResult data) {
+    List<String> columns;
+    if (data.type == 'multiple_variants') {
+      columns = ['Варианты ответов', 'Количество голосов'];
+    } else {
+      columns = ['', ...data.allColumns];
+    }
+
+    // FIXED: Все колонки теперь имеют ширину по своему содержимому
+    Map<int, TableColumnWidth> columnWidths = {};
+    for (int i = 0; i < columns.length; i++) {
+      columnWidths[i] = const IntrinsicColumnWidth();
+    }
+
+    return Table(
+      columnWidths: columnWidths,
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.1),
+          ),
+          children: columns.map((colName) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Text(
+                colName,
+                textAlign: colName.isEmpty ? TextAlign.start : TextAlign.center,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            );
+          }).toList(),
+        ),
+        ...data.subjectResults.map((row) {
+          return TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(row.name, style: Theme.of(context).textTheme.bodyLarge),
+              ),
+              ...columns.sublist(1).map((colName) {
+                String cellValue;
+                if (data.type == 'multiple_variants') {
+                  cellValue = (row.voteCounts[row.name] ?? 0).toString();
+                } else {
+                  cellValue = (row.voteCounts[colName] ?? 0).toString();
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Center(child: Text(cellValue)),
+                );
+              }),
             ],
           );
-        }).toList(),
-        gridData: const FlGridData(show: false),
-      ),
-      swapAnimationDuration: const Duration(milliseconds: 800),
-      swapAnimationCurve: Curves.easeInOut,
+        }),
+      ],
     );
   }
 }
+
+// Вспомогательный виджет для строк информации
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.black54)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
