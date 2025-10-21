@@ -17,8 +17,6 @@ class ResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Этот экран больше не использует BlocProvider для загрузки,
-    // так как все данные уже есть в объекте `event`.
     return AppBackground(
       imagePath: imagePath,
       child: BackdropFilter(
@@ -68,7 +66,6 @@ class _ResultsView extends StatelessWidget {
             _InfoRow(label: 'Начало голосования', value: startDate),
             _InfoRow(label: 'Завершение голосования', value: endDate),
             const SizedBox(height: 24),
-            // Отображаем таблицу с результатами
             _ResultsTable(results: event.results),
             const SizedBox(height: 32),
             Container(
@@ -117,7 +114,6 @@ class _ResultsTable extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          // Генерируем таблицу для каждого вопроса
           ...results.asMap().entries.map((entry) {
             int index = entry.key;
             QuestionResult questionResult = entry.value;
@@ -131,7 +127,11 @@ class _ResultsTable extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  _buildDataTable(context, questionResult.subjectResults),
+                  // Оборачиваем таблицу в SingleChildScrollView для горизонтальной прокрутки
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: _buildDataTable(context, questionResult),
+                  ),
                 ],
               ),
             );
@@ -141,25 +141,62 @@ class _ResultsTable extends StatelessWidget {
     );
   }
 
-  Widget _buildDataTable(BuildContext context, List<SubjectResult> data) {
-    return DataTable(
-      headingRowColor: WidgetStateProperty.all(Colors.black.withOpacity(0.1)),
-      dataRowHeight: 40,
-      headingRowHeight: 40,
-      horizontalMargin: 0,
-      columnSpacing: 16,
-      columns: [
-        const DataColumn(label: Flexible(child: Text(''))), // Пустая для названий
-        DataColumn(label: Center(child: Text('За', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)))),
-        DataColumn(label: Center(child: Text('Против', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)))),
+  Widget _buildDataTable(BuildContext context, QuestionResult data) {
+    List<String> columns;
+    if (data.type == 'multiple_variants') {
+      columns = ['Варианты ответов', 'Количество голосов'];
+    } else {
+      columns = ['', ...data.allColumns];
+    }
+
+    // FIXED: Все колонки теперь имеют ширину по своему содержимому
+    Map<int, TableColumnWidth> columnWidths = {};
+    for (int i = 0; i < columns.length; i++) {
+      columnWidths[i] = const IntrinsicColumnWidth();
+    }
+
+    return Table(
+      columnWidths: columnWidths,
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        TableRow(
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.1),
+          ),
+          children: columns.map((colName) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Text(
+                colName,
+                textAlign: colName.isEmpty ? TextAlign.start : TextAlign.center,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            );
+          }).toList(),
+        ),
+        ...data.subjectResults.map((row) {
+          return TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(row.name, style: Theme.of(context).textTheme.bodyLarge),
+              ),
+              ...columns.sublist(1).map((colName) {
+                String cellValue;
+                if (data.type == 'multiple_variants') {
+                  cellValue = (row.voteCounts[row.name] ?? 0).toString();
+                } else {
+                  cellValue = (row.voteCounts[colName] ?? 0).toString();
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Center(child: Text(cellValue)),
+                );
+              }),
+            ],
+          );
+        }),
       ],
-      rows: data.map((row) {
-        return DataRow(cells: [
-          DataCell(Text(row.name, style: Theme.of(context).textTheme.bodyLarge)),
-          DataCell(Center(child: Text(row.forVotes.toString()))),
-          DataCell(Center(child: Text(row.againstVotes.toString()))),
-        ]);
-      }).toList(),
     );
   }
 }
@@ -192,3 +229,4 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
+

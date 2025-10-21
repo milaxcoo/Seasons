@@ -101,12 +101,6 @@ class _TopBar extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('RU', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white)),
-              const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-            ],
-          ),
-          Row(
-            children: [
               GestureDetector(
                 onTap: () {
                   Navigator.of(context).push(
