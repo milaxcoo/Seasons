@@ -97,7 +97,7 @@ class _TopBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Row(
             children: [
@@ -147,6 +147,7 @@ class _Header extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
                   shadows: [const Shadow(blurRadius: 8, color: Colors.black54)],
+                  fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w100,
                   fontSize: 16,
                   letterSpacing: 6,
@@ -231,7 +232,7 @@ class _Footer extends StatelessWidget {
         children: [
           Text(
             poem,
-            textAlign: TextAlign.center,
+            textAlign: TextAlign.left,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.white,
                   height: 1.5,
@@ -241,7 +242,7 @@ class _Footer extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             author,
-            textAlign: TextAlign.center,
+            textAlign: TextAlign.left,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.white,
                   fontStyle: FontStyle.italic,
@@ -271,7 +272,7 @@ class _EventList extends StatelessWidget {
         if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: const Color(0xFFe4dcc5),
