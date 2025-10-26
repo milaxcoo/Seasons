@@ -10,57 +10,68 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Получаем тему для текущего месяца
     final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!; // Октябрь по умолчанию
+    final theme = monthlyThemes[currentMonth] ??
+        monthlyThemes[10]!; // Октябрь по умолчанию
 
     return AppBackground(
-      imagePath: theme.imagePath, // Используем динамический фон
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-        child: Scaffold(
-          backgroundColor: Colors.black.withOpacity(0.25),
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(
-              'Данные пользователя',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+        imagePath: theme.imagePath, // Используем динамический фон
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+          child: Scaffold(
+            backgroundColor: Colors.black.withOpacity(0.25),
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: Text(
+                'Данные пользователя',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(color: Colors.white),
+              ),
+            ),
+            body: SingleChildScrollView(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE4DCC5).withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _UserInfoRow(
+                      label: 'Фамилия',
+                      value: 'Лебедев',
+                    ),
+                    const Divider(height: 24),
+                    _UserInfoRow(
+                      label: 'Имя',
+                      value: 'Михаил',
+                    ),
+                    const Divider(height: 24),
+                    _UserInfoRow(
+                      label: 'Отчество',
+                      value: 'Александрович',
+                    ),
+                    const Divider(height: 24),
+                    _UserInfoRow(
+                      label: 'Электронная почта',
+                      value: 'lebedev_ma@pfur.ru',
+                    ),
+                    const Divider(height: 24),
+                    _UserInfoRow(
+                      label: 'Должность',
+                      value: 'Студент',
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                _UserInfoRow(
-                  label: 'Фамилия',
-                  value: 'Лебедев',
-                ),
-                const SizedBox(height: 24),
-                _UserInfoRow(
-                  label: 'Имя',
-                  value: 'Михаил',
-                ),
-                const SizedBox(height: 24),
-                _UserInfoRow(
-                  label: 'Отчество',
-                  value: 'Александрович',
-                ),
-                const SizedBox(height: 24),
-                _UserInfoRow(
-                  label: 'Электронная почта',
-                  value: 'lebedev_ma@pfur.ru',
-                ),
-                const SizedBox(height: 24),
-                _UserInfoRow(
-                  label: 'Должность',
-                  value: 'Студент', // Это значение можно будет получать из API в будущем
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+        ));
   }
 }
 
@@ -76,23 +87,21 @@ class _UserInfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Метка (например, "Фамилия")
         SizedBox(
-          width: 120, // Фиксированная ширина для выравнивания
+          width: 150,
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.black54,
                 ),
           ),
         ),
-        const SizedBox(width: 24),
-        // Значение (например, "Лебедев")
+        const SizedBox(width: 16),
         Expanded(
           child: Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
+                  color: Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -101,4 +110,3 @@ class _UserInfoRow extends StatelessWidget {
     );
   }
 }
-

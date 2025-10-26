@@ -33,7 +33,10 @@ class VotingDetailsScreen extends StatelessWidget {
             elevation: 0,
             title: Text(
               event.title, // Заголовок теперь - название голосования
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(color: Colors.white),
             ),
           ),
           body: _VotingDetailsView(event: event),
@@ -55,7 +58,8 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
   final Map<String, String> _selectedAnswers = {};
 
   void _submitVote() {
-    final totalSubjects = widget.event.questions.fold<int>(0, (sum, q) => sum + q.subjects.length);
+    final totalSubjects = widget.event.questions
+        .fold<int>(0, (sum, q) => sum + q.subjects.length);
     if (_selectedAnswers.length < totalSubjects) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -65,13 +69,32 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
         ));
       return;
     }
-    
-    context.read<VotingBloc>().add(
-          SubmitVote(
-            eventId: widget.event.id,
-            answers: _selectedAnswers,
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Подтверждение'),
+        content: const Text('Вы уверены, что хотите проголосовать?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Нет'),
           ),
-        );
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.read<VotingBloc>().add(
+                    SubmitVote(
+                      eventId: widget.event.id,
+                      answers: _selectedAnswers,
+                    ),
+                  );
+            },
+            child: const Text('Да'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -136,16 +159,25 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: widget.event.hasVoted ? Colors.grey : Theme.of(context).colorScheme.primary,
+                    backgroundColor: widget.event.hasVoted
+                        ? Colors.grey
+                        : const Color(0xFF52A355),
                   ),
-                  onPressed: (state is VotingLoadInProgress || _selectedAnswers.isEmpty || widget.event.hasVoted)
+                  onPressed: (state is VotingLoadInProgress ||
+                          _selectedAnswers.isEmpty ||
+                          widget.event.hasVoted)
                       ? null
                       : _submitVote,
                   child: state is VotingLoadInProgress
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          widget.event.hasVoted ? 'Вы уже проголосовали' : 'Проголосовать',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                          widget.event.hasVoted
+                              ? 'Вы уже проголосовали'
+                              : 'Проголосовать',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(color: Colors.white),
                         ),
                 ),
               ),
@@ -167,11 +199,11 @@ class _EventInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
-    
+
     final startDate = event.votingStartDate != null
         ? dateFormat.format(event.votingStartDate!)
         : 'Не установлено';
-        
+
     final endDate = event.votingEndDate != null
         ? dateFormat.format(event.votingEndDate!)
         : 'Не установлено';
@@ -199,7 +231,7 @@ class _EventInfoCard extends StatelessWidget {
           _InfoRow(
             label: 'Статус',
             value: event.hasVoted ? 'Проголосовано' : 'Не проголосовано',
-            valueColor: event.hasVoted ? const Color(0xFF00A94F) : Colors.red,
+            valueColor: event.hasVoted ? const Color(0xFF52A355) : Colors.red,
           ),
         ],
       ),
@@ -223,7 +255,11 @@ class _InfoRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.black54)),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.black54)),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -240,7 +276,6 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
 
 // Виджет для отображения одной карточки вопроса
 class _QuestionCard extends StatelessWidget {
@@ -269,18 +304,23 @@ class _QuestionCard extends StatelessWidget {
           children: [
             Text(
               question.name,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
             ...question.subjects.map((subject) {
               return _SubjectWidget(
                 subject: subject,
                 groupValue: selectedAnswers[subject.id],
-                onChanged: hasVoted ? null : (answerId) {
-                  if (answerId != null) {
-                    onAnswerSelected(subject.id, answerId);
-                  }
-                },
+                onChanged: hasVoted
+                    ? null
+                    : (answerId) {
+                        if (answerId != null) {
+                          onAnswerSelected(subject.id, answerId);
+                        }
+                      },
               );
             }),
           ],
@@ -318,6 +358,7 @@ class _SubjectWidget extends StatelessWidget {
               title: Text(answer.name),
               value: answer.id,
               groupValue: groupValue,
+              activeColor: const Color(0xFF52A355),
               onChanged: onChanged,
             );
           }),
@@ -326,4 +367,3 @@ class _SubjectWidget extends StatelessWidget {
     );
   }
 }
-
