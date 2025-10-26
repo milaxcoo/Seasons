@@ -17,7 +17,7 @@ class ProfileScreen extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
         child: Scaffold(
-          backgroundColor: Colors.black.withOpacity(0.2),
+          backgroundColor: Colors.black.withOpacity(0.25),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,

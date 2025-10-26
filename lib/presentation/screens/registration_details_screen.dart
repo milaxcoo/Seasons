@@ -28,16 +28,35 @@ class RegistrationDetailsScreen extends StatelessWidget {
       ),
       child: AppBackground(
         imagePath: imagePath,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.35),
+                      Colors.black.withOpacity(0.25),
+                      Colors.black.withOpacity(0.35),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
             ),
             body: _RegistrationDetailsView(event: event),
           ),
+        ),
+          ],
         ),
       ),
     );
