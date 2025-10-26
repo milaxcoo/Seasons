@@ -468,7 +468,7 @@ class _VotingEventCard extends StatelessWidget {
                 event.status == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
               Text(
-                '${event.status == model.VotingStatus.registration ? (event.isRegistered ? "Зарегистрирован" : "Не зарегистрирован") : (event.hasVoted ? "Проголосовано" : "Не проголосовано")}',
+                event.status == model.VotingStatus.registration ? (event.isRegistered ? "Зарегистрирован" : "Не зарегистрирован") : (event.hasVoted ? "Проголосовано" : "Не проголосовано"),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: (event.status == model.VotingStatus.registration
                               ? event.isRegistered
