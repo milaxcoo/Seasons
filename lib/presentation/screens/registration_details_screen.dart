@@ -49,13 +49,13 @@ class RegistrationDetailsScreen extends StatelessWidget {
               filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
               child: Scaffold(
                 backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                ),
+                body: _RegistrationDetailsView(event: event),
+              ),
             ),
-            body: _RegistrationDetailsView(event: event),
-          ),
-        ),
           ],
         ),
       ),
@@ -71,33 +71,38 @@ class _RegistrationDetailsView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Форматируем даты в нужный нам вид
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
-    
+
     // Проверяем, установлена ли дата. Если нет - пишем "Не установлено".
-    final startDate = event.votingStartDate != null 
-        ? dateFormat.format(event.votingStartDate!) 
+    final startDate = event.votingStartDate != null
+        ? dateFormat.format(event.votingStartDate!)
         : 'Не установлено';
-        
-    final endDate = event.registrationEndDate != null 
-        ? dateFormat.format(event.registrationEndDate!) 
+
+    final endDate = event.registrationEndDate != null
+        ? dateFormat.format(event.registrationEndDate!)
         : 'Не установлено';
 
     return BlocListener<VotingBloc, VotingState>(
       listener: (context, state) {
         if (state is RegistrationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Вы были успешно зарегистрированы!'), backgroundColor: Colors.green),
+            const SnackBar(
+                content: Text('Вы были успешно зарегистрированы!'),
+                backgroundColor: Colors.green),
           );
           // Возвращаем true, чтобы HomeScreen мог обновиться
           Navigator.of(context).pop(true);
         }
         if (state is RegistrationFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ошибка регистрации: ${state.error}'), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text('Ошибка регистрации: ${state.error}'),
+                backgroundColor: Colors.red),
           );
         }
       },
       child: Center(
-        child: SingleChildScrollView( // Добавлено для избежания переполнения на маленьких экранах
+        child: SingleChildScrollView(
+          // Добавлено для избежания переполнения на маленьких экранах
           child: Container(
             margin: const EdgeInsets.all(24),
             padding: const EdgeInsets.all(24),
@@ -112,7 +117,10 @@ class _RegistrationDetailsView extends StatelessWidget {
                 Text(
                   event.title,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Divider(),
@@ -128,8 +136,11 @@ class _RegistrationDetailsView extends StatelessWidget {
                 const Divider(),
                 _InfoRow(
                   label: 'Статус',
-                  value: event.isRegistered ? 'Зарегистрирован' : 'Не зарегистрирован',
-                  valueColor: event.isRegistered ? const Color(0xFF00A94F) : Colors.red,
+                  value: event.isRegistered
+                      ? 'Зарегистрирован'
+                      : 'Не зарегистрирован',
+                  valueColor:
+                      event.isRegistered ? const Color(0xFF00A94F) : Colors.red,
                 ),
                 const SizedBox(height: 32),
                 BlocBuilder<VotingBloc, VotingState>(
@@ -145,29 +156,48 @@ class _RegistrationDetailsView extends StatelessWidget {
                         child: Center(
                           child: Text(
                             'Идет регистрация...',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(color: Colors.white),
                           ),
                         ),
                       );
                     }
-                    
+
                     // Основная кнопка
                     return ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        side: BorderSide(color: event.isRegistered ? Colors.grey : const Color(0xFF6A9457), width: 2),
-                        backgroundColor: event.isRegistered ? Colors.grey.shade300 : Colors.transparent,
+                        side: BorderSide(
+                            color: event.isRegistered
+                                ? Colors.grey
+                                : const Color(0xFF6A9457),
+                            width: 2),
+                        backgroundColor: event.isRegistered
+                            ? Colors.grey.shade300
+                            : Colors.transparent,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      onPressed: event.isRegistered ? null : () {
-                        context.read<VotingBloc>().add(RegisterForEvent(eventId: event.id));
-                      },
+                      onPressed: event.isRegistered
+                          ? null
+                          : () {
+                              context
+                                  .read<VotingBloc>()
+                                  .add(RegisterForEvent(eventId: event.id));
+                            },
                       child: Text(
-                        event.isRegistered ? 'Вы уже зарегистрированы' : 'Зарегистрироваться',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: event.isRegistered ? Colors.black54 : const Color(0xFF6A9457),
-                        ),
+                        event.isRegistered
+                            ? 'Вы уже зарегистрированы'
+                            : 'Зарегистрироваться',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: event.isRegistered
+                                      ? Colors.black54
+                                      : const Color(0xFF6A9457),
+                                ),
                       ),
                     );
                   },
@@ -197,16 +227,20 @@ class _InfoRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.black54)),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.black54)),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: valueColor ?? Colors.black,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: valueColor ?? Colors.black,
+                  ),
             ),
           ),
         ],
@@ -214,4 +248,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
