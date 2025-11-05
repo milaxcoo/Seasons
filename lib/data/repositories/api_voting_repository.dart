@@ -100,21 +100,7 @@ class ApiVotingRepository implements VotingRepository {
     final body = {'voting_id': eventId};
     try {
       final response = await http.post(url, headers: headers, body: body);
-      
-      if (kDebugMode) {
-        print('--- ЗАПРОС РЕГИСТРАЦИИ ---');
-        print('URL: $url');
-        print('Тело: $body');
-        print('--- ОТВЕТ СЕРВЕРА ---');
-        print('Статус: ${response.statusCode}');
-        print('Тело: ${response.body}');
-        print('--------------------');
-      }
-
-      // FIXED: Теперь мы проверяем на "registered", как и присылает сервер.
-      if (response.statusCode == 200 && response.body.contains('"status":"registered"')) {
-        return; // Успех!
-      } else {
+      if (response.statusCode != 200 || !response.body.contains('"status":"registered"')) {
         throw Exception('Ошибка регистрации. Сервер ответил: ${response.body}');
       }
     } catch (e) {
@@ -122,6 +108,7 @@ class ApiVotingRepository implements VotingRepository {
     }
   }
 
+  @override
   Future<VotingEvent> getEventDetails(String eventId) async {
     // Этот метод пока не используется
     throw UnimplementedError();
@@ -133,27 +120,75 @@ class ApiVotingRepository implements VotingRepository {
     return [];
   }
 
+  // FIXED: Полностью переписан метод для отправки голоса
   @override
-  Future<void> submitVote(String eventId, Map<String, String> answers) async {
-     final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
+  Future<void> submitVote(VotingEvent event, Map<String, String> answers) async {
+    final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
+    
     final headers = {
       ..._baseHeaders,
       'Content-Type': 'application/x-www-form-urlencoded',
     };
-    final body = <String, String>{'voting_id': eventId};
+
+    // Собираем тело запроса в правильном формате
+    final body = <String, String>{
+      'voting_id': event.id,
+    };
+
     int index = 0;
-    answers.forEach((subjectId, answerId) {
-      body['data[$index][name]'] = 'subject::$subjectId';
-      body['data[$index][value]'] = answerId;
-      index++;
-    });
+    // Проходим по всем вопросам в том порядке, в котором они есть в голосовании
+    for (final question in event.questions) {
+      if (question.subjects.isEmpty && question.answers.isNotEmpty) {
+        // Это простой вопрос, ищем ответ по ID вопроса
+        final answerId = answers[question.id];
+        if (answerId != null) {
+          body['data[$index][name]'] = 'question::${question.id}';
+          body['data[$index][value]'] = answerId;
+          index++;
+        }
+      } else if (question.subjects.isNotEmpty) {
+        // Это сложный вопрос, проходим по его субъектам
+        for (final subject in question.subjects) {
+          final answerId = answers[subject.id];
+          if (answerId != null) {
+            body['data[$index][name]'] = 'subject::${subject.id}';
+            body['data[$index][value]'] = answerId;
+            index++;
+          }
+        }
+      }
+    }
+
     try {
       final response = await http.post(url, headers: headers, body: body);
-      if (response.statusCode != 200 || !response.body.contains('"status":"voted"')) {
-        throw Exception('Ошибка при отправке голоса. Сервер ответил: ${response.body}');
+
+      if (kDebugMode) {
+        print('--- ЗАПРОС ГОЛОСОВАНИЯ ---');
+        print('URL: $url');
+        print('Тело: $body');
+        print('--- ОТВЕТ СЕРВЕРА ---');
+        print('Статус: ${response.statusCode}');
+        print('Тело: ${response.body}');
+        print('--------------------');
       }
+
+      // Успешный ответ
+      if (response.statusCode == 200 && response.body.contains('"status":"voted"')) {
+        return;
+      }
+      
+      // Ошибка "Уже проголосовал"
+      if (response.body.contains("User already voted")) {
+        // Мы пробрасываем это конкретное сообщение об ошибке, чтобы UI мог его поймать
+        throw Exception("User already voted");
+      }
+
+      // Любая другая ошибка
+      throw Exception('Ошибка при отправке голоса. Сервер ответил: ${response.body}');
+      
     } catch (e) {
-      throw Exception('Не удалось проголосовать: $e');
+      // Передаем ошибку дальше
+      throw Exception(e.toString());
     }
   }
 
@@ -163,4 +198,3 @@ class ApiVotingRepository implements VotingRepository {
     return [];
   }
 }
-

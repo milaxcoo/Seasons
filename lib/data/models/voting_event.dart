@@ -64,6 +64,7 @@ class VotingEvent extends Equatable {
       }
     }
 
+    // FIXED: Логика парсинга теперь создает список объектов Question
     List<Question> parsedQuestions = [];
     try {
       if (votingData['questions'] != null && votingData['questions'] is List) {
@@ -131,7 +132,7 @@ class VotingEvent extends Equatable {
       votingStartDate: parseDate(votingData['registration_started_at'] as String?) ?? parseDate(votingData['voting_started_at'] as String?),
       votingEndDate: parseDate(votingData['end_voting_at'] as String?) ?? parseDate(votingData['voting_ended_at'] as String?),
       isRegistered: votingData['registered'] == 1,
-      questions: parsedQuestions,
+      questions: parsedQuestions, // Передаем распарсенный список вопросов
       hasVoted: votingData['voted'] == 1,
       results: parsedResults, // Передаем распарсенные результаты
     );
@@ -152,3 +153,4 @@ class VotingEvent extends Equatable {
         results, // Добавлено в props
       ];
 }
+

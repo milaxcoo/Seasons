@@ -38,13 +38,14 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     }
   }
 
-  // FIXED: Обработчик теперь работает с Map<String, String> ответов
-  Future<void> _onSubmitVote(
-      SubmitVote event, Emitter<VotingState> emit) async {
-    emit(
-        VotingLoadInProgress()); // Показываем состояние загрузки во время отправки
+  // FIXED: Обработчик теперь получает полный 'event' из события SubmitVote
+  // и ему больше не нужно искать его в 'state'.
+  Future<void> _onSubmitVote(SubmitVote event, Emitter<VotingState> emit) async {
+    emit(VotingLoadInProgress());
     try {
-      await _votingRepository.submitVote(event.eventId, event.answers);
+      // Теперь мы передаем 'event.event' (полный объект VotingEvent)
+      // и 'event.answers' в репозиторий.
+      await _votingRepository.submitVote(event.event, event.answers);
       emit(VotingSubmissionSuccess());
     } catch (e) {
       emit(VotingFailure(error: e.toString()));
@@ -62,3 +63,4 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     }
   }
 }
+
