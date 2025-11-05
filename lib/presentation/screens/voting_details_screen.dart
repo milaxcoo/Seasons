@@ -1,7 +1,7 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:seasons/data/models/question.dart' as model;
 import 'package:seasons/data/models/subject.dart' as model;
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -32,7 +32,7 @@ class VotingDetailsScreen extends StatelessWidget {
             backgroundColor: Colors.transparent,
             elevation: 0,
             title: Text(
-              event.title, // Заголовок теперь - название голосования
+              "Вопросы голосования",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
             ),
           ),
@@ -52,11 +52,23 @@ class _VotingDetailsView extends StatefulWidget {
 }
 
 class _VotingDetailsViewState extends State<_VotingDetailsView> {
+  // Храним выбранные ответы.
+  // Ключ - ID вопроса (для простых) или ID субъекта (для сложных).
+  // Значение - ID ответа.
   final Map<String, String> _selectedAnswers = {};
 
   void _submitVote() {
-    final totalSubjects = widget.event.questions.fold<int>(0, (sum, q) => sum + q.subjects.length);
-    if (_selectedAnswers.length < totalSubjects) {
+    // Считаем общее количество "линий выбора"
+    int totalItemsToVoteOn = 0;
+    for (var q in widget.event.questions) {
+      if (q.subjects.isNotEmpty) {
+        totalItemsToVoteOn += q.subjects.length;
+      } else if (q.answers.isNotEmpty) {
+        totalItemsToVoteOn += 1; // 1 выбор на простой вопрос
+      }
+    }
+    
+    if (_selectedAnswers.length < totalItemsToVoteOn) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(const SnackBar(
@@ -66,9 +78,10 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
       return;
     }
     
+    // FIXED: Передаем полный объект event и карту ответов
     context.read<VotingBloc>().add(
           SubmitVote(
-            eventId: widget.event.id,
+            event: widget.event,
             answers: _selectedAnswers,
           ),
         );
@@ -80,7 +93,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
       listener: (context, state) {
         if (state is VotingSubmissionSuccess) {
           showDialog(
-            context: context,
+            context: context, 
             barrierDismissible: false,
             builder: (dialogContext) => AlertDialog(
               title: const Text('Голос принят'),
@@ -89,7 +102,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    Navigator.of(context).pop(true);
+                    Navigator.of(context).pop(true); // Возвращаем true для обновления
                   },
                   child: const Text('OK'),
                 ),
@@ -97,31 +110,51 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             ),
           );
         } else if (state is VotingFailure) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(
-              content: Text('Ошибка: ${state.error}'),
-              backgroundColor: Colors.redAccent,
-            ));
+          // FIXED: "Умная" обработка ошибки, которую мы видели в логах
+          final errorMessage = state.error.toLowerCase();
+          if (errorMessage.contains("user already voted")) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(SnackBar(
+                content: const Text('Ваш голос уже был учтен ранее.'),
+                backgroundColor: Colors.blue,
+              ));
+            Navigator.of(context).pop(true); // Все равно обновляем
+          } else {
+            // Любая другая, настоящая ошибка
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(SnackBar(
+                content: Text('Ошибка: ${state.error}'),
+                backgroundColor: Colors.redAccent,
+              ));
+          }
         }
       },
       builder: (context, state) {
+        if (widget.event.questions.isEmpty) {
+          return Center(
+            child: Text(
+              'Вопросы для этого голосования отсутствуют.',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+            ),
+          );
+        }
+
         return Column(
           children: [
-            // FIXED: Добавлен новый информационный блок
-            _EventInfoCard(event: widget.event),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
                 itemCount: widget.event.questions.length,
                 itemBuilder: (context, index) {
                   final question = widget.event.questions[index];
                   return _QuestionCard(
                     question: question,
                     selectedAnswers: _selectedAnswers,
-                    onAnswerSelected: (subjectId, answerId) {
+                    onAnswerSelected: (key, answerId) {
                       setState(() {
-                        _selectedAnswers[subjectId] = answerId;
+                        _selectedAnswers[key] = answerId;
                       });
                     },
                     hasVoted: widget.event.hasVoted,
@@ -157,95 +190,10 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
   }
 }
 
-// --- НОВЫЕ И ОБНОВЛЕННЫЕ ВИДЖЕТЫ ---
-
-// Виджет для отображения основной информации о голосовании
-class _EventInfoCard extends StatelessWidget {
-  final model.VotingEvent event;
-  const _EventInfoCard({required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
-    
-    final startDate = event.votingStartDate != null
-        ? dateFormat.format(event.votingStartDate!)
-        : 'Не установлено';
-        
-    final endDate = event.votingEndDate != null
-        ? dateFormat.format(event.votingEndDate!)
-        : 'Не установлено';
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE4DCC5).withOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            event.description,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          _InfoRow(label: 'Начало\nголосования', value: startDate),
-          const Divider(height: 1),
-          _InfoRow(label: 'Завершение\nголосования', value: endDate),
-          const Divider(height: 1),
-          _InfoRow(
-            label: 'Статус',
-            value: event.hasVoted ? 'Проголосовано' : 'Не проголосовано',
-            valueColor: event.hasVoted ? const Color(0xFF00A94F) : Colors.red,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Виджет для отображения строки информации
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _InfoRow({required this.label, required this.value, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.black54)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? Colors.black,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-// Виджет для отображения одной карточки вопроса
 class _QuestionCard extends StatelessWidget {
   final model.Question question;
   final Map<String, String> selectedAnswers;
+  // Ключ - это ID субъекта (для сложных) или ID вопроса (для простых)
   final Function(String, String) onAnswerSelected;
   final bool hasVoted;
 
@@ -258,8 +206,10 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSimpleQuestion = question.subjects.isEmpty && question.answers.isNotEmpty;
+
     return Card(
-      color: const Color(0xFFE4DCC5),
+      color: const Color(0xFFe4dcc5),
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -272,17 +222,33 @@ class _QuestionCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
-            ...question.subjects.map((subject) {
-              return _SubjectWidget(
-                subject: subject,
-                groupValue: selectedAnswers[subject.id],
-                onChanged: hasVoted ? null : (answerId) {
-                  if (answerId != null) {
-                    onAnswerSelected(subject.id, answerId);
-                  }
-                },
-              );
-            }),
+            
+            if (isSimpleQuestion)
+              ...question.answers.map((answer) {
+                return RadioListTile<String>(
+                  title: Text(answer.name),
+                  value: answer.id,
+                  groupValue: selectedAnswers[question.id], // Ключ - ID вопроса
+                  onChanged: hasVoted ? null : (answerId) {
+                    if (answerId != null) {
+                      onAnswerSelected(question.id, answerId);
+                    }
+                  },
+                );
+              }),
+            
+            if (!isSimpleQuestion)
+              ...question.subjects.map((subject) {
+                return _SubjectWidget(
+                  subject: subject,
+                  groupValue: selectedAnswers[subject.id], // Ключ - ID субъекта
+                  onChanged: hasVoted ? null : (answerId) {
+                    if (answerId != null) {
+                      onAnswerSelected(subject.id, answerId);
+                    }
+                  },
+                );
+              }),
           ],
         ),
       ),
@@ -290,7 +256,6 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
-// Виджет для одного "под-вопроса"
 class _SubjectWidget extends StatelessWidget {
   final model.Subject subject;
   final String? groupValue;
@@ -326,4 +291,3 @@ class _SubjectWidget extends StatelessWidget {
     );
   }
 }
-
