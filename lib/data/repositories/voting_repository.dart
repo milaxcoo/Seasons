@@ -12,10 +12,11 @@ abstract class VotingRepository {
   // --- Методы для голосований ---
   Future<List<VotingEvent>> getEventsByStatus(VotingStatus status);
   Future<void> registerForEvent(String eventId);
+  Future<VotingEvent> getEventDetails(String eventId); // Мы его пока не используем, но он есть
   Future<List<Nominee>> getNomineesForEvent(String eventId);
   
-  // FIXED: Метод теперь принимает полный объект Event, чтобы знать структуру вопросов
-  Future<void> submitVote(VotingEvent event, Map<String, String> answers);
+  // FIXED: Метод submitVote теперь принимает полный объект VotingEvent
+  Future<bool> submitVote(VotingEvent event, Map<String, String> answers);
   
   Future<List<QuestionResult>> getResultsForEvent(String eventId);
 }

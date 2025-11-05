@@ -33,3 +33,8 @@ class FetchResults extends VotingEvent {
   const FetchResults({required this.eventId});
 }
 
+// Это событие больше не нужно, так как мы его не используем
+// class FetchEventDetails extends VotingEvent {
+//   final String eventId;
+//   const FetchEventDetails({required this.eventId});
+// }
