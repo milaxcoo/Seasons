@@ -16,75 +16,6 @@ import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedPanelIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchEventsForPanel(0);
-  }
-
-  void _fetchEventsForPanel(int index) {
-    setState(() {
-      _selectedPanelIndex = index;
-    });
-    final status = [
-      model.VotingStatus.registration,
-      model.VotingStatus.active,
-      model.VotingStatus.completed,
-    ][_selectedPanelIndex];
-    context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
-
-    return AppBackground(
-      imagePath: theme.imagePath,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _TopBar(),
-              _Header(),
-              _PanelSelector(
-                selectedIndex: _selectedPanelIndex,
-                onPanelSelected: _fetchEventsForPanel,
-              ),
-              Expanded(
-                child: _EventList(
-                  key: ValueKey(_selectedPanelIndex),
-                  status: [
-                    model.VotingStatus.registration,
-                    model.VotingStatus.active,
-                    model.VotingStatus.completed,
-                  ][_selectedPanelIndex],
-                  imagePath: theme.imagePath,
-                  onRefresh: () => _fetchEventsForPanel(_selectedPanelIndex),
-                ),
-              ),
-              _Footer(poem: theme.poem, author: theme.author),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- Вспомогательные виджеты ---
-
 class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -97,7 +28,7 @@ class _TopBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Row(
             children: [
@@ -107,7 +38,11 @@ class _TopBar extends StatelessWidget {
                     MaterialPageRoute(builder: (_) => const ProfileScreen()),
                   );
                 },
-                child: Text(userLogin, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white)),
+                child: Text(userLogin,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge
+                        ?.copyWith(color: Colors.white)),
               ),
               IconButton(
                 icon: const Icon(Icons.exit_to_app, color: Colors.white),
@@ -138,7 +73,9 @@ class _Header extends StatelessWidget {
             'Seasons',
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   color: Colors.white,
-                  shadows: [const Shadow(blurRadius: 10, color: Colors.black54)],
+                  shadows: [
+                    const Shadow(blurRadius: 10, color: Colors.black54)
+                  ],
                   fontWeight: FontWeight.w900,
                 ),
           ),
@@ -147,6 +84,7 @@ class _Header extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
                   shadows: [const Shadow(blurRadius: 8, color: Colors.black54)],
+                  fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w100,
                   fontSize: 16,
                   letterSpacing: 6,
@@ -161,8 +99,13 @@ class _Header extends StatelessWidget {
 class _PanelSelector extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onPanelSelected;
+  final Map<model.VotingStatus, int> hasEvents;
 
-  const _PanelSelector({required this.selectedIndex, required this.onPanelSelected});
+  const _PanelSelector({
+    required this.selectedIndex,
+    required this.onPanelSelected,
+    required this.hasEvents,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +113,15 @@ class _PanelSelector extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.black.withOpacity(0.5),
+            Colors.black.withOpacity(0.3),
+            Colors.black.withOpacity(0.5),
+          ],
+        ),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
@@ -180,16 +131,125 @@ class _PanelSelector extends StatelessWidget {
             icon: RegistrationIcon(isSelected: selectedIndex == 0),
             isSelected: selectedIndex == 0,
             onTap: () => onPanelSelected(0),
+            hasActiveEvents: hasEvents[model.VotingStatus.registration]! > 0,
           ),
           _PanelButton(
             icon: ActiveVotingIcon(isSelected: selectedIndex == 1),
             isSelected: selectedIndex == 1,
             onTap: () => onPanelSelected(1),
+            hasActiveEvents: hasEvents[model.VotingStatus.active]! > 0,
           ),
           _PanelButton(
             icon: ResultsIcon(isSelected: selectedIndex == 2),
             isSelected: selectedIndex == 2,
             onTap: () => onPanelSelected(2),
+            hasActiveEvents: hasEvents[model.VotingStatus.completed]! > 0,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedPanelIndex = 0;
+  final Map<model.VotingStatus, int> _eventsCount = {
+    model.VotingStatus.registration: 0,
+    model.VotingStatus.active: 0,
+    model.VotingStatus.completed: 0,
+  };
+
+  void _updateEventsCount(model.VotingStatus status, int count) {
+    setState(() {
+      _eventsCount[status] = count;
+    });
+  }
+
+  void _fetchEventsForPanel(int index) {
+    setState(() {
+      _selectedPanelIndex = index;
+    });
+    final status = [
+      model.VotingStatus.registration,
+      model.VotingStatus.active,
+      model.VotingStatus.completed,
+    ][_selectedPanelIndex];
+    context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentMonth = DateTime.now().month;
+    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
+    return AppBackground(
+      imagePath: theme.imagePath,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.35),
+                    Colors.black.withOpacity(0.25),
+                    Colors.black.withOpacity(0.35),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    _TopBar(),
+                    _Header(),
+                    BlocListener<VotingBloc, VotingState>(
+                      listener: (context, state) {
+                        if (state is VotingEventsLoadSuccess) {
+                          _updateEventsCount(
+                              [
+                                model.VotingStatus.registration,
+                                model.VotingStatus.active,
+                                model.VotingStatus.completed,
+                              ][_selectedPanelIndex],
+                              state.events.length);
+                        }
+                      },
+                      child: _PanelSelector(
+                        selectedIndex: _selectedPanelIndex,
+                        onPanelSelected: _fetchEventsForPanel,
+                        hasEvents: _eventsCount,
+                      ),
+                    ),
+                    Expanded(
+                      child: _EventList(
+                        key: ValueKey(_selectedPanelIndex),
+                        status: [
+                          model.VotingStatus.registration,
+                          model.VotingStatus.active,
+                          model.VotingStatus.completed,
+                        ][_selectedPanelIndex],
+                        imagePath: theme.imagePath,
+                        onRefresh: () =>
+                            _fetchEventsForPanel(_selectedPanelIndex),
+                      ),
+                    ),
+                    _Footer(poem: theme.poem, author: theme.author),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -201,16 +261,31 @@ class _PanelButton extends StatelessWidget {
   final Widget icon;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool hasActiveEvents;
 
-  const _PanelButton({required this.icon, required this.isSelected, required this.onTap});
+  const _PanelButton({
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+    required this.hasActiveEvents,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Color backgroundColor;
+    if (isSelected) {
+      backgroundColor = Colors.white.withOpacity(0.9);
+    } else if (hasActiveEvents) {
+      backgroundColor = const Color(0xFF00A94F);
+    } else {
+      backgroundColor = const Color(0xFF6d9fc5);
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: CircleAvatar(
         radius: 25,
-        backgroundColor: isSelected ? Colors.white.withOpacity(0.9) : Colors.transparent,
+        backgroundColor: backgroundColor,
         child: icon,
       ),
     );
@@ -226,27 +301,26 @@ class _Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(10.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             poem,
-            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
-                  height: 1.5,
-                  shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
-                ),
+              color: Colors.white,
+              height: 1.5,
+              shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             author,
-            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
-                  fontStyle: FontStyle.italic,
-                  shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
-                ),
+              color: Colors.white,
+              fontStyle: FontStyle.italic,
+              shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+            ),
           ),
         ],
       ),
@@ -259,35 +333,53 @@ class _EventList extends StatelessWidget {
   final String imagePath;
   final VoidCallback onRefresh;
 
-  const _EventList({super.key, required this.status, required this.imagePath, required this.onRefresh});
+  const _EventList(
+      {super.key,
+      required this.status,
+      required this.imagePath,
+      required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<VotingBloc, VotingState>(
       builder: (context, state) {
         if (state is VotingLoadInProgress) {
-          return const Center(child: CircularProgressIndicator(color: Colors.white));
+          return const Center(
+              child: CircularProgressIndicator(color: Colors.white));
         }
         if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFe4dcc5),
-                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.5),
+                    Colors.black.withOpacity(0.7),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(30),
               ),
               child: Center(
                 child: Text(
                   'Нет активных голосований',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.black87),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    shadows: [
+                      const Shadow(blurRadius: 6, color: Colors.black87)
+                    ],
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
               return _VotingEventCard(
@@ -299,7 +391,12 @@ class _EventList extends StatelessWidget {
           );
         }
         if (state is VotingFailure) {
-          return Center(child: Text('Error: ${state.error}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white)));
+          return Center(
+              child: Text('Error: ${state.error}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: Colors.white)));
         }
         return const SizedBox.shrink();
       },
@@ -342,30 +439,79 @@ class _VotingEventCard extends StatelessWidget {
     }
 
     return Card(
-      color: const Color(0xFFe4dcc5),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      color: const Color(0xFFE4DCC5),
       child: ListTile(
-        title: Text(event.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87)),
-        subtitle: Text(dateInfo, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54)),
+        contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        title: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            event.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              dateInfo,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.black54,
+                  ),
+            ),
+            if (event.status == model.VotingStatus.registration ||
+                event.status == model.VotingStatus.active) ...[
+              const SizedBox(height: 2),
+              Text(
+                event.status == model.VotingStatus.registration ? (event.isRegistered ? "Зарегистрирован" : "Не зарегистрирован") : (event.hasVoted ? "Проголосовано" : "Не проголосовано"),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: (event.status == model.VotingStatus.registration
+                              ? event.isRegistered
+                              : event.hasVoted)
+                          ? const Color(0xFF00A94F)
+                          : Colors.red,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ],
+          ],
+        ),
         trailing: const Icon(Icons.chevron_right, color: Colors.black54),
         onTap: () async {
-          // --- DEBUG: Добавляем отладочные сообщения ---
           if (kDebugMode) {
-            print('\n--- DEBUG [HomeScreen]: Нажата карточка "${event.title}" ---');
-            print('--- DEBUG [HomeScreen]: Статус объекта event: ${event.status} ---');
+            print(
+                '\n--- DEBUG [HomeScreen]: Нажата карточка "${event.title}" ---');
+            print(
+                '--- DEBUG [HomeScreen]: Статус объекта event: ${event.status} ---');
           }
 
           final result = await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) {
                 if (event.status == model.VotingStatus.registration) {
-                  if (kDebugMode) print('--- DEBUG [HomeScreen]: Навигация -> RegistrationDetailsScreen ---');
-                  return RegistrationDetailsScreen(event: event, imagePath: imagePath);
+                  if (kDebugMode) {
+                    print(
+                        '--- DEBUG [HomeScreen]: Навигация -> RegistrationDetailsScreen ---');
+                  }
+                  return RegistrationDetailsScreen(
+                      event: event, imagePath: imagePath);
                 } else if (event.status == model.VotingStatus.active) {
-                  if (kDebugMode) print('--- DEBUG [HomeScreen]: Навигация -> VotingDetailsScreen ---');
-                  return VotingDetailsScreen(event: event, imagePath: imagePath);
-                } else { // Это должен быть completed
-                  if (kDebugMode) print('--- DEBUG [HomeScreen]: Навигация -> ResultsScreen ---');
+                  if (kDebugMode) {
+                    print(
+                        '--- DEBUG [HomeScreen]: Навигация -> VotingDetailsScreen ---');
+                  }
+                  return VotingDetailsScreen(
+                      event: event, imagePath: imagePath);
+                } else {
+                  if (kDebugMode) {
+                    print(
+                        '--- DEBUG [HomeScreen]: Навигация -> ResultsScreen ---');
+                  }
                   return ResultsScreen(event: event, imagePath: imagePath);
                 }
               },
@@ -380,4 +526,3 @@ class _VotingEventCard extends StatelessWidget {
     );
   }
 }
-

@@ -19,16 +19,35 @@ class ResultsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBackground(
       imagePath: imagePath,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.35),
+                    Colors.black.withOpacity(0.25),
+                    Colors.black.withOpacity(0.35),
+                  ],
+                ),
+              ),
+            ),
           ),
-          body: _ResultsView(event: event),
-        ),
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+              ),
+              body: _ResultsView(event: event),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -37,12 +56,16 @@ class ResultsScreen extends StatelessWidget {
 class _ResultsView extends StatelessWidget {
   final model.VotingEvent event;
   const _ResultsView({required this.event});
-  
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
-    final startDate = event.votingStartDate != null ? dateFormat.format(event.votingStartDate!) : 'Не установлено';
-    final endDate = event.votingEndDate != null ? dateFormat.format(event.votingEndDate!) : 'Не установлено';
+    final startDate = event.votingStartDate != null
+        ? dateFormat.format(event.votingStartDate!)
+        : 'Не установлено';
+    final endDate = event.votingEndDate != null
+        ? dateFormat.format(event.votingEndDate!)
+        : 'Не установлено';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -58,7 +81,10 @@ class _ResultsView extends StatelessWidget {
             Text(
               event.title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Divider(),
@@ -77,7 +103,10 @@ class _ResultsView extends StatelessWidget {
               child: Center(
                 child: Text(
                   'Заседание завершено',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(color: Colors.white),
                 ),
               ),
             ),
@@ -98,7 +127,7 @@ class _ResultsTable extends StatelessWidget {
     if (results.isEmpty) {
       return const Text("Результаты для этого голосования отсутствуют.");
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -111,7 +140,10 @@ class _ResultsTable extends StatelessWidget {
           Text(
             'Результаты голосования',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ...results.asMap().entries.map((entry) {
@@ -124,7 +156,10 @@ class _ResultsTable extends StatelessWidget {
                 children: [
                   Text(
                     '${index + 1}. ${questionResult.name}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   // Оборачиваем таблицу в SingleChildScrollView для горизонтальной прокрутки
@@ -169,7 +204,10 @@ class _ResultsTable extends StatelessWidget {
               child: Text(
                 colName,
                 textAlign: colName.isEmpty ? TextAlign.start : TextAlign.center,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             );
           }).toList(),
@@ -178,8 +216,10 @@ class _ResultsTable extends StatelessWidget {
           return TableRow(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Text(row.name, style: Theme.of(context).textTheme.bodyLarge),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(row.name,
+                    style: Theme.of(context).textTheme.bodyLarge),
               ),
               ...columns.sublist(1).map((colName) {
                 String cellValue;
@@ -189,7 +229,8 @@ class _ResultsTable extends StatelessWidget {
                   cellValue = (row.voteCounts[colName] ?? 0).toString();
                 }
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Center(child: Text(cellValue)),
                 );
               }),
@@ -215,7 +256,11 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.black54)),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.black54)),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -229,4 +274,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
