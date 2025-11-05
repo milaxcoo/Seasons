@@ -18,15 +18,14 @@ class RegisterForEvent extends VotingEvent {
   const RegisterForEvent({required this.eventId});
 }
 
-// FIXED: SubmitVote теперь принимает Map<String, String> ответов,
-// где ключ - это ID субъекта, а значение - ID выбранного ответа.
+// FIXED: SubmitVote теперь принимает полный объект VotingEvent и Map ответов
 class SubmitVote extends VotingEvent {
-  final String eventId;
+  final model.VotingEvent event;
   final Map<String, String> answers;
-  const SubmitVote({required this.eventId, required this.answers});
+  const SubmitVote({required this.event, required this.answers});
 
   @override
-  List<Object> get props => [eventId, answers];
+  List<Object> get props => [event, answers];
 }
 
 class FetchResults extends VotingEvent {
