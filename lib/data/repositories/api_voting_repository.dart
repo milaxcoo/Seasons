@@ -61,7 +61,6 @@ class ApiVotingRepository implements VotingRepository {
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedBody = json.decode(response.body);
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
-
         String statusString;
          switch(status){
             case VotingStatus.registration:
@@ -74,13 +73,11 @@ class ApiVotingRepository implements VotingRepository {
               statusString = 'completed';
               break;
          }
-
         for (var votingJson in data) {
           if (votingJson is Map<String, dynamic> && votingJson['status'] == null) {
             votingJson['status'] = statusString;
           }
         }
-        
         return data.map((json) => VotingEvent.fromJson(json)).toList();
       } else {
         throw Exception('Не удалось загрузить события. Код ответа: ${response.statusCode}');
@@ -122,15 +119,15 @@ class ApiVotingRepository implements VotingRepository {
 
   // FIXED: Полностью переписан метод для отправки голоса
   @override
-  Future<void> submitVote(VotingEvent event, Map<String, String> answers) async {
-    final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
+  Future<bool> submitVote(VotingEvent event, Map<String, String> answers) async {
+     final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
     
     final headers = {
       ..._baseHeaders,
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
-    // Собираем тело запроса в правильном формате
+    // Собираем тело запроса в ПРАВИЛЬНОМ формате
     final body = <String, String>{
       'voting_id': event.id,
     };
@@ -139,7 +136,7 @@ class ApiVotingRepository implements VotingRepository {
     // Проходим по всем вопросам в том порядке, в котором они есть в голосовании
     for (final question in event.questions) {
       if (question.subjects.isEmpty && question.answers.isNotEmpty) {
-        // Это простой вопрос, ищем ответ по ID вопроса
+        // Это простой вопрос (напр., "Вопрос 5"), ищем ответ по ID вопроса
         final answerId = answers[question.id];
         if (answerId != null) {
           body['data[$index][name]'] = 'question::${question.id}';
@@ -147,7 +144,7 @@ class ApiVotingRepository implements VotingRepository {
           index++;
         }
       } else if (question.subjects.isNotEmpty) {
-        // Это сложный вопрос, проходим по его субъектам
+        // Это сложный вопрос (напр., "Вопрос 1"), проходим по его субъектам
         for (final subject in question.subjects) {
           final answerId = answers[subject.id];
           if (answerId != null) {
@@ -174,20 +171,18 @@ class ApiVotingRepository implements VotingRepository {
 
       // Успешный ответ
       if (response.statusCode == 200 && response.body.contains('"status":"voted"')) {
-        return;
+        return true; // Голос УСПЕШНО принят
       }
       
       // Ошибка "Уже проголосовал"
-      if (response.body.contains("User already voted")) {
-        // Мы пробрасываем это конкретное сообщение об ошибке, чтобы UI мог его поймать
-        throw Exception("User already voted");
+      if (response.statusCode == 409 && response.body.contains("User already voted")) {
+        return false; // Голос НЕ принят (но это не ошибка)
       }
 
       // Любая другая ошибка
       throw Exception('Ошибка при отправке голоса. Сервер ответил: ${response.body}');
       
     } catch (e) {
-      // Передаем ошибку дальше
       throw Exception(e.toString());
     }
   }

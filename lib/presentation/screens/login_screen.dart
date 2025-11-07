@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:seasons/core/monthly_theme_data.dart'; // FIXED: Импортируем новый централизованный файл
+import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'home_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,11 +21,14 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text(
+          title: Text(
             "Авторизация через РУДН ID",
             style: TextStyle(
-              fontWeight: FontWeight.bold,
-              shadows: [], // Убираем тени
+              fontFamily: GoogleFonts.exo2().fontFamily,
+              fontStyle: FontStyle.normal,
+              fontWeight: FontWeight.w900,
+              fontSize: 26.0,
+              shadows: [],
             ),
           ),
           content: const SingleChildScrollView(
@@ -105,11 +110,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'Войти',
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  fontSize: 26,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w100,
-                                ),
+                            style: TextStyle(
+                              fontFamily: GoogleFonts.exo2().fontFamily,
+                              fontStyle: FontStyle.normal,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 26,
+                              color: Colors.white,
+                              shadows: [],
+                            ),
                           ),
                           const SizedBox(width: 12),
                           const Icon(

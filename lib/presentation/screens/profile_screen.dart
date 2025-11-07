@@ -26,8 +26,12 @@ class ProfileScreen extends StatelessWidget {
                 'Данные пользователя',
                 style: Theme.of(context)
                     .textTheme
-                    .headlineSmall
-                    ?.copyWith(color: Colors.white),
+                    .bodyLarge // Используем 'bodyLarge' (Exo 2 w700)
+                    ?.copyWith(
+                      color: Colors.white,
+                      fontSize: 20, // Делаем крупнее
+                      fontWeight: FontWeight.w900, // Делаем жирнее
+                    ),
               ),
             ),
             body: SingleChildScrollView(
@@ -100,9 +104,11 @@ class _UserInfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge // Используем 'bodyLarge' (Exo 2 w700)
+                ?.copyWith(
                   color: Colors.black,
-                  fontWeight: FontWeight.bold,
                 ),
           ),
         ),
