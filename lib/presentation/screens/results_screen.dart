@@ -59,7 +59,8 @@ class _ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
+    final dateFormat = DateFormat('dd.MM.yyyy\nHH:mm:ss', 'ru');
+
     final startDate = event.votingStartDate != null
         ? dateFormat.format(event.votingStartDate!)
         : 'Не установлено';
@@ -83,14 +84,14 @@ class _ResultsView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context)
                   .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+                  .bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
             ),
             const SizedBox(height: 8),
             const Divider(),
             _InfoRow(label: 'Описание', value: event.description),
-            _InfoRow(label: 'Начало голосования', value: startDate),
-            _InfoRow(label: 'Завершение голосования', value: endDate),
+            _InfoRow(label: 'Начало\nголосования', value: startDate),
+            _InfoRow(label: 'Завершение\nголосования', value: endDate),
             const SizedBox(height: 24),
             _ResultsTable(results: event.results),
             const SizedBox(height: 32),
@@ -105,7 +106,7 @@ class _ResultsView extends StatelessWidget {
                   'Заседание завершено',
                   style: Theme.of(context)
                       .textTheme
-                      .titleMedium
+                      .bodyLarge
                       ?.copyWith(color: Colors.white),
                 ),
               ),
@@ -142,8 +143,8 @@ class _ResultsTable extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
+                .bodyLarge
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 16),
           ...results.asMap().entries.map((entry) {
@@ -158,8 +159,8 @@ class _ResultsTable extends StatelessWidget {
                     '${index + 1}. ${questionResult.name}',
                     style: Theme.of(context)
                         .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                        .bodyLarge
+                        ?.copyWith(fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 8),
                   // Оборачиваем таблицу в SingleChildScrollView для горизонтальной прокрутки
@@ -206,8 +207,8 @@ class _ResultsTable extends StatelessWidget {
                 textAlign: colName.isEmpty ? TextAlign.start : TextAlign.center,
                 style: Theme.of(context)
                     .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w900),
               ),
             );
           }).toList(),

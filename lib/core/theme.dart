@@ -29,15 +29,97 @@ class AppTheme {
     );
 
     // --- TYPOGRAPHY ---
-    // This is the key change. It tells Flutter to try 'HemiHead' first,
-    // and if a character is missing, use 'Russo One' as the backup.
-    return baseTheme.copyWith(
-      textTheme: baseTheme.textTheme.apply(
+
+    // 1. --- ИСПРАВЛЕНИЕ ---
+    // Используем 'Exo 2' как ОСНОВНОЙ шрифт для ВСЕГО.
+    // Он поддерживает и латиницу, и кириллицу, и НЕ курсивный.
+    // Нам больше не нужен 'Russo One' или 'fontFamilyFallback'.
+    final baseTextTheme = GoogleFonts.exo2TextTheme(baseTheme.textTheme)
+        .copyWith(
+          // --- ИЗМЕНЕНИЕ: Делаем Exo 2 жирнее (w700), чтобы он был похож на Russo One ---
+          bodyLarge: GoogleFonts.exo2(
+            textStyle: baseTheme.textTheme.bodyLarge,
+            fontWeight: FontWeight.w700,
+          ),
+          bodyMedium: GoogleFonts.exo2(
+            textStyle: baseTheme.textTheme.bodyMedium,
+            fontWeight: FontWeight.w700,
+          ),
+          bodySmall: GoogleFonts.exo2(
+            textStyle: baseTheme.textTheme.bodySmall,
+            fontWeight: FontWeight.w700,
+          ),
+          labelLarge: GoogleFonts.exo2(
+            textStyle: baseTheme.textTheme.labelLarge,
+            fontWeight: FontWeight.w700,
+          ),
+          labelMedium: GoogleFonts.exo2(
+            textStyle: baseTheme.textTheme.labelMedium,
+            fontWeight: FontWeight.w700,
+          ),
+          labelSmall: GoogleFonts.exo2(
+            textStyle: baseTheme.textTheme.labelSmall,
+            fontWeight: FontWeight.w700,
+          ),
+        )
+        .apply(
+      bodyColor: textColor,
+      displayColor: textColor,
+    );
+
+    // 2. --- ИСПРАВЛЕНИЕ ---
+    // Теперь переопределяем ЗАГОЛОВКИ,
+    // чтобы они использовали 'HemiHead'
+    // и принудительно ставим курсив.
+    // 'Exo 2' (из baseTextTheme) автоматически станет запасным шрифтом
+    // для кириллицы в заголовках и тоже будет курсивным.
+    final finalTheme = baseTextTheme.copyWith(
+      displayLarge: baseTextTheme.displayLarge?.copyWith(
         fontFamily: 'HemiHead',
-        fontFamilyFallback: [GoogleFonts.russoOne().fontFamily!],
-        bodyColor: textColor,
-        displayColor: textColor,
+        fontStyle: FontStyle.italic,
       ),
+      displayMedium: baseTextTheme.displayMedium?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      displaySmall: baseTextTheme.displaySmall?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      headlineLarge: baseTextTheme.headlineLarge?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      headlineSmall: baseTextTheme.headlineSmall?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      // 'titleLarge' часто используется для AppBar
+      titleLarge: baseTextTheme.titleLarge?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      titleMedium: baseTextTheme.titleMedium?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      titleSmall: baseTextTheme.titleSmall?.copyWith(
+        fontFamily: 'HemiHead',
+        fontStyle: FontStyle.italic,
+      ),
+      // Все остальные стили (body, label, button)
+      // автоматически будут 'Exo 2' (Normal) из baseTextTheme.
+    );
+
+    // 3. --- ИСПРАВЛЕНИЕ ---
+    // Применяем нашу новую, разделенную тему (finalTheme)
+    // вместо старого 'apply'.
+    return baseTheme.copyWith(
+      textTheme: finalTheme,
     );
   }
 }
