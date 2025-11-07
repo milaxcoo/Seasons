@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/models/question.dart' as model;
 import 'package:seasons/data/models/subject.dart' as model;
@@ -11,7 +12,7 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 
-const Color rudnGreenColor = Color(0xFF52a355);
+const Color rudnGreenColor = Color(0xFF23a74c);
 
 class VotingDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -34,10 +35,19 @@ class VotingDetailsScreen extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            title: Text(
-              "Вопросы голосования",
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
             ),
+            title: Text(
+              event.title,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                  ),
+            ),
+            centerTitle: true,
           ),
           body: _VotingDetailsView(event: event),
         ),
@@ -81,7 +91,12 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text("Вы уверены?"),
+        title: Text(
+          "Вы уверены?",
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+        ),
         content: const Text("После подтверждения ваш голос будет засчитан, и изменить его будет нельзя."),
         actions: <Widget>[
           TextButton(
@@ -132,10 +147,27 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext ctxt) {
     if (_isLoadingDraft) {
       return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
+
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
+    final startDate = widget.event.votingStartDate != null
+        ? dateFormat.format(widget.event.votingStartDate!)
+        : 'Не установлено';
+    final endDate = widget.event.votingEndDate != null
+        ? dateFormat.format(widget.event.votingEndDate!)
+        : 'Не установлено';
+
+    final statusText = widget.event.hasVoted ? "Проголосовал" : "Не проголосовал";
+    final statusColor = widget.event.hasVoted ? rudnGreenColor : Colors.black;
+
+    final now = DateTime.now();
+    final bool isOngoing = widget.event.votingStartDate != null &&
+        widget.event.votingStartDate!.isBefore(now) &&
+        (widget.event.votingEndDate == null ||
+            widget.event.votingEndDate!.isAfter(now));
 
     return BlocConsumer<VotingBloc, VotingState>(
       listener: (context, state) {
@@ -144,7 +176,13 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             context: context,
             barrierDismissible: false,
             builder: (dialogContext) => AlertDialog(
-              title: const Text('Голос принят'),
+              title: Text(
+                'Голос принят',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
               content: const Text('Спасибо за участие!'),
               actionsAlignment: MainAxisAlignment.center,
               actions: [
@@ -192,11 +230,95 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
           );
         }
 
-        return Column(
+        // --- ИСПРАВЛЕНИЕ: Обертка в Stack для кнопки ---
+        return Stack(
           children: [
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
+            // --- ИСПРАВЛЕНИЕ: Используем Column + NestedScrollView ---
+            NestedScrollView(
+              // --- ИСПРАВЛЕНИЕ: headerSliverBuilder для "нелипких" плашек ---
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                return <Widget>[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFe4dcc5),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // --- ОПИСАНИЕ (внутри плашки) ---
+                            if (widget.event.description.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                                child: Text(
+                                  widget.event.description,
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        color: Colors.black,
+                                      ),
+                                ),
+                              ),
+                            // --- ДАТЫ/СТАТУС (внутри плашки) ---
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (widget.event.description.isNotEmpty)
+                                    const Divider(color: Colors.black12, height: 1),
+                                  _InfoRow(
+                                      label: 'Начало голосования',
+                                      value: startDate),
+                                  const Divider(color: Colors.black12),
+                                  _InfoRow(
+                                      label: 'Завершение голосования',
+                                      value: endDate),
+                                  const Divider(color: Colors.black12),
+                                  _InfoRow(
+                                    label: 'Статус',
+                                    value: statusText,
+                                    valueColor: statusColor,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isOngoing && !widget.event.hasVoted)
+                              Align(
+                                alignment: Alignment.bottomLeft,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF4a4a4a),
+                                    borderRadius: BorderRadius.only(
+                                      topRight: Radius.circular(12),
+                                      bottomLeft: Radius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Идет голосование',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ];
+              },
+              // --- ИСПРАВЛЕНИЕ: body - это сам список вопросов ---
+              body: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 120), // Отступ для кнопки
                 itemCount: widget.event.questions.length,
                 itemBuilder: (context, index) {
                   final question = widget.event.questions[index];
@@ -215,24 +337,31 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: widget.event.hasVoted ? Colors.grey : rudnGreenColor,
+            
+            // --- КНОПКА (остается прибитой к низу) ---
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: widget.event.hasVoted ? Colors.grey : rudnGreenColor,
+                    ),
+                    onPressed: (state is VotingLoadInProgress || _selectedAnswers.isEmpty || widget.event.hasVoted)
+                        ? null
+                        : _submitVote,
+                    child: state is VotingLoadInProgress
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            widget.event.hasVoted ? 'Вы уже проголосовали' : 'Проголосовать',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w900),
+                          ),
                   ),
-                  onPressed: (state is VotingLoadInProgress || _selectedAnswers.isEmpty || widget.event.hasVoted)
-                      ? null
-                      : _submitVote,
-                  child: state is VotingLoadInProgress
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          widget.event.hasVoted ? 'Вы уже проголосовали' : 'Проголосовать',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
-                        ),
                 ),
               ),
             ),
@@ -274,7 +403,10 @@ class _QuestionCard extends StatelessWidget {
           children: [
             Text(
               question.name,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+              ),
             ),
             const Divider(height: 24),
             
@@ -283,28 +415,26 @@ class _QuestionCard extends StatelessWidget {
                 return _CustomCheckboxTile(
                   title: answer.name,
                   value: selectedAnswers[question.id] == answer.id,
-                  // FIXED: Передаем 'isDisabled' прямо в 'onChanged'
                   onChanged: isDisabled ? null : (bool? newValue) {
                     if (newValue == true) {
                       onAnswerSelected(question.id, answer.id);
                     }
                   },
                 );
-              }).toList(),
+              }),
             
             if (!isSimpleQuestion)
               ...question.subjects.map((subject) {
                 return _SubjectWidget(
                   subject: subject,
                   groupValue: selectedAnswers[subject.id],
-                  // FIXED: Передаем 'isDisabled' прямо в 'onChanged'
                   onChanged: isDisabled ? null : (answerId) {
                     if (answerId != null) {
                       onAnswerSelected(subject.id, answerId);
                     }
                   },
                 );
-              }).toList(),
+              }),
           ],
         ),
       ),
@@ -332,28 +462,69 @@ class _SubjectWidget extends StatelessWidget {
         children: [
           Text(
             subject.name,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
           ...subject.answers.map((answer) {
             return _CustomCheckboxTile(
               title: answer.name,
               value: groupValue == answer.id,
-              // FIXED: Проверяем, является ли 'onChanged' (этого виджета) null,
-              // и в зависимости от этого передаем либо null, либо новую функцию.
               onChanged: onChanged == null ? null : (bool? newValue) {
                 if (newValue == true) {
                   onChanged!(answer.id);
                 }
               },
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 }
 
-// Наш кастомный CheckboxListTile
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.black.withOpacity(0.6),
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: valueColor ?? Colors.black,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CustomCheckboxTile extends StatelessWidget {
   final String title;
   final bool value;
@@ -362,42 +533,37 @@ class _CustomCheckboxTile extends StatelessWidget {
   const _CustomCheckboxTile({
     required this.title,
     required this.value,
-    this.onChanged,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Определяем, активен ли виджет
-    final bool isEnabled = onChanged != null;
-
     return InkWell(
-      onTap: isEnabled ? () => onChanged!(!value) : null,
+      onTap: onChanged != null ? () => onChanged!(!value) : null,
+      splashColor: rudnGreenColor.withOpacity(0.2),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
           children: [
-            Transform.scale(
-              scale: 1.2,
-              child: Checkbox(
-                value: value,
-                // FIXED: Если виджет неактивен, цвет "галочки" - серый
-                activeColor: isEnabled ? rudnGreenColor : Colors.grey.shade600,
-                onChanged: onChanged,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                side: BorderSide(
-                  color: isEnabled ? Colors.black54 : Colors.grey.shade400,
-                  width: 2,
-                ),
-              ),
+            Icon(
+              value ? Icons.check_box : Icons.check_box_outline_blank,
+              color: onChanged == null
+                  ? Colors.grey
+                  : (value
+                      ? rudnGreenColor
+                      : Theme.of(context).textTheme.bodyLarge?.color ??
+                          Colors.black),
+              size: 28,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: isEnabled ? Colors.black : Colors.grey.shade600,
+                      color: onChanged == null
+                          ? Colors.grey
+                          : (Theme.of(context).textTheme.bodyLarge?.color ??
+                              Colors.black),
                     ),
               ),
             ),

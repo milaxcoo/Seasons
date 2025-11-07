@@ -74,7 +74,10 @@ class _Header extends StatelessWidget {
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   color: Colors.white,
                   shadows: [
-                    const Shadow(blurRadius: 10, color: Colors.black54)
+                    const Shadow(blurRadius: 10, color: Colors.black54),
+                    const Shadow(
+                        blurRadius: 2,
+                        color: Colors.black87) // <-- ДОБАВЛЕНО
                   ],
                   fontWeight: FontWeight.w900,
                 ),
@@ -82,12 +85,17 @@ class _Header extends StatelessWidget {
           Text(
             'времена года',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  shadows: [const Shadow(blurRadius: 8, color: Colors.black54)],
+                  color: Colors.white.withOpacity(0.9),
+                  shadows: [
+                    const Shadow(blurRadius: 8, color: Colors.black54),
+                    const Shadow(
+                        blurRadius: 2,
+                        color: Colors.black54) // <-- ДОБАВЛЕНО
+                  ],
                   fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w100,
+                  fontWeight: FontWeight.w900,
                   fontSize: 16,
-                  letterSpacing: 6,
+                  letterSpacing: 7,
                 ),
           ),
         ],
@@ -350,8 +358,8 @@ class _EventList extends StatelessWidget {
         if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 96),
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -367,12 +375,13 @@ class _EventList extends StatelessWidget {
               child: Center(
                 child: Text(
                   'Нет активных голосований',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    shadows: [
-                      const Shadow(blurRadius: 6, color: Colors.black87)
-                    ],
-                  ),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white,
+                        fontSize: 20.0,
+                        shadows: [
+                          const Shadow(blurRadius: 6, color: Colors.black87)
+                        ],
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -449,10 +458,11 @@ class _VotingEventCard extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
             event.title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Colors.black87,
+                  fontWeight: FontWeight.w900,
                 ),
+                
           ),
         ),
         subtitle: Column(
@@ -468,7 +478,7 @@ class _VotingEventCard extends StatelessWidget {
                 event.status == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
               Text(
-                event.status == model.VotingStatus.registration ? (event.isRegistered ? "Зарегистрирован" : "Не зарегистрирован") : (event.hasVoted ? "Проголосовано" : "Не проголосовано"),
+                event.status == model.VotingStatus.registration ? (event.isRegistered ? "Зарегистрирован(-а)" : "Не зарегистрирован(-а)") : (event.hasVoted ? "Проголосовал(-а)" : "Не проголосовал(-а)"),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: (event.status == model.VotingStatus.registration
                               ? event.isRegistered
