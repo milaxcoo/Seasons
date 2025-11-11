@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -77,7 +78,7 @@ class _Header extends StatelessWidget {
                     const Shadow(blurRadius: 10, color: Colors.black54),
                     const Shadow(
                         blurRadius: 2,
-                        color: Colors.black87) // <-- ДОБАВЛЕНО
+                        color: Colors.black87)
                   ],
                   fontWeight: FontWeight.w900,
                 ),
@@ -90,7 +91,7 @@ class _Header extends StatelessWidget {
                     const Shadow(blurRadius: 8, color: Colors.black54),
                     const Shadow(
                         blurRadius: 2,
-                        color: Colors.black54) // <-- ДОБАВЛЕНО
+                        color: Colors.black54)
                   ],
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w900,
@@ -117,43 +118,110 @@ class _PanelSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // --- НАСТРОЙКИ ---
+    const Duration animDuration = Duration(milliseconds: 600);
+    const double barHeight = 60.0;
+    const double buttonRadius = 25.0; // <-- ⭐ ГЛАВНЫЙ РАДИУС
+    const double moundHeight = 20.0;
+    const double moundWidth = (buttonRadius * 2) + 30.0; // (25*2)+30 = 80.0
+    const double horizontalMargin = 15.0;
+
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.black.withOpacity(0.5),
+        Colors.black.withOpacity(0.3),
+        Colors.black.withOpacity(0.5),
+      ],
+    );
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.black.withOpacity(0.5),
-            Colors.black.withOpacity(0.3),
-            Colors.black.withOpacity(0.5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _PanelButton(
-            icon: RegistrationIcon(isSelected: selectedIndex == 0),
-            isSelected: selectedIndex == 0,
-            onTap: () => onPanelSelected(0),
-            hasActiveEvents: hasEvents[model.VotingStatus.registration]! > 0,
-          ),
-          _PanelButton(
-            icon: ActiveVotingIcon(isSelected: selectedIndex == 1),
-            isSelected: selectedIndex == 1,
-            onTap: () => onPanelSelected(1),
-            hasActiveEvents: hasEvents[model.VotingStatus.active]! > 0,
-          ),
-          _PanelButton(
-            icon: ResultsIcon(isSelected: selectedIndex == 2),
-            isSelected: selectedIndex == 2,
-            onTap: () => onPanelSelected(2),
-            hasActiveEvents: hasEvents[model.VotingStatus.completed]! > 0,
-          ),
-        ],
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      height: barHeight + moundHeight, 
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
+          final double buttonSlotWidth = barWidth / 3;
+
+          return Stack(
+            clipBehavior: Clip.none, // Оставляем
+            alignment: Alignment.topCenter, 
+            children: [
+              // --- Слой 1: ЕДИНЫЙ РАЗМЫТЫЙ БАР-БУГОРОК ---
+              Positioned(
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: ClipPath(
+                  clipper: _UnifiedBarClipper(
+                    moundIndex: selectedIndex,
+                    buttonSlotWidth: buttonSlotWidth,
+                    barHeight: barHeight,
+                    moundHeight: moundHeight,
+                    moundWidth: moundWidth,
+                    horizontalMargin: horizontalMargin,
+                  ),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(
+                      decoration: BoxDecoration(gradient: gradient),
+                    ),
+                  ),
+                ),
+              ),
+
+              // --- Слой 2: Ряд с Кнопками ---
+              Positioned(
+                top: moundHeight, 
+                left: horizontalMargin,
+                right: horizontalMargin,
+                height: barHeight, 
+                child: Row(
+                  children: [
+                    // Слот 1
+                    Container(
+                      width: buttonSlotWidth,
+                      child: _PanelButton(
+                        icon: RegistrationIcon(isSelected: false),
+                        isSelected: selectedIndex == 0,
+                        onTap: () => onPanelSelected(0),
+                        hasActiveEvents:
+                            hasEvents[model.VotingStatus.registration]! > 0,
+                        buttonRadius: buttonRadius,
+                      ),
+                    ),
+                    // Слот 2
+                    Container(
+                      width: buttonSlotWidth,
+                      child: _PanelButton(
+                        icon: ActiveVotingIcon(isSelected: false),
+                        isSelected: selectedIndex == 1,
+                        onTap: () => onPanelSelected(1),
+                        hasActiveEvents:
+                            hasEvents[model.VotingStatus.active]! > 0,
+                        buttonRadius: buttonRadius,
+                      ),
+                    ),
+                    // Слот 3
+                    Container(
+                      width: buttonSlotWidth,
+                      child: _PanelButton(
+                        icon: ResultsIcon(isSelected: false),
+                        isSelected: selectedIndex == 2,
+                        onTap: () => onPanelSelected(2),
+                        hasActiveEvents:
+                            hasEvents[model.VotingStatus.completed]! > 0,
+                        buttonRadius: buttonRadius,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -198,6 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return AppBackground(
       imagePath: theme.imagePath,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
             child: Container(
@@ -270,31 +339,57 @@ class _PanelButton extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool hasActiveEvents;
+  final double buttonRadius;
 
   const _PanelButton({
     required this.icon,
     required this.isSelected,
     required this.onTap,
     required this.hasActiveEvents,
+    required this.buttonRadius,
   });
 
   @override
   Widget build(BuildContext context) {
+    const Duration animDuration = Duration(milliseconds: 600);
+    const double buttonPopUpHeight = 15.0; 
+
     Color backgroundColor;
-    if (isSelected) {
-      backgroundColor = Colors.white.withOpacity(0.9);
-    } else if (hasActiveEvents) {
+    if (hasActiveEvents) {
       backgroundColor = const Color(0xFF00A94F);
     } else {
       backgroundColor = const Color(0xFF6d9fc5);
     }
 
+    final double buttonYTranslation = isSelected ? -buttonPopUpHeight : 0.0;
+    final double scale = isSelected ? 1.0 : 0.8;
+    
+    // Иконка (1.2 * 25.0 = 30.0)
+    final double iconSize = buttonRadius * 1.2; 
+
     return GestureDetector(
       onTap: onTap,
-      child: CircleAvatar(
-        radius: 25,
-        backgroundColor: backgroundColor,
-        child: icon,
+      behavior: HitTestBehavior.translucent,
+      child: AnimatedContainer(
+        duration: animDuration,
+        curve: Curves.fastOutSlowIn,
+        transform: Matrix4.translationValues(0, buttonYTranslation, 0),
+        transformAlignment: Alignment.center,
+        child: AnimatedScale(
+          duration: animDuration,
+          curve: Curves.fastOutSlowIn,
+          scale: scale,
+          child: CircleAvatar(
+            radius: buttonRadius,
+            backgroundColor: backgroundColor,
+            child: IconTheme(
+              data: IconTheme.of(context).copyWith(
+                size: iconSize,
+              ),
+              child: icon,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -534,5 +629,112 @@ class _VotingEventCard extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+class _UnifiedBarClipper extends CustomClipper<Path> {
+  final int moundIndex;
+  final double buttonSlotWidth;
+  final double barHeight;
+  final double moundHeight;
+  final double moundWidth;
+  final double horizontalMargin; 
+
+  _UnifiedBarClipper({
+    required this.moundIndex,
+    required this.buttonSlotWidth,
+    required this.barHeight,
+    required this.moundHeight,
+    required this.moundWidth,
+    required this.horizontalMargin,
+  });
+
+  @override
+  Path getClip(Size size) {
+    // size.width - это ПОЛНАЯ ширина экрана
+    final path = Path();
+    final double cornerRadius = 30.0;
+
+    // Y-координаты
+    final double barTopY = moundHeight;
+    final double barBottomY = moundHeight + barHeight;
+
+    // X-координаты "виртуального" бара
+    final double barLeftX = horizontalMargin;
+    final double barRightX = size.width - horizontalMargin;
+    
+    // X-координаты "бугорка"
+    final double moundCenterX =
+        barLeftX + (moundIndex * buttonSlotWidth) + (buttonSlotWidth / 2);
+    final double moundStart = moundCenterX - (moundWidth / 2);
+    final double moundEnd = moundCenterX + (moundWidth / 2);
+    
+    // X-координаты углов (для проверки)
+    final double topLeftCornerX = barLeftX + cornerRadius;
+    final double topRightCornerX = barRightX - cornerRadius;
+
+    // --- Рисуем путь (Новая, правильная логика v16) ---
+
+    // 1. Начинаем с верхнего-левого угла
+    path.moveTo(barLeftX, barTopY + cornerRadius);
+    path.arcToPoint(
+      Offset(topLeftCornerX, barTopY),
+      radius: Radius.circular(cornerRadius),
+      clockwise: true,
+    );
+
+    // 2. Рисуем верхнюю грань + "бугорок"
+    if (moundIndex == 0) {
+      path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
+      path.lineTo(topRightCornerX, barTopY);
+    } 
+    else if (moundIndex == 1) {
+      path.lineTo(moundStart, barTopY);
+      path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
+      path.lineTo(topRightCornerX, barTopY);
+    }
+    else {
+      path.lineTo(moundStart, barTopY);
+      path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
+    }
+
+    // 3. Рисуем верхний-правый угол
+    path.arcToPoint(
+      Offset(barRightX, barTopY + cornerRadius),
+      radius: Radius.circular(cornerRadius),
+      clockwise: true,
+    );
+
+    // 4. Рисуем правую грань
+    path.lineTo(barRightX, barBottomY - cornerRadius);
+
+    // 5. Рисуем нижний-правый угол
+    path.arcToPoint(
+      Offset(barRightX - cornerRadius, barBottomY),
+      radius: Radius.circular(cornerRadius),
+      clockwise: true,
+    );
+    
+    // 6. Рисуем нижнюю грань
+    path.lineTo(topLeftCornerX, barBottomY); // (barLeftX + cornerRadius)
+
+    // 7. Рисуем нижний-левый угол
+    path.arcToPoint(
+      Offset(barLeftX, barBottomY - cornerRadius),
+      radius: Radius.circular(cornerRadius),
+      clockwise: true,
+    );
+    
+    // 8. Замыкаем путь (рисуем левую грань)
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _UnifiedBarClipper oldClipper) {
+    return oldClipper.moundIndex != moundIndex ||
+        oldClipper.buttonSlotWidth != buttonSlotWidth ||
+        oldClipper.moundHeight != moundHeight ||
+        oldClipper.horizontalMargin != horizontalMargin;
   }
 }
