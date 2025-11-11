@@ -2,35 +2,89 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // A base class to handle the color logic for the SVG icons.
-abstract class _SvgIcon extends StatelessWidget {
+abstract class _SvgIcon extends StatefulWidget {
   final bool isSelected;
   final String svgData;
+  final double strokeDasharray;
 
-  const _SvgIcon({super.key, required this.isSelected, required this.svgData});
+  const _SvgIcon({
+    Key? key,
+    required this.isSelected,
+    required this.svgData,
+    this.strokeDasharray = 400,
+  }) : super(key: key);
+
+  @override
+  _SvgIconState createState() => _SvgIconState();
+}
+
+class _SvgIconState extends State<_SvgIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _animation = Tween<double>(begin: widget.strokeDasharray, end: 0)
+        .animate(_controller);
+
+    if (widget.isSelected) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SvgIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      if (widget.isSelected) {
+        _controller.forward(from: 0);
+      } else {
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     // The color is determined by the isSelected flag.
-    final color = isSelected ? Colors.black87 : Colors.white;
-    return SvgPicture.string(
-      svgData,
-      width: 30,
-      height: 30,
-      // This filter finds "currentColor" in the SVG and replaces it with our desired color.
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    final color = widget.isSelected ? Colors.black87 : Colors.white;
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return SvgPicture.string(
+          widget.svgData
+              .replaceAll('stroke-dasharray="400"', 'stroke-dasharray="${widget.strokeDasharray}"')
+              .replaceAll('stroke-dashoffset="400"', 'stroke-dashoffset="${_animation.value}"'),
+          width: 30,
+          height: 30,
+          // This filter finds "currentColor" in the SVG and replaces it with our desired color.
+          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+        );
+      },
     );
   }
 }
-
 // Icon for the "Registration" panel.
 class RegistrationIcon extends _SvgIcon {
   const RegistrationIcon({super.key, required super.isSelected})
       : super(
           svgData: '''
             <svg viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.8,6.6h16.4"></path>
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M20.2,12.1H3.8"></path>
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.8,17.5h16.4"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.8,6.6h16.4" stroke-dasharray="400" stroke-dashoffset="400"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M20.2,12.1H3.8" stroke-dasharray="400" stroke-dashoffset="400"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.8,17.5h16.4" stroke-dasharray="400" stroke-dashoffset="400"></path>
             </svg>
           ''',
         );
@@ -42,8 +96,8 @@ class ActiveVotingIcon extends _SvgIcon {
       : super(
           svgData: '''
             <svg viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M6.7,4.8h10.7c0.3,0,0.6,0.2,0.7,0.5l2.8,7.3c0,0.1,0,0.2,0,0.3v5.6c0,0.4-0.4,0.8-0.8,0.8H3.8c-0.4,0-0.8-0.3-0.8-0.8v-5.6c0-0.1,0-0.2,0.1-0.3L6,5.3C6.1,5,6.4,4.8,6.7,4.8z"></path>
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.4,12.9H8l1.6,2.8h4.9l1.5-2.8h4.6"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M6.7,4.8h10.7c0.3,0,0.6,0.2,0.7,0.5l2.8,7.3c0,0.1,0,0.2,0,0.3v5.6c0,0.4-0.4,0.8-0.8,0.8H3.8c-0.4,0-0.8-0.3-0.8-0.8v-5.6c0-0.1,0-0.2,0.1-0.3L6,5.3C6.1,5,6.4,4.8,6.7,4.8z" stroke-dasharray="400" stroke-dashoffset="400"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.4,12.9H8l1.6,2.8h4.9l1.5-2.8h4.6" stroke-dasharray="400" stroke-dashoffset="400"></path>
             </svg>
           ''',
         );
@@ -55,11 +109,10 @@ class ResultsIcon extends _SvgIcon {
       : super(
           svgData: '''
             <svg viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.4,11.9l8.8,4.4l8.4-4.4"></path>
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.4,16.2l8.8,4.5l8.4-4.5"></path>
-              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.7,7.8l8.6-4.5l8,4.5l-8,4.3L3.7,7.8z"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.4,11.9l8.8,4.4l8.4-4.4" stroke-dasharray="400" stroke-dashoffset="400"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.4,16.2l8.8,4.5l8.4-4.5" stroke-dasharray="400" stroke-dashoffset="400"></path>
+              <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.7,7.8l8.6-4.5l8,4.5l-8,4.3L3.7,7.8z" stroke-dasharray="400" stroke-dashoffset="400"></path>
             </svg>
           ''',
         );
 }
-

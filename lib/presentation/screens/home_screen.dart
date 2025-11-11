@@ -15,6 +15,7 @@ import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
+import 'package:seasons/presentation/widgets/v_menu.dart';
 
 class _TopBar extends StatelessWidget {
   @override
@@ -104,61 +105,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _PanelSelector extends StatelessWidget {
-  final int selectedIndex;
-  final Function(int) onPanelSelected;
-  final Map<model.VotingStatus, int> hasEvents;
-
-  const _PanelSelector({
-    required this.selectedIndex,
-    required this.onPanelSelected,
-    required this.hasEvents,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.black.withOpacity(0.5),
-            Colors.black.withOpacity(0.3),
-            Colors.black.withOpacity(0.5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _PanelButton(
-            icon: RegistrationIcon(isSelected: selectedIndex == 0),
-            isSelected: selectedIndex == 0,
-            onTap: () => onPanelSelected(0),
-            hasActiveEvents: hasEvents[model.VotingStatus.registration]! > 0,
-          ),
-          _PanelButton(
-            icon: ActiveVotingIcon(isSelected: selectedIndex == 1),
-            isSelected: selectedIndex == 1,
-            onTap: () => onPanelSelected(1),
-            hasActiveEvents: hasEvents[model.VotingStatus.active]! > 0,
-          ),
-          _PanelButton(
-            icon: ResultsIcon(isSelected: selectedIndex == 2),
-            isSelected: selectedIndex == 2,
-            onTap: () => onPanelSelected(2),
-            hasActiveEvents: hasEvents[model.VotingStatus.completed]! > 0,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -234,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               state.events.length);
                         }
                       },
-                      child: _PanelSelector(
+                      child: VMenu(
                         selectedIndex: _selectedPanelIndex,
                         onPanelSelected: _fetchEventsForPanel,
                         hasEvents: _eventsCount,
@@ -260,41 +206,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PanelButton extends StatelessWidget {
-  final Widget icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final bool hasActiveEvents;
-
-  const _PanelButton({
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-    required this.hasActiveEvents,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Color backgroundColor;
-    if (isSelected) {
-      backgroundColor = Colors.white.withOpacity(0.9);
-    } else if (hasActiveEvents) {
-      backgroundColor = const Color(0xFF00A94F);
-    } else {
-      backgroundColor = const Color(0xFF6d9fc5);
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: CircleAvatar(
-        radius: 25,
-        backgroundColor: backgroundColor,
-        child: icon,
       ),
     );
   }
