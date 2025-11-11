@@ -78,8 +78,10 @@ class _SvgIconState extends State<_SvgIcon>
 }
 // Icon for the "Registration" panel.
 class RegistrationIcon extends _SvgIcon {
-  const RegistrationIcon({super.key, required super.isSelected})
+  const RegistrationIcon({Key? key, required bool isSelected})
       : super(
+          key: key,
+          isSelected: isSelected,
           svgData: '''
             <svg viewBox="0 0 24 24">
               <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.8,6.6h16.4" stroke-dasharray="400" stroke-dashoffset="400"></path>
@@ -92,8 +94,10 @@ class RegistrationIcon extends _SvgIcon {
 
 // Icon for the "Active Voting" panel.
 class ActiveVotingIcon extends _SvgIcon {
-  const ActiveVotingIcon({super.key, required super.isSelected})
+  const ActiveVotingIcon({Key? key, required bool isSelected})
       : super(
+          key: key,
+          isSelected: isSelected,
           svgData: '''
             <svg viewBox="0 0 24 24">
               <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M6.7,4.8h10.7c0.3,0,0.6,0.2,0.7,0.5l2.8,7.3c0,0.1,0,0.2,0,0.3v5.6c0,0.4-0.4,0.8-0.8,0.8H3.8c-0.4,0-0.8-0.3-0.8-0.8v-5.6c0-0.1,0-0.2,0.1-0.3L6,5.3C6.1,5,6.4,4.8,6.7,4.8z" stroke-dasharray="400" stroke-dashoffset="400"></path>
@@ -105,8 +109,10 @@ class ActiveVotingIcon extends _SvgIcon {
 
 // Icon for the "Results" panel.
 class ResultsIcon extends _SvgIcon {
-  const ResultsIcon({super.key, required super.isSelected})
+  const ResultsIcon({Key? key, required bool isSelected})
       : super(
+          key: key,
+          isSelected: isSelected,
           svgData: '''
             <svg viewBox="0 0 24 24">
               <path stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" d="M3.4,11.9l8.8,4.4l8.4-4.4" stroke-dasharray="400" stroke-dashoffset="400"></path>
