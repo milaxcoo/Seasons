@@ -67,7 +67,7 @@ jobs:
               messagingSenderId: 'MOCK_SENDER_ID',
               projectId: 'MOCK_PROJECT_ID',
               storageBucket: 'MOCK_BUCKET',
-              iosBundleId: 'com.example.mock',
+              iosBundleId: 'com.lebedev.seasons',
             );
           }
           EOF
@@ -147,7 +147,7 @@ jobs:
               messagingSenderId: 'MOCK_SENDER_ID',
               projectId: 'MOCK_PROJECT_ID',
               storageBucket: 'MOCK_BUCKET',
-              iosBundleId: 'com.example.mock',
+              iosBundleId: 'com.lebedev.seasons',
             );
           }
           EOF
@@ -164,7 +164,7 @@ jobs:
                 "client_info": {
                   "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
                   "android_client_info": {
-                    "package_name": "com.example.mock"
+                    "package_name": "com.example.votepfurapp"
                   }
                 },
                 "oauth_client": [],
