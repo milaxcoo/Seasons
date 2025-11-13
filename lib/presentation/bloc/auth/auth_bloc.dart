@@ -22,7 +22,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (hasToken) {
       // FIXED: Получаем userLogin, который теперь может быть null.
       final userLogin = await _votingRepository.getUserLogin();
-      
+
       // FIXED: Добавляем проверку на null.
       if (userLogin != null) {
         emit(AuthAuthenticated(userLogin: userLogin));
@@ -40,7 +40,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await _votingRepository.login(event.login, event.password);
       final userLogin = await _votingRepository.getUserLogin();
-      
+
       // FIXED: Здесь тоже добавляем проверку на null.
       if (userLogin != null) {
         emit(AuthAuthenticated(userLogin: userLogin));

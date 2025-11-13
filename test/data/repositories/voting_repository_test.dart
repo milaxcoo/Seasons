@@ -247,7 +247,8 @@ void main() {
         verify(() => mockRepository.registerForEvent('event-01')).called(1);
       });
 
-      test('registerForEvent throws exception when already registered', () async {
+      test('registerForEvent throws exception when already registered',
+          () async {
         // Arrange
         when(() => mockRepository.registerForEvent(any()))
             .thenThrow(Exception('Already registered'));

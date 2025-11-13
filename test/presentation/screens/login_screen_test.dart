@@ -32,11 +32,12 @@ void main() {
       hasVoted: false,
       results: [],
     );
-    
+
     registerFallbackValue(AppStarted());
     registerFallbackValue(LoggedOut());
     registerFallbackValue(const LoggedIn(login: '', password: ''));
-    registerFallbackValue(const FetchEventsByStatus(status: model.VotingStatus.active));
+    registerFallbackValue(
+        const FetchEventsByStatus(status: model.VotingStatus.active));
     registerFallbackValue(const RegisterForEvent(eventId: ''));
     registerFallbackValue(SubmitVote(event: fakeEvent, answers: const {}));
     registerFallbackValue(const FetchResults(eventId: ''));
@@ -80,7 +81,8 @@ void main() {
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
 
-    testWidgets('shows info dialog when login button is tapped', (tester) async {
+    testWidgets('shows info dialog when login button is tapped',
+        (tester) async {
       // Arrange
       when(() => mockAuthBloc.state).thenReturn(AuthInitial());
       when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -100,7 +102,8 @@ void main() {
       expect(find.text('Продолжить'), findsOneWidget);
     });
 
-    testWidgets('triggers login when Continue is tapped in dialog', (tester) async {
+    testWidgets('triggers login when Continue is tapped in dialog',
+        (tester) async {
       // Arrange
       when(() => mockAuthBloc.state).thenReturn(AuthInitial());
       when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -119,7 +122,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Verify that LoggedIn event was added
-      verify(() => mockAuthBloc.add(const LoggedIn(login: 'rudn_user', password: 'password'))).called(1);
+      verify(() => mockAuthBloc.add(
+          const LoggedIn(login: 'rudn_user', password: 'password'))).called(1);
     });
 
     testWidgets('closes dialog when Cancel is tapped', (tester) async {
@@ -143,13 +147,14 @@ void main() {
       expect(find.text('Авторизация через РУДН ID'), findsNothing);
     });
 
-    testWidgets('navigates to HomeScreen when AuthAuthenticated', (tester) async {
+    testWidgets('navigates to HomeScreen when AuthAuthenticated',
+        (tester) async {
       // Arrange
       when(() => mockAuthBloc.state).thenReturn(AuthInitial());
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
-      
+
       // Create a broadcast stream controller to emit states
       final stateController = StreamController<AuthState>.broadcast();
       when(() => mockAuthBloc.stream).thenAnswer((_) => stateController.stream);
@@ -161,7 +166,7 @@ void main() {
 
       // Emit AuthAuthenticated state to trigger navigation
       stateController.add(const AuthAuthenticated(userLogin: 'testuser'));
-      
+
       // Wait for navigation animation to start
       // Note: HomeScreen has complex dependencies that cause build errors in tests
       // This test verifies navigation is attempted by checking LoginScreen disappears
@@ -172,7 +177,9 @@ void main() {
       expect(find.text('Войти'), findsNothing);
 
       stateController.close();
-    }, skip: true); // HomeScreen dependencies cause build errors in widget tests - navigation logic works in integration tests
+    },
+        skip:
+            true); // HomeScreen dependencies cause build errors in widget tests - navigation logic works in integration tests
 
     testWidgets('shows loading state when AuthLoading', (tester) async {
       // Arrange
@@ -204,7 +211,8 @@ void main() {
 
     testWidgets('renders with AuthFailure state', (tester) async {
       // Arrange
-      when(() => mockAuthBloc.state).thenReturn(const AuthFailure(error: 'Login failed'));
+      when(() => mockAuthBloc.state)
+          .thenReturn(const AuthFailure(error: 'Login failed'));
       when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
 
       // Act
@@ -216,7 +224,8 @@ void main() {
       expect(find.text('Войти'), findsOneWidget);
     });
 
-    testWidgets('has correct copyright and contact information', (tester) async {
+    testWidgets('has correct copyright and contact information',
+        (tester) async {
       // Arrange
       when(() => mockAuthBloc.state).thenReturn(AuthInitial());
       when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());

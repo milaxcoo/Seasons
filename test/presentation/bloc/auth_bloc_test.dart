@@ -34,8 +34,10 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthAuthenticated] when token and userLogin are found',
         build: () {
-          when(() => mockVotingRepository.getAuthToken()).thenAnswer((_) async => 'some_token');
-          when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async => 'testuser');
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'some_token');
+          when(() => mockVotingRepository.getUserLogin())
+              .thenAnswer((_) async => 'testuser');
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
@@ -50,7 +52,8 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthUnauthenticated] when token is not found',
         build: () {
-          when(() => mockVotingRepository.getAuthToken()).thenAnswer((_) async => null);
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => null);
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
@@ -65,8 +68,10 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthUnauthenticated] when token exists but userLogin is null',
         build: () {
-          when(() => mockVotingRepository.getAuthToken()).thenAnswer((_) async => 'some_token');
-          when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async => null);
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'some_token');
+          when(() => mockVotingRepository.getUserLogin())
+              .thenAnswer((_) async => null);
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
@@ -83,11 +88,14 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthAuthenticated] for a successful login',
         build: () {
-          when(() => mockVotingRepository.login('user', 'pass')).thenAnswer((_) async => 'some_token');
-          when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async => 'user');
+          when(() => mockVotingRepository.login('user', 'pass'))
+              .thenAnswer((_) async => 'some_token');
+          when(() => mockVotingRepository.getUserLogin())
+              .thenAnswer((_) async => 'user');
           return authBloc;
         },
-        act: (bloc) => bloc.add(const LoggedIn(login: 'user', password: 'pass')),
+        act: (bloc) =>
+            bloc.add(const LoggedIn(login: 'user', password: 'pass')),
         expect: () => [
           AuthLoading(),
           const AuthAuthenticated(userLogin: 'user'),
@@ -102,13 +110,16 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthFailure, AuthUnauthenticated] for a failed login',
         build: () {
-          when(() => mockVotingRepository.login(any(), any())).thenThrow(Exception('Login failed'));
+          when(() => mockVotingRepository.login(any(), any()))
+              .thenThrow(Exception('Login failed'));
           return authBloc;
         },
-        act: (bloc) => bloc.add(const LoggedIn(login: 'user', password: 'pass')),
+        act: (bloc) =>
+            bloc.add(const LoggedIn(login: 'user', password: 'pass')),
         expect: () => [
           AuthLoading(),
-          isA<AuthFailure>().having((s) => s.error, 'error', contains('Login failed')),
+          isA<AuthFailure>()
+              .having((s) => s.error, 'error', contains('Login failed')),
           AuthUnauthenticated(),
         ],
         verify: (_) {
@@ -120,14 +131,18 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthFailure, AuthUnauthenticated] when login succeeds but userLogin is null',
         build: () {
-          when(() => mockVotingRepository.login('user', 'pass')).thenAnswer((_) async => 'some_token');
-          when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async => null);
+          when(() => mockVotingRepository.login('user', 'pass'))
+              .thenAnswer((_) async => 'some_token');
+          when(() => mockVotingRepository.getUserLogin())
+              .thenAnswer((_) async => null);
           return authBloc;
         },
-        act: (bloc) => bloc.add(const LoggedIn(login: 'user', password: 'pass')),
+        act: (bloc) =>
+            bloc.add(const LoggedIn(login: 'user', password: 'pass')),
         expect: () => [
           AuthLoading(),
-          isA<AuthFailure>().having((s) => s.error, 'error', contains('User login not found')),
+          isA<AuthFailure>().having(
+              (s) => s.error, 'error', contains('User login not found')),
           AuthUnauthenticated(),
         ],
       );
@@ -140,10 +155,12 @@ void main() {
               .thenThrow(Exception('Invalid credentials'));
           return authBloc;
         },
-        act: (bloc) => bloc.add(const LoggedIn(login: 'wrong', password: 'wrong')),
+        act: (bloc) =>
+            bloc.add(const LoggedIn(login: 'wrong', password: 'wrong')),
         expect: () => [
           AuthLoading(),
-          isA<AuthFailure>().having((s) => s.error, 'error', contains('Invalid credentials')),
+          isA<AuthFailure>()
+              .having((s) => s.error, 'error', contains('Invalid credentials')),
           AuthUnauthenticated(),
         ],
       );
@@ -168,7 +185,8 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthUnauthenticated] even when logout throws an error',
         build: () {
-          when(() => mockVotingRepository.logout()).thenThrow(Exception('Logout error'));
+          when(() => mockVotingRepository.logout())
+              .thenThrow(Exception('Logout error'));
           return authBloc;
         },
         act: (bloc) => bloc.add(LoggedOut()),
@@ -181,8 +199,10 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'handles multiple login attempts correctly',
         build: () {
-          when(() => mockVotingRepository.login(any(), any())).thenAnswer((_) async => 'token');
-          when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async => 'testuser');
+          when(() => mockVotingRepository.login(any(), any()))
+              .thenAnswer((_) async => 'token');
+          when(() => mockVotingRepository.getUserLogin())
+              .thenAnswer((_) async => 'testuser');
           return authBloc;
         },
         act: (bloc) async {
@@ -202,8 +222,10 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'handles login followed by logout correctly',
         build: () {
-          when(() => mockVotingRepository.login(any(), any())).thenAnswer((_) async => 'token');
-          when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async => 'testuser');
+          when(() => mockVotingRepository.login(any(), any()))
+              .thenAnswer((_) async => 'token');
+          when(() => mockVotingRepository.getUserLogin())
+              .thenAnswer((_) async => 'testuser');
           when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
           return authBloc;
         },
