@@ -37,6 +37,7 @@ void main() {
         hasVoted: false,
         results: [],
       ));
+      registerFallbackValue(model.VotingStatus.active);
       registerFallbackValue(<String, String>{});
     });
 
@@ -340,8 +341,9 @@ void main() {
               .thenAnswer((_) async => []);
           return votingBloc;
         },
-        act: (bloc) {
+        act: (bloc) async {
           bloc.add(const RegisterForEvent(eventId: 'event-1'));
+          await Future.delayed(const Duration(milliseconds: 100)); // Wait for registration to complete
           bloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration));
         },
         expect: () => [

@@ -179,8 +179,8 @@ void main() {
             'name': 'Date Test',
             'description': 'Testing date parsing',
             'end_registration_at': '2025-12-31T23:59:59',
-            'voting_started_at': '2026-01-01T00:00:00',
-            'end_voting_at': '2026-01-31T23:59:59',
+            'voting_started_at': '2025-01-01T00:00:00',
+            'end_voting_at': '2025-01-31T23:59:59',
             'registered': 0,
             'voted': 0,
             'questions': [],
@@ -189,12 +189,23 @@ void main() {
 
         final event = VotingEvent.fromJson(json);
 
+        // Dates are converted from UTC to local time in the model
+        final expectedRegEnd = DateTime.parse('2025-12-31T23:59:59Z').toLocal();
+        final expectedVotingStart = DateTime.parse('2025-01-01T00:00:00Z').toLocal();
+        final expectedVotingEnd = DateTime.parse('2025-01-31T23:59:59Z').toLocal();
+
         expect(event.registrationEndDate, isNotNull);
         expect(event.votingStartDate, isNotNull);
         expect(event.votingEndDate, isNotNull);
-        expect(event.registrationEndDate!.year, 2025);
-        expect(event.registrationEndDate!.month, 12);
-        expect(event.registrationEndDate!.day, 31);
+        expect(event.registrationEndDate!.year, expectedRegEnd.year);
+        expect(event.registrationEndDate!.month, expectedRegEnd.month);
+        expect(event.registrationEndDate!.day, expectedRegEnd.day);
+        expect(event.votingStartDate!.year, expectedVotingStart.year);
+        expect(event.votingStartDate!.month, expectedVotingStart.month);
+        expect(event.votingStartDate!.day, expectedVotingStart.day);
+        expect(event.votingEndDate!.year, expectedVotingEnd.year);
+        expect(event.votingEndDate!.month, expectedVotingEnd.month);
+        expect(event.votingEndDate!.day, expectedVotingEnd.day);
       });
 
       test('handles invalid date strings gracefully', () {

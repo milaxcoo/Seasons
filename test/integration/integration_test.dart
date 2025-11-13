@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:seasons/data/models/voting_event.dart';
+import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
@@ -28,16 +27,17 @@ void main() {
     });
 
     setUpAll(() {
-      registerFallbackValue(const VotingEvent(
+      registerFallbackValue(const model.VotingEvent(
         id: 'test',
         title: 'Test',
         description: 'Test',
-        status: VotingStatus.active,
+        status: model.VotingStatus.active,
         isRegistered: false,
         questions: [],
         hasVoted: false,
         results: [],
       ));
+      registerFallbackValue(model.VotingStatus.active);
       registerFallbackValue(<String, String>{});
     });
 
@@ -47,13 +47,13 @@ void main() {
           .thenAnswer((_) async => 'token');
       when(() => mockRepository.getUserLogin())
           .thenAnswer((_) async => 'user');
-      when(() => mockRepository.getEventsByStatus(VotingStatus.registration))
+      when(() => mockRepository.getEventsByStatus(model.VotingStatus.registration))
           .thenAnswer((_) async => [
-                VotingEvent(
+                model.VotingEvent(
                   id: 'event-01',
                   title: 'Test Event',
                   description: 'Description',
-                  status: VotingStatus.registration,
+                  status: model.VotingStatus.registration,
                   isRegistered: false,
                   questions: const [],
                   hasVoted: false,
@@ -73,7 +73,7 @@ void main() {
       );
 
       // Act & Assert - Fetch Events
-      votingBloc.add(const FetchEventsByStatus(status: VotingStatus.registration));
+      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration));
       await expectLater(
         votingBloc.stream,
         emitsInOrder([
@@ -92,18 +92,18 @@ void main() {
       // Verify all interactions
       verify(() => mockRepository.login('user', 'pass')).called(1);
       verify(() => mockRepository.getUserLogin()).called(1);
-      verify(() => mockRepository.getEventsByStatus(VotingStatus.registration))
+      verify(() => mockRepository.getEventsByStatus(model.VotingStatus.registration))
           .called(1);
       verify(() => mockRepository.logout()).called(1);
     });
 
     test('Complete voting flow: register -> fetch event -> submit vote', () async {
       // Arrange
-      final testEvent = VotingEvent(
+      final testEvent = model.VotingEvent(
         id: 'event-01',
         title: 'Test Event',
         description: 'Description',
-        status: VotingStatus.active,
+        status: model.VotingStatus.active,
         isRegistered: true,
         questions: const [],
         hasVoted: false,
@@ -112,7 +112,7 @@ void main() {
 
       when(() => mockRepository.registerForEvent('event-01'))
           .thenAnswer((_) async {});
-      when(() => mockRepository.getEventsByStatus(VotingStatus.active))
+      when(() => mockRepository.getEventsByStatus(model.VotingStatus.active))
           .thenAnswer((_) async => [testEvent]);
       when(() => mockRepository.submitVote(any(), any()))
           .thenAnswer((_) async => true);
@@ -128,7 +128,7 @@ void main() {
       );
 
       // Act & Assert - Fetch Active Events
-      votingBloc.add(const FetchEventsByStatus(status: VotingStatus.active));
+      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.active));
       await expectLater(
         votingBloc.stream,
         emitsInOrder([
@@ -149,7 +149,7 @@ void main() {
 
       // Verify all interactions
       verify(() => mockRepository.registerForEvent('event-01')).called(1);
-      verify(() => mockRepository.getEventsByStatus(VotingStatus.active))
+      verify(() => mockRepository.getEventsByStatus(model.VotingStatus.active))
           .called(1);
       verify(() => mockRepository.submitVote(any(), any())).called(1);
     });
@@ -196,11 +196,11 @@ void main() {
 
     test('Error handling: failed vote submission shows error', () async {
       // Arrange
-      final testEvent = VotingEvent(
+      final testEvent = model.VotingEvent(
         id: 'event-01',
         title: 'Test Event',
         description: 'Description',
-        status: VotingStatus.active,
+        status: model.VotingStatus.active,
         isRegistered: true,
         questions: const [],
         hasVoted: false,
@@ -230,9 +230,9 @@ void main() {
           .thenAnswer((_) async => []);
 
       // Act - Multiple rapid fetches
-      votingBloc.add(const FetchEventsByStatus(status: VotingStatus.registration));
-      votingBloc.add(const FetchEventsByStatus(status: VotingStatus.active));
-      votingBloc.add(const FetchEventsByStatus(status: VotingStatus.completed));
+      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration));
+      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.active));
+      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.completed));
 
       // Assert - Should handle all requests
       await expectLater(
@@ -258,7 +258,7 @@ void main() {
           .thenAnswer((_) async => []);
 
       // Act - Fetch events while logged in
-      votingBloc.add(const FetchEventsByStatus(status: VotingStatus.active));
+      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.active));
       await expectLater(
         votingBloc.stream,
         emitsInOrder([

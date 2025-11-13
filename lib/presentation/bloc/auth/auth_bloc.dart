@@ -55,7 +55,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
-    await _votingRepository.logout();
+    try {
+      await _votingRepository.logout();
+    } catch (_) {
+      // Ignore logout errors - user should be logged out locally regardless
+    }
     emit(AuthUnauthenticated());
   }
 }

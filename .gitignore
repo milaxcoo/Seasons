@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+firepit-log.txt
 
 # IntelliJ related
 *.iml
@@ -44,9 +45,26 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase configuration file
+# Firebase configuration files (IMPORTANT: Keep these ignored to protect sensitive API keys)
 lib/firebase_options.dart
-
-# Firebase native config files
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.keystore
+*.jks
+*.p12
+*.pem
+secrets.json
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Test results
+test-results/
+.test_coverage/

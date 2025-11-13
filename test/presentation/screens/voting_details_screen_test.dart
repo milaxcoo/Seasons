@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:seasons/core/services/draft_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:seasons/data/models/nominee.dart';
 import 'package:seasons/data/models/question.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -17,10 +19,15 @@ import '../../mocks.dart';
 void main() {
   late MockVotingRepository mockVotingRepository;
   late MockVotingBloc mockVotingBloc;
-  late MockDraftService mockDraftService;
   late model.VotingEvent testEvent;
 
-  setUpAll(() {
+  setUpAll(() async {
+    // Initialize SharedPreferences for tests (required by DraftService)
+    SharedPreferences.setMockInitialValues({});
+    
+    // Initialize locale data for date formatting (required by DateFormat with 'ru' locale)
+    await initializeDateFormatting('ru', null);
+    
     registerFallbackValue(model.VotingEvent(
       id: 'test',
       title: 'Test',
@@ -31,13 +38,23 @@ void main() {
       hasVoted: false,
       results: const [],
     ));
+    // Fallback for bloc events (mocktail needs a VotingEvent subclass instance)
+    registerFallbackValue(SubmitVote(event: model.VotingEvent(
+      id: 'fb',
+      title: 'fb',
+      description: 'fb',
+      status: model.VotingStatus.active,
+      isRegistered: false,
+      questions: const [],
+      hasVoted: false,
+      results: const [],
+    ), answers: <String, String>{}));
     registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
     mockVotingRepository = MockVotingRepository();
     mockVotingBloc = MockVotingBloc();
-    mockDraftService = MockDraftService();
     
     testEvent = model.VotingEvent(
       id: 'active-01',
@@ -70,7 +87,7 @@ void main() {
       child: BlocProvider<VotingBloc>.value(
         value: mockVotingBloc,
         child: MaterialApp(
-          home: VotingDetailsScreen(event: testEvent, imagePath: 'assets/backgrounds/default.jpg'),
+          home: VotingDetailsScreen(event: testEvent, imagePath: ''),
         ),
       ),
     );
@@ -183,7 +200,7 @@ void main() {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
       
-      final stateController = StreamController<VotingState>();
+      final stateController = StreamController<VotingState>.broadcast();
       when(() => mockVotingBloc.stream).thenAnswer((_) => stateController.stream);
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -207,7 +224,7 @@ void main() {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
       
-      final stateController = StreamController<VotingState>();
+      final stateController = StreamController<VotingState>.broadcast();
       when(() => mockVotingBloc.stream).thenAnswer((_) => stateController.stream);
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -255,7 +272,7 @@ void main() {
           child: BlocProvider<VotingBloc>.value(
             value: mockVotingBloc,
             child: MaterialApp(
-              home: VotingDetailsScreen(event: votedEvent, imagePath: 'assets/backgrounds/default.jpg'),
+              home: VotingDetailsScreen(event: votedEvent, imagePath: ''),
             ),
           ),
         ),
@@ -305,7 +322,7 @@ void main() {
           child: BlocProvider<VotingBloc>.value(
             value: mockVotingBloc,
             child: MaterialApp(
-              home: VotingDetailsScreen(event: multiQuestionEvent, imagePath: 'assets/backgrounds/default.jpg'),
+              home: VotingDetailsScreen(event: multiQuestionEvent, imagePath: ''),
             ),
           ),
         ),
@@ -347,7 +364,7 @@ void main() {
           child: BlocProvider<VotingBloc>.value(
             value: mockVotingBloc,
             child: MaterialApp(
-              home: VotingDetailsScreen(event: noQuestionsEvent, imagePath: 'assets/backgrounds/default.jpg'),
+              home: VotingDetailsScreen(event: noQuestionsEvent, imagePath: ''),
             ),
           ),
         ),
