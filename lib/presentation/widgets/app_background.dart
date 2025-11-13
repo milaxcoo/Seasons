@@ -14,13 +14,15 @@ class AppBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          // 2. Use the imagePath variable here
-          image: AssetImage(imagePath),
-          fit: BoxFit.cover,
-        ),
-      ),
+      decoration: imagePath.isNotEmpty
+          ? BoxDecoration(
+              image: DecorationImage(
+                // 2. Use the imagePath variable here
+                image: AssetImage(imagePath),
+                fit: BoxFit.cover,
+              ),
+            )
+          : null,
       child: child,
     );
   }

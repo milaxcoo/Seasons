@@ -13,7 +13,7 @@ class ApiVotingRepository implements VotingRepository {
 
   Map<String, String> get _baseHeaders {
     // ВАЖНО: Убедитесь, что здесь ваше актуальное значение cookie
-    const String sessionCookie = 'a339b6ef03bf1b34f1d89d9fb6fc4831';
+    const String sessionCookie = '3edf387097f0adc228b4bd7794d4c832';
     return {
       'Cookie': 'session=$sessionCookie',
       'X-Requested-With': 'XMLHttpRequest',

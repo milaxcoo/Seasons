@@ -1,129 +1,413 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:flutter_test/flutter_test.dart';
-// import 'package:mocktail/mocktail.dart';
-// import 'package:seasons/data/models/nominee.dart';
-// import 'package:seasons/data/models/voting_event.dart' as model;
-// import 'package:seasons/data/repositories/voting_repository.dart';
-// import 'package:seasons/presentation/screens/voting_details_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:seasons/data/models/nominee.dart';
+import 'package:seasons/data/models/question.dart';
+import 'package:seasons/data/models/voting_event.dart' as model;
+import 'package:seasons/data/repositories/voting_repository.dart';
+import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_event.dart';
+import 'package:seasons/presentation/bloc/voting/voting_state.dart';
+import 'package:seasons/presentation/screens/voting_details_screen.dart';
 
-// import '../../mocks.dart'; // Import the mock classes from a central file
+import '../../mocks.dart';
 
-// void main() {
-//   late MockVotingRepository mockVotingRepository;
-//   late model.VotingEvent testEvent;
+void main() {
+  late MockVotingRepository mockVotingRepository;
+  late MockVotingBloc mockVotingBloc;
+  late model.VotingEvent testEvent;
 
-//   setUp(() {
-//     mockVotingRepository = MockVotingRepository();
-//     testEvent = model.VotingEvent(
-//       id: 'active-01',
-//       title: 'Innovator of the Year',
-//       description: '',
-//       status: model.VotingStatus.active,
-//       registrationEndDate: DateTime.now(),
-//       votingStartDate: DateTime.now(),
-//       votingEndDate: DateTime.now(),
-//     );
-//   });
+  setUpAll(() async {
+    // Initialize SharedPreferences for tests (required by DraftService)
+    SharedPreferences.setMockInitialValues({});
 
-//   // A helper function to create the widget under test.
-//   // It provides the MockVotingRepository, which the screen needs to create its BLoC.
-//   Widget createTestWidget() {
-//     return RepositoryProvider<VotingRepository>.value(
-//       value: mockVotingRepository,
-//       child: MaterialApp(
-//         home: VotingDetailsScreen(event: testEvent),
-//       ),
-//     );
-//   }
+    // Initialize locale data for date formatting (required by DateFormat with 'ru' locale)
+    await initializeDateFormatting('ru', null);
 
-//   group('VotingDetailsScreen', () {
-//     testWidgets('renders CircularProgressIndicator initially', (tester) async {
-//       // Arrange: Set up the repository to simulate a delay.
-//       when(() => mockVotingRepository.getNomineesForEvent(any()))
-//           .thenAnswer((_) async {
-//         await Future.delayed(const Duration(milliseconds: 100));
-//         return [];
-//       });
+    registerFallbackValue(model.VotingEvent(
+      id: 'test',
+      title: 'Test',
+      description: 'Test',
+      status: model.VotingStatus.active,
+      isRegistered: true,
+      questions: const [],
+      hasVoted: false,
+      results: const [],
+    ));
+    // Fallback for bloc events (mocktail needs a VotingEvent subclass instance)
+    registerFallbackValue(SubmitVote(
+        event: model.VotingEvent(
+          id: 'fb',
+          title: 'fb',
+          description: 'fb',
+          status: model.VotingStatus.active,
+          isRegistered: false,
+          questions: const [],
+          hasVoted: false,
+          results: const [],
+        ),
+        answers: <String, String>{}));
+    registerFallbackValue(<String, String>{});
+  });
 
-//       // Act: Build the widget.
-//       await tester.pumpWidget(createTestWidget());
+  setUp(() {
+    mockVotingRepository = MockVotingRepository();
+    mockVotingBloc = MockVotingBloc();
 
-//       // Assert: Verify that the loading indicator is displayed while fetching.
-//       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    testEvent = model.VotingEvent(
+      id: 'active-01',
+      title: 'Innovator of the Year',
+      description: 'Vote for the best innovator',
+      status: model.VotingStatus.active,
+      registrationEndDate: DateTime(2025, 11, 30),
+      votingStartDate: DateTime(2025, 12, 1),
+      votingEndDate: DateTime(2025, 12, 31),
+      isRegistered: true,
+      questions: const [
+        Question(
+          id: 'q1',
+          name: 'Who is the best innovator?',
+          subjects: [],
+          answers: [
+            Nominee(id: 'nom-01', name: 'Project Alpha'),
+            Nominee(id: 'nom-02', name: 'Team Innovate'),
+          ],
+        ),
+      ],
+      hasVoted: false,
+      results: const [],
+    );
+  });
 
-//       // Allow the future to complete.
-//       await tester.pumpAndSettle();
-//     });
+  Widget createTestWidget() {
+    return RepositoryProvider<VotingRepository>.value(
+      value: mockVotingRepository,
+      child: BlocProvider<VotingBloc>.value(
+        value: mockVotingBloc,
+        child: MaterialApp(
+          home: VotingDetailsScreen(event: testEvent, imagePath: ''),
+        ),
+      ),
+    );
+  }
 
-//     testWidgets('renders list of nominees on successful load', (tester) async {
-//       // Arrange: Set up the repository to return a list of nominees.
-//       final nominees = [
-//         const Nominee(id: 'nom-01', name: 'Project Alpha'),
-//         const Nominee(id: 'nom-02', name: 'Team Innovate'),
-//       ];
-//       when(() => mockVotingRepository.getNomineesForEvent(any()))
-//           .thenAnswer((_) async => nominees);
+  group('VotingDetailsScreen', () {
+    testWidgets('renders event details correctly', (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
 
-//       // Act: Build the widget and let it settle.
-//       await tester.pumpWidget(createTestWidget());
-//       await tester.pumpAndSettle();
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
 
-//       // Assert: Verify that the nominees are rendered.
-//       expect(find.text('Project Alpha'), findsOneWidget);
-//       expect(find.text('Team Innovate'), findsOneWidget);
-//       expect(find.byType(RadioListTile<String>), findsNWidgets(2));
-//     });
+      // Assert
+      expect(find.text('Innovator of the Year'), findsOneWidget);
+      expect(find.text('Vote for the best innovator'), findsOneWidget);
+    });
 
-//     testWidgets('enables submit button only when a nominee is selected', (tester) async {
-//       // Arrange
-//       final nominees = [const Nominee(id: 'nom-01', name: 'Project Alpha')];
-//       when(() => mockVotingRepository.getNomineesForEvent(any()))
-//           .thenAnswer((_) async => nominees);
+    testWidgets('renders questions and answers', (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
 
-//       // Act
-//       await tester.pumpWidget(createTestWidget());
-//       await tester.pumpAndSettle();
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
 
-//       // Assert: Initially, the button should be disabled.
-//       // FIXED: Look for the Russian text on the button.
-//       final submitButton = find.widgetWithText(ElevatedButton, 'Проголосовать');
-//       expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNull);
+      // Assert
+      expect(find.text('Who is the best innovator?'), findsOneWidget);
+      expect(find.text('Project Alpha'), findsOneWidget);
+      expect(find.text('Team Innovate'), findsOneWidget);
+    });
 
-//       // Act: Tap on a nominee to select it.
-//       await tester.tap(find.text('Project Alpha'));
-//       await tester.pump(); // Rebuild the widget after the local state change.
+    testWidgets('enables submit button when answer is selected',
+        (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-//       // Assert: After selection, the button should be enabled.
-//       expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNotNull);
-//     });
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
 
-//     testWidgets('shows confirmation dialog on successful vote submission', (tester) async {
-//       // Arrange
-//       final nominees = [const Nominee(id: 'nom-01', name: 'Project Alpha')];
-//       when(() => mockVotingRepository.getNomineesForEvent(any()))
-//           .thenAnswer((_) async => nominees);
-//       when(() => mockVotingRepository.submitVote(any(), any()))
-//           .thenAnswer((_) async {}); // Simulate a successful vote.
+      // Initially button should be disabled
+      final submitButton = find.widgetWithText(ElevatedButton, 'Проголосовать');
+      expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNull);
 
-//       // Act
-//       await tester.pumpWidget(createTestWidget());
-//       await tester.pumpAndSettle();
+      // Select an answer
+      await tester.tap(find.text('Project Alpha'));
+      await tester.pumpAndSettle();
 
-//       // Select a nominee and tap the submit button.
-//       await tester.tap(find.text('Project Alpha'));
-//       await tester.pump();
-//       await tester.tap(find.widgetWithText(ElevatedButton, 'Проголосовать'));
-      
-//       // We need one pump to process the BLoC's state change,
-//       // and then another to handle the dialog appearing.
-//       await tester.pump();
-//       await tester.pump();
+      // Now button should be enabled
+      expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNotNull);
+    });
 
-//       // Assert: Verify that the confirmation dialog is shown.
-//       // FIXED: Look for the Russian text in the dialog.
-//       expect(find.text('Голос принят'), findsOneWidget);
-//       expect(find.text('Спасибо за участие!'), findsOneWidget);
-//     });
-//   });
-// }
+    testWidgets('shows confirmation dialog when submit is tapped',
+        (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Select an answer
+      await tester.tap(find.text('Project Alpha'));
+      await tester.pumpAndSettle();
+
+      // Tap submit button
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Проголосовать'));
+      await tester.pumpAndSettle();
+
+      // Assert: Confirmation dialog should be shown
+      expect(find.text('Вы уверены?'), findsOneWidget);
+      expect(
+          find.text(
+              'После подтверждения ваш голос будет засчитан, и изменить его будет нельзя.'),
+          findsOneWidget);
+      expect(find.text('Отмена'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Проголосовать'),
+          findsNWidgets(2)); // One in screen, one in dialog
+    });
+
+    testWidgets('submits vote when confirmation dialog is confirmed',
+        (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Select an answer
+      await tester.tap(find.text('Project Alpha'));
+      await tester.pumpAndSettle();
+
+      // Tap submit button
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Проголосовать'));
+      await tester.pumpAndSettle();
+
+      // Confirm in dialog
+      await tester
+          .tap(find.widgetWithText(ElevatedButton, 'Проголосовать').last);
+      await tester.pumpAndSettle();
+
+      // Assert: SubmitVote event should be added
+      verify(() => mockVotingBloc.add(any<SubmitVote>())).called(1);
+    });
+
+    testWidgets('shows success dialog when vote is submitted successfully',
+        (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+
+      final stateController = StreamController<VotingState>.broadcast();
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Emit success state
+      stateController.add(VotingSubmissionSuccess());
+      await tester.pumpAndSettle();
+
+      // Assert: Success dialog should be shown
+      expect(find.text('Голос принят'), findsOneWidget);
+      expect(find.text('Спасибо за участие!'), findsOneWidget);
+      expect(find.text('OK'), findsOneWidget);
+
+      stateController.close();
+    });
+
+    testWidgets('shows error snackbar when vote submission fails',
+        (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+
+      final stateController = StreamController<VotingState>.broadcast();
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Emit failure state
+      stateController.add(const VotingFailure(error: 'Submission failed'));
+      await tester.pumpAndSettle();
+
+      // Assert: Error snackbar should be shown
+      expect(find.text('Ошибка: Submission failed'), findsOneWidget);
+
+      stateController.close();
+    });
+
+    testWidgets('disables submit button when user already voted',
+        (tester) async {
+      // Arrange
+      final votedEvent = model.VotingEvent(
+        id: 'voted-01',
+        title: 'Already Voted Event',
+        description: 'You already voted',
+        status: model.VotingStatus.active,
+        isRegistered: true,
+        questions: const [
+          Question(
+            id: 'q1',
+            name: 'Question',
+            subjects: [],
+            answers: [Nominee(id: 'nom-01', name: 'Option 1')],
+          ),
+        ],
+        hasVoted: true,
+        results: const [],
+      );
+
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      // Act
+      await tester.pumpWidget(
+        RepositoryProvider<VotingRepository>.value(
+          value: mockVotingRepository,
+          child: BlocProvider<VotingBloc>.value(
+            value: mockVotingBloc,
+            child: MaterialApp(
+              home: VotingDetailsScreen(event: votedEvent, imagePath: ''),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert: Submit button should show "already voted" text and be disabled
+      expect(find.text('Вы уже проголосовали'), findsOneWidget);
+      final submitButton =
+          find.widgetWithText(ElevatedButton, 'Вы уже проголосовали');
+      expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNull);
+    });
+
+    testWidgets(
+        'shows snackbar when trying to submit without answering all questions',
+        (tester) async {
+      // Arrange
+      final multiQuestionEvent = model.VotingEvent(
+        id: 'multi-q-01',
+        title: 'Multi Question Event',
+        description: 'Answer all questions',
+        status: model.VotingStatus.active,
+        isRegistered: true,
+        questions: const [
+          Question(
+            id: 'q1',
+            name: 'Question 1',
+            subjects: [],
+            answers: [Nominee(id: 'nom-01', name: 'Option 1')],
+          ),
+          Question(
+            id: 'q2',
+            name: 'Question 2',
+            subjects: [],
+            answers: [Nominee(id: 'nom-02', name: 'Option 2')],
+          ),
+        ],
+        hasVoted: false,
+        results: const [],
+      );
+
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      // Act
+      await tester.pumpWidget(
+        RepositoryProvider<VotingRepository>.value(
+          value: mockVotingRepository,
+          child: BlocProvider<VotingBloc>.value(
+            value: mockVotingBloc,
+            child: MaterialApp(
+              home:
+                  VotingDetailsScreen(event: multiQuestionEvent, imagePath: ''),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Select only one answer
+      await tester.tap(find.text('Option 1'));
+      await tester.pumpAndSettle();
+
+      // Try to submit
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Проголосовать'));
+      await tester.pumpAndSettle();
+
+      // Assert: Snackbar should be shown
+      expect(find.text('Пожалуйста, ответьте на все вопросы.'), findsOneWidget);
+    });
+
+    testWidgets('renders empty state when no questions', (tester) async {
+      // Arrange
+      final noQuestionsEvent = model.VotingEvent(
+        id: 'no-q-01',
+        title: 'No Questions Event',
+        description: 'No questions available',
+        status: model.VotingStatus.active,
+        isRegistered: true,
+        questions: const [],
+        hasVoted: false,
+        results: const [],
+      );
+
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      // Act
+      await tester.pumpWidget(
+        RepositoryProvider<VotingRepository>.value(
+          value: mockVotingRepository,
+          child: BlocProvider<VotingBloc>.value(
+            value: mockVotingBloc,
+            child: MaterialApp(
+              home: VotingDetailsScreen(event: noQuestionsEvent, imagePath: ''),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('Вопросы для этого голосования отсутствуют.'),
+          findsOneWidget);
+    });
+
+    testWidgets('displays voting dates correctly', (tester) async {
+      // Arrange
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      // Act
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Assert: Check for date labels
+      expect(find.text('Начало голосования'), findsOneWidget);
+      expect(find.text('Завершение голосования'), findsOneWidget);
+      expect(find.text('Статус'), findsOneWidget);
+    });
+  });
+}
