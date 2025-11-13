@@ -20,7 +20,7 @@ dependencies:
 
   # UI & Styling
   google_fonts: ^6.2.1
-  fl_chart: ^1.1.0
+  fl_chart: ^1.1.1
   intl: ^0.20.2
 
   # Secure Storage
