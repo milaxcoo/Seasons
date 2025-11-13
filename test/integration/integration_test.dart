@@ -45,9 +45,9 @@ void main() {
       // Arrange
       when(() => mockRepository.login('user', 'pass'))
           .thenAnswer((_) async => 'token');
-      when(() => mockRepository.getUserLogin())
-          .thenAnswer((_) async => 'user');
-      when(() => mockRepository.getEventsByStatus(model.VotingStatus.registration))
+      when(() => mockRepository.getUserLogin()).thenAnswer((_) async => 'user');
+      when(() =>
+              mockRepository.getEventsByStatus(model.VotingStatus.registration))
           .thenAnswer((_) async => [
                 model.VotingEvent(
                   id: 'event-01',
@@ -73,7 +73,8 @@ void main() {
       );
 
       // Act & Assert - Fetch Events
-      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration));
+      votingBloc.add(
+          const FetchEventsByStatus(status: model.VotingStatus.registration));
       await expectLater(
         votingBloc.stream,
         emitsInOrder([
@@ -92,12 +93,14 @@ void main() {
       // Verify all interactions
       verify(() => mockRepository.login('user', 'pass')).called(1);
       verify(() => mockRepository.getUserLogin()).called(1);
-      verify(() => mockRepository.getEventsByStatus(model.VotingStatus.registration))
+      verify(() =>
+              mockRepository.getEventsByStatus(model.VotingStatus.registration))
           .called(1);
       verify(() => mockRepository.logout()).called(1);
     });
 
-    test('Complete voting flow: register -> fetch event -> submit vote', () async {
+    test('Complete voting flow: register -> fetch event -> submit vote',
+        () async {
       // Arrange
       final testEvent = model.VotingEvent(
         id: 'event-01',
@@ -128,7 +131,8 @@ void main() {
       );
 
       // Act & Assert - Fetch Active Events
-      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.active));
+      votingBloc
+          .add(const FetchEventsByStatus(status: model.VotingStatus.active));
       await expectLater(
         votingBloc.stream,
         emitsInOrder([
@@ -230,9 +234,12 @@ void main() {
           .thenAnswer((_) async => []);
 
       // Act - Multiple rapid fetches
-      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration));
-      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.active));
-      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.completed));
+      votingBloc.add(
+          const FetchEventsByStatus(status: model.VotingStatus.registration));
+      votingBloc
+          .add(const FetchEventsByStatus(status: model.VotingStatus.active));
+      votingBloc
+          .add(const FetchEventsByStatus(status: model.VotingStatus.completed));
 
       // Assert - Should handle all requests
       await expectLater(
@@ -258,7 +265,8 @@ void main() {
           .thenAnswer((_) async => []);
 
       // Act - Fetch events while logged in
-      votingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.active));
+      votingBloc
+          .add(const FetchEventsByStatus(status: model.VotingStatus.active));
       await expectLater(
         votingBloc.stream,
         emitsInOrder([

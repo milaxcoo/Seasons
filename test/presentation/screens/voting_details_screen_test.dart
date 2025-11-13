@@ -24,10 +24,10 @@ void main() {
   setUpAll(() async {
     // Initialize SharedPreferences for tests (required by DraftService)
     SharedPreferences.setMockInitialValues({});
-    
+
     // Initialize locale data for date formatting (required by DateFormat with 'ru' locale)
     await initializeDateFormatting('ru', null);
-    
+
     registerFallbackValue(model.VotingEvent(
       id: 'test',
       title: 'Test',
@@ -39,23 +39,25 @@ void main() {
       results: const [],
     ));
     // Fallback for bloc events (mocktail needs a VotingEvent subclass instance)
-    registerFallbackValue(SubmitVote(event: model.VotingEvent(
-      id: 'fb',
-      title: 'fb',
-      description: 'fb',
-      status: model.VotingStatus.active,
-      isRegistered: false,
-      questions: const [],
-      hasVoted: false,
-      results: const [],
-    ), answers: <String, String>{}));
+    registerFallbackValue(SubmitVote(
+        event: model.VotingEvent(
+          id: 'fb',
+          title: 'fb',
+          description: 'fb',
+          status: model.VotingStatus.active,
+          isRegistered: false,
+          questions: const [],
+          hasVoted: false,
+          results: const [],
+        ),
+        answers: <String, String>{}));
     registerFallbackValue(<String, String>{});
   });
 
   setUp(() {
     mockVotingRepository = MockVotingRepository();
     mockVotingBloc = MockVotingBloc();
-    
+
     testEvent = model.VotingEvent(
       id: 'active-01',
       title: 'Innovator of the Year',
@@ -123,7 +125,8 @@ void main() {
       expect(find.text('Team Innovate'), findsOneWidget);
     });
 
-    testWidgets('enables submit button when answer is selected', (tester) async {
+    testWidgets('enables submit button when answer is selected',
+        (tester) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -145,7 +148,8 @@ void main() {
       expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNotNull);
     });
 
-    testWidgets('shows confirmation dialog when submit is tapped', (tester) async {
+    testWidgets('shows confirmation dialog when submit is tapped',
+        (tester) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -165,12 +169,17 @@ void main() {
 
       // Assert: Confirmation dialog should be shown
       expect(find.text('Вы уверены?'), findsOneWidget);
-      expect(find.text('После подтверждения ваш голос будет засчитан, и изменить его будет нельзя.'), findsOneWidget);
+      expect(
+          find.text(
+              'После подтверждения ваш голос будет засчитан, и изменить его будет нельзя.'),
+          findsOneWidget);
       expect(find.text('Отмена'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Проголосовать'), findsNWidgets(2)); // One in screen, one in dialog
+      expect(find.widgetWithText(ElevatedButton, 'Проголосовать'),
+          findsNWidgets(2)); // One in screen, one in dialog
     });
 
-    testWidgets('submits vote when confirmation dialog is confirmed', (tester) async {
+    testWidgets('submits vote when confirmation dialog is confirmed',
+        (tester) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -189,19 +198,22 @@ void main() {
       await tester.pumpAndSettle();
 
       // Confirm in dialog
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Проголосовать').last);
+      await tester
+          .tap(find.widgetWithText(ElevatedButton, 'Проголосовать').last);
       await tester.pumpAndSettle();
 
       // Assert: SubmitVote event should be added
       verify(() => mockVotingBloc.add(any<SubmitVote>())).called(1);
     });
 
-    testWidgets('shows success dialog when vote is submitted successfully', (tester) async {
+    testWidgets('shows success dialog when vote is submitted successfully',
+        (tester) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
-      
+
       final stateController = StreamController<VotingState>.broadcast();
-      when(() => mockVotingBloc.stream).thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
       // Act
@@ -220,12 +232,14 @@ void main() {
       stateController.close();
     });
 
-    testWidgets('shows error snackbar when vote submission fails', (tester) async {
+    testWidgets('shows error snackbar when vote submission fails',
+        (tester) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingInitial());
-      
+
       final stateController = StreamController<VotingState>.broadcast();
-      when(() => mockVotingBloc.stream).thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
       // Act
@@ -242,7 +256,8 @@ void main() {
       stateController.close();
     });
 
-    testWidgets('disables submit button when user already voted', (tester) async {
+    testWidgets('disables submit button when user already voted',
+        (tester) async {
       // Arrange
       final votedEvent = model.VotingEvent(
         id: 'voted-01',
@@ -281,11 +296,14 @@ void main() {
 
       // Assert: Submit button should show "already voted" text and be disabled
       expect(find.text('Вы уже проголосовали'), findsOneWidget);
-      final submitButton = find.widgetWithText(ElevatedButton, 'Вы уже проголосовали');
+      final submitButton =
+          find.widgetWithText(ElevatedButton, 'Вы уже проголосовали');
       expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNull);
     });
 
-    testWidgets('shows snackbar when trying to submit without answering all questions', (tester) async {
+    testWidgets(
+        'shows snackbar when trying to submit without answering all questions',
+        (tester) async {
       // Arrange
       final multiQuestionEvent = model.VotingEvent(
         id: 'multi-q-01',
@@ -322,7 +340,8 @@ void main() {
           child: BlocProvider<VotingBloc>.value(
             value: mockVotingBloc,
             child: MaterialApp(
-              home: VotingDetailsScreen(event: multiQuestionEvent, imagePath: ''),
+              home:
+                  VotingDetailsScreen(event: multiQuestionEvent, imagePath: ''),
             ),
           ),
         ),
@@ -372,7 +391,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Вопросы для этого голосования отсутствуют.'), findsOneWidget);
+      expect(find.text('Вопросы для этого голосования отсутствуют.'),
+          findsOneWidget);
     });
 
     testWidgets('displays voting dates correctly', (tester) async {

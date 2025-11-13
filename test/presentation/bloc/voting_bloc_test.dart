@@ -78,28 +78,32 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingEventsLoadSuccess] when events are fetched successfully',
         build: () {
-          when(() => mockVotingRepository.getEventsByStatus(model.VotingStatus.registration))
+          when(() => mockVotingRepository
+                  .getEventsByStatus(model.VotingStatus.registration))
               .thenAnswer((_) async => testEvents);
           return votingBloc;
         },
-        act: (bloc) => bloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration)),
+        act: (bloc) => bloc.add(
+            const FetchEventsByStatus(status: model.VotingStatus.registration)),
         expect: () => [
           VotingLoadInProgress(),
           VotingEventsLoadSuccess(events: testEvents),
         ],
         verify: (_) {
-          verify(() => mockVotingRepository.getEventsByStatus(model.VotingStatus.registration)).called(1);
+          verify(() => mockVotingRepository
+              .getEventsByStatus(model.VotingStatus.registration)).called(1);
         },
       );
 
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingEventsLoadSuccess] with empty list when no events',
         build: () {
-          when(() => mockVotingRepository.getEventsByStatus(model.VotingStatus.active))
-              .thenAnswer((_) async => []);
+          when(() => mockVotingRepository.getEventsByStatus(
+              model.VotingStatus.active)).thenAnswer((_) async => []);
           return votingBloc;
         },
-        act: (bloc) => bloc.add(const FetchEventsByStatus(status: model.VotingStatus.active)),
+        act: (bloc) => bloc
+            .add(const FetchEventsByStatus(status: model.VotingStatus.active)),
         expect: () => [
           VotingLoadInProgress(),
           const VotingEventsLoadSuccess(events: []),
@@ -113,10 +117,12 @@ void main() {
               .thenThrow(Exception('Failed to fetch events'));
           return votingBloc;
         },
-        act: (bloc) => bloc.add(const FetchEventsByStatus(status: model.VotingStatus.completed)),
+        act: (bloc) => bloc.add(
+            const FetchEventsByStatus(status: model.VotingStatus.completed)),
         expect: () => [
           VotingLoadInProgress(),
-          isA<VotingFailure>().having((s) => s.error, 'error', contains('Failed to fetch events')),
+          isA<VotingFailure>().having(
+              (s) => s.error, 'error', contains('Failed to fetch events')),
         ],
       );
     });
@@ -135,7 +141,8 @@ void main() {
           RegistrationSuccess(),
         ],
         verify: (_) {
-          verify(() => mockVotingRepository.registerForEvent('event-1')).called(1);
+          verify(() => mockVotingRepository.registerForEvent('event-1'))
+              .called(1);
         },
       );
 
@@ -149,7 +156,8 @@ void main() {
         act: (bloc) => bloc.add(const RegisterForEvent(eventId: 'event-1')),
         expect: () => [
           RegistrationInProgress(),
-          isA<RegistrationFailure>().having((s) => s.error, 'error', contains('Registration failed')),
+          isA<RegistrationFailure>()
+              .having((s) => s.error, 'error', contains('Registration failed')),
         ],
       );
 
@@ -163,7 +171,8 @@ void main() {
         act: (bloc) => bloc.add(const RegisterForEvent(eventId: 'event-1')),
         expect: () => [
           RegistrationInProgress(),
-          isA<RegistrationFailure>().having((s) => s.error, 'error', contains('already registered')),
+          isA<RegistrationFailure>()
+              .having((s) => s.error, 'error', contains('already registered')),
         ],
       );
     });
@@ -196,7 +205,8 @@ void main() {
               .thenAnswer((_) async => true);
           return votingBloc;
         },
-        act: (bloc) => bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
+        act: (bloc) =>
+            bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
         expect: () => [
           VotingLoadInProgress(),
           VotingSubmissionSuccess(),
@@ -213,10 +223,12 @@ void main() {
               .thenThrow(Exception('Submission failed'));
           return votingBloc;
         },
-        act: (bloc) => bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
+        act: (bloc) =>
+            bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
         expect: () => [
           VotingLoadInProgress(),
-          isA<VotingFailure>().having((s) => s.error, 'error', contains('Submission failed')),
+          isA<VotingFailure>()
+              .having((s) => s.error, 'error', contains('Submission failed')),
         ],
       );
 
@@ -227,10 +239,12 @@ void main() {
               .thenThrow(Exception('User already voted'));
           return votingBloc;
         },
-        act: (bloc) => bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
+        act: (bloc) =>
+            bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
         expect: () => [
           VotingLoadInProgress(),
-          isA<VotingFailure>().having((s) => s.error, 'error', contains('already voted')),
+          isA<VotingFailure>()
+              .having((s) => s.error, 'error', contains('already voted')),
         ],
       );
 
@@ -280,7 +294,8 @@ void main() {
           VotingResultsLoadSuccess(results: testResults),
         ],
         verify: (_) {
-          verify(() => mockVotingRepository.getResultsForEvent('event-1')).called(1);
+          verify(() => mockVotingRepository.getResultsForEvent('event-1'))
+              .called(1);
         },
       );
 
@@ -308,7 +323,8 @@ void main() {
         act: (bloc) => bloc.add(const FetchResults(eventId: 'event-1')),
         expect: () => [
           VotingLoadInProgress(),
-          isA<VotingFailure>().having((s) => s.error, 'error', contains('Failed to fetch results')),
+          isA<VotingFailure>().having(
+              (s) => s.error, 'error', contains('Failed to fetch results')),
         ],
       );
     });
@@ -322,8 +338,10 @@ void main() {
           return votingBloc;
         },
         act: (bloc) {
-          bloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration));
-          bloc.add(const FetchEventsByStatus(status: model.VotingStatus.active));
+          bloc.add(const FetchEventsByStatus(
+              status: model.VotingStatus.registration));
+          bloc.add(
+              const FetchEventsByStatus(status: model.VotingStatus.active));
         },
         skip: 2, // Skip first fetch
         expect: () => [
@@ -343,8 +361,10 @@ void main() {
         },
         act: (bloc) async {
           bloc.add(const RegisterForEvent(eventId: 'event-1'));
-          await Future.delayed(const Duration(milliseconds: 100)); // Wait for registration to complete
-          bloc.add(const FetchEventsByStatus(status: model.VotingStatus.registration));
+          await Future.delayed(const Duration(
+              milliseconds: 100)); // Wait for registration to complete
+          bloc.add(const FetchEventsByStatus(
+              status: model.VotingStatus.registration));
         },
         expect: () => [
           RegistrationInProgress(),

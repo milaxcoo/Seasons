@@ -19,14 +19,16 @@ void main() {
 
   setUpAll(() async {
     await initializeDateFormatting('ru_RU', null);
-    registerFallbackValue(const FetchEventsByStatus(status: model.VotingStatus.registration));
+    registerFallbackValue(
+        const FetchEventsByStatus(status: model.VotingStatus.registration));
     registerFallbackValue(LoggedOut());
   });
 
   setUp(() {
     mockAuthBloc = MockAuthBloc();
     mockVotingBloc = MockVotingBloc();
-    when(() => mockAuthBloc.state).thenReturn(const AuthAuthenticated(userLogin: 'testuser'));
+    when(() => mockAuthBloc.state)
+        .thenReturn(const AuthAuthenticated(userLogin: 'testuser'));
     when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
   });
 
@@ -45,7 +47,8 @@ void main() {
   group('HomeScreen', () {
     testWidgets('renders main layout components correctly', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(events: []));
+      when(() => mockVotingBloc.state)
+          .thenReturn(const VotingEventsLoadSuccess(events: []));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -63,7 +66,9 @@ void main() {
       expect(find.byType(ResultsIcon), findsWidgets);
     });
 
-    testWidgets('renders CircularProgressIndicator when state is VotingLoadInProgress', (tester) async {
+    testWidgets(
+        'renders CircularProgressIndicator when state is VotingLoadInProgress',
+        (tester) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingLoadInProgress());
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -77,7 +82,8 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('renders list of events when state is VotingEventsLoadSuccess', (tester) async {
+    testWidgets('renders list of events when state is VotingEventsLoadSuccess',
+        (tester) async {
       // Arrange
       final events = [
         model.VotingEvent(
@@ -111,7 +117,8 @@ void main() {
 
     testWidgets('renders empty state when no events', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(events: []));
+      when(() => mockVotingBloc.state)
+          .thenReturn(const VotingEventsLoadSuccess(events: []));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -123,7 +130,8 @@ void main() {
       expect(find.text('Нет активных голосований'), findsOneWidget);
     });
 
-    testWidgets('renders error message when state is VotingFailure', (tester) async {
+    testWidgets('renders error message when state is VotingFailure',
+        (tester) async {
       // Arrange
       final state = const VotingFailure(error: 'Failed to load');
       when(() => mockVotingBloc.state).thenReturn(state);
@@ -140,7 +148,8 @@ void main() {
 
     testWidgets('shows logout button and triggers logout', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(events: []));
+      when(() => mockVotingBloc.state)
+          .thenReturn(const VotingEventsLoadSuccess(events: []));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
       when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
@@ -175,7 +184,8 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(events: events));
+      when(() => mockVotingBloc.state)
+          .thenReturn(VotingEventsLoadSuccess(events: events));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -202,7 +212,8 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(events: events));
+      when(() => mockVotingBloc.state)
+          .thenReturn(VotingEventsLoadSuccess(events: events));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -216,7 +227,8 @@ void main() {
 
     testWidgets('panel selector switches between statuses', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(events: []));
+      when(() => mockVotingBloc.state)
+          .thenReturn(const VotingEventsLoadSuccess(events: []));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -230,7 +242,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Verify that FetchEventsByStatus was called with active status
-      verify(() => mockVotingBloc.add(const FetchEventsByStatus(status: model.VotingStatus.active))).called(1);
+      verify(() => mockVotingBloc.add(
+              const FetchEventsByStatus(status: model.VotingStatus.active)))
+          .called(1);
     });
 
     testWidgets('displays date information correctly', (tester) async {
@@ -250,7 +264,8 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(events: events));
+      when(() => mockVotingBloc.state)
+          .thenReturn(VotingEventsLoadSuccess(events: events));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -264,7 +279,8 @@ void main() {
 
     testWidgets('renders footer with poem', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(events: []));
+      when(() => mockVotingBloc.state)
+          .thenReturn(const VotingEventsLoadSuccess(events: []));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -278,4 +294,3 @@ void main() {
     });
   });
 }
-

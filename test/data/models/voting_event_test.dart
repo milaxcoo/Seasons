@@ -191,8 +191,10 @@ void main() {
 
         // Dates are converted from UTC to local time in the model
         final expectedRegEnd = DateTime.parse('2025-12-31T23:59:59Z').toLocal();
-        final expectedVotingStart = DateTime.parse('2025-01-01T00:00:00Z').toLocal();
-        final expectedVotingEnd = DateTime.parse('2025-01-31T23:59:59Z').toLocal();
+        final expectedVotingStart =
+            DateTime.parse('2025-01-01T00:00:00Z').toLocal();
+        final expectedVotingEnd =
+            DateTime.parse('2025-01-31T23:59:59Z').toLocal();
 
         expect(event.registrationEndDate, isNotNull);
         expect(event.votingStartDate, isNotNull);
