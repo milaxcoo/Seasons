@@ -119,7 +119,6 @@ class _PanelSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // --- НАСТРОЙКИ ---
-    const Duration animDuration = Duration(milliseconds: 600);
     const double barHeight = 60.0;
     const double buttonRadius = 25.0; // <-- ⭐ ГЛАВНЫЙ РАДИУС
     const double moundHeight = 20.0;
