@@ -180,7 +180,7 @@ class _PanelSelector extends StatelessWidget {
                 child: Row(
                   children: [
                     // Слот 1
-                    Container(
+                    SizedBox(
                       width: buttonSlotWidth,
                       child: _PanelButton(
                         icon: RegistrationIcon(isSelected: false),
@@ -192,7 +192,7 @@ class _PanelSelector extends StatelessWidget {
                       ),
                     ),
                     // Слот 2
-                    Container(
+                    SizedBox(
                       width: buttonSlotWidth,
                       child: _PanelButton(
                         icon: ActiveVotingIcon(isSelected: false),
@@ -204,7 +204,7 @@ class _PanelSelector extends StatelessWidget {
                       ),
                     ),
                     // Слот 3
-                    Container(
+                    SizedBox(
                       width: buttonSlotWidth,
                       child: _PanelButton(
                         icon: ResultsIcon(isSelected: false),
