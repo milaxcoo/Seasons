@@ -31,13 +31,13 @@ void main() {
   });
 
   Widget createTestWidget() {
-    return MaterialApp(
-      home: MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthBloc>.value(value: mockAuthBloc),
-          BlocProvider<VotingBloc>.value(value: mockVotingBloc),
-        ],
-        child: const HomeScreen(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+        BlocProvider<VotingBloc>.value(value: mockVotingBloc),
+      ],
+      child: const MaterialApp(
+        home: HomeScreen(),
       ),
     );
   }
@@ -71,7 +71,7 @@ void main() {
 
       // Act
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Assert
       expect(find.byType(CircularProgressIndicator), findsOneWidget);

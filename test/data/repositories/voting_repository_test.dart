@@ -3,11 +3,27 @@ import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/question.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
-import 'package:seasons/data/repositories/voting_repository.dart';
 
 import '../../mocks.dart';
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(VotingEvent(
+      id: 'test',
+      title: 'Test',
+      description: '',
+      status: VotingStatus.active,
+      registrationEndDate: null,
+      votingStartDate: null,
+      votingEndDate: null,
+      isRegistered: false,
+      questions: [],
+      hasVoted: false,
+      results: [],
+    ));
+    registerFallbackValue(VotingStatus.active);
+  });
+
   group('VotingRepository', () {
     late MockVotingRepository mockRepository;
 

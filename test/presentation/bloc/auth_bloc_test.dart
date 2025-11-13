@@ -185,12 +185,14 @@ void main() {
           when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async => 'testuser');
           return authBloc;
         },
-        act: (bloc) {
+        act: (bloc) async {
           bloc.add(const LoggedIn(login: 'user1', password: 'pass1'));
+          await Future.delayed(const Duration(milliseconds: 100));
           bloc.add(const LoggedIn(login: 'user2', password: 'pass2'));
         },
-        skip: 2, // Skip first login
         expect: () => [
+          AuthLoading(),
+          const AuthAuthenticated(userLogin: 'testuser'),
           AuthLoading(),
           const AuthAuthenticated(userLogin: 'testuser'),
         ],

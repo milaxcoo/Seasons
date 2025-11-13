@@ -123,7 +123,7 @@ class _PanelSelector extends StatelessWidget {
     const double buttonRadius = 25.0; // <-- ⭐ ГЛАВНЫЙ РАДИУС
     const double moundHeight = 20.0;
     const double moundWidth = (buttonRadius * 2) + 30.0; // (25*2)+30 = 80.0
-    const double horizontalMargin = 15.0;
+    const double horizontalMargin = 10.0;
 
     final gradient = LinearGradient(
       begin: Alignment.topLeft,
