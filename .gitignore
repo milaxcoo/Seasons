@@ -70,3 +70,13 @@ test-results/
 .test_coverage/
 test_output.txt
 *.log
+
+# Documentation (internal use only)
+FIREBASE_SECURITY_GUIDE.md
+OAUTH_CHECKLIST.md
+OAUTH_SETUP.md
+OAUTH_TESTING_GUIDE.md
+OIDC_DISCOVERY_COMPLETE.md
+RUDN_ID_INTEGRATION.md
+SECURITY_AUDIT_REPORT.md
+SECURITY_FIXES_SUMMARY.md
