@@ -1,44 +1,67 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:seasons/core/oauth_service.dart';
 import 'package:seasons/data/models/nominee.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 
 class ApiVotingRepository implements VotingRepository {
-  final String _baseUrl = 'https://seasons.rudn.ru';
+  // Make API base URL configurable via environment variable
+  // Usage: flutter run --dart-define=API_BASE_URL=https://staging.seasons.rudn.ru
+  final String _baseUrl = const String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://seasons.rudn.ru',
+  );
+  final OAuthService _oauthService = OAuthService();
   String? _userLogin;
-  String? _authToken;
 
   Map<String, String> get _baseHeaders {
-    // ВАЖНО: Убедитесь, что здесь ваше актуальное значение cookie
-    const String sessionCookie = '3edf387097f0adc228b4bd7794d4c832';
     return {
-      'Cookie': 'session=$sessionCookie',
       'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/json',
     };
   }
 
-  // --- Методы аутентификации ---
+  /// Get headers with OAuth Bearer token
+  Future<Map<String, String>> get _authHeaders async {
+    final headers = Map<String, String>.from(_baseHeaders);
+    final accessToken = await _oauthService.getAccessToken();
+    if (accessToken != null) {
+      headers['Authorization'] = 'Bearer $accessToken';
+    }
+    return headers;
+  }
+
+  // --- OAuth Authentication Methods ---
   @override
   Future<String> login(String login, String password) async {
-    _authToken = 'fake_token_for_testing';
-    _userLogin = 'Лебедев М.А.';
-    return _authToken!;
+    // Use OAuth service for authentication
+    _userLogin = await _oauthService.login();
+    if (_userLogin == null) {
+      throw Exception('OAuth login failed');
+    }
+    return 'oauth_authenticated'; // Token is managed by OAuthService
   }
 
   @override
   Future<void> logout() async {
-    _authToken = null;
+    await _oauthService.logout();
     _userLogin = null;
   }
 
   @override
-  Future<String?> getAuthToken() async => _authToken;
+  Future<String?> getAuthToken() async {
+    return await _oauthService.getAccessToken();
+  }
 
   @override
-  Future<String?> getUserLogin() async => _userLogin;
+  Future<String?> getUserLogin() async {
+    if (_userLogin != null) return _userLogin;
+    _userLogin = await _oauthService.getUserDisplayName();
+    return _userLogin;
+  }
 
   // --- Методы для голосований ---
   @override
@@ -57,7 +80,8 @@ class ApiVotingRepository implements VotingRepository {
     }
     final url = Uri.parse('$_baseUrl$path');
     try {
-      final response = await http.get(url, headers: _baseHeaders);
+      final headers = await _authHeaders;
+      final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedBody = json.decode(response.body);
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
@@ -90,8 +114,9 @@ class ApiVotingRepository implements VotingRepository {
   @override
   Future<void> registerForEvent(String eventId) async {
     final url = Uri.parse('$_baseUrl/api/v1/voter/register_in_voting');
+    final baseHeaders = await _authHeaders;
     final headers = {
-      ..._baseHeaders,
+      ...baseHeaders,
       'Content-Type': 'application/x-www-form-urlencoded',
     };
     final body = {'voting_id': eventId};
@@ -122,8 +147,9 @@ class ApiVotingRepository implements VotingRepository {
   Future<bool> submitVote(VotingEvent event, Map<String, String> answers) async {
      final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
     
+    final baseHeaders = await _authHeaders;
     final headers = {
-      ..._baseHeaders,
+      ...baseHeaders,
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 

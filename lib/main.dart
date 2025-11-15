@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:seasons/core/push_notification_service.dart';
 import 'package:seasons/core/theme.dart';
@@ -15,9 +16,22 @@ import 'firebase_options.dart';
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Initialize Firebase
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    
+    // ✅ Enable Firebase App Check (Security Protection)
+    await FirebaseAppCheck.instance.activate(
+      // For Android: Use Play Integrity for production apps
+      androidProvider: AndroidProvider.playIntegrity,
+      // For iOS: Use App Attest (iOS 14+) for production
+      appleProvider: AppleProvider.appAttest,
+      // Note: For debug builds, you may need to use debug providers
+      // See Firebase Console → App Check → Apps → Debug tokens
+    );
+    
     await initializeDateFormatting('ru_RU', null);
     runApp(const SeasonsApp());
   } catch (e) {

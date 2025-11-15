@@ -121,9 +121,9 @@ void main() {
       await tester.tap(find.text('Продолжить'));
       await tester.pumpAndSettle();
 
-      // Assert: Verify that LoggedIn event was added
+      // Assert: Verify that LoggedIn event was added (with empty credentials for OAuth)
       verify(() => mockAuthBloc.add(
-          const LoggedIn(login: 'rudn_user', password: 'password'))).called(1);
+          const LoggedIn(login: '', password: ''))).called(1);
     });
 
     testWidgets('closes dialog when Cancel is tapped', (tester) async {
@@ -190,9 +190,11 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
-      // Assert: The screen should still render normally during loading
-      expect(find.text('Seasons'), findsOneWidget);
-      expect(find.text('Войти'), findsOneWidget);
+      // Assert: During loading, CircularProgressIndicator should be shown
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Login UI should NOT be visible during loading
+      expect(find.text('Seasons'), findsNothing);
+      expect(find.text('Войти'), findsNothing);
     });
 
     testWidgets('renders with AuthUnauthenticated state', (tester) async {

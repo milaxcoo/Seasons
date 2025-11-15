@@ -68,3 +68,5 @@ coverage/
 # Test results
 test-results/
 .test_coverage/
+test_output.txt
+*.log

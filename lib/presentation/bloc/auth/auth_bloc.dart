@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 
 part 'auth_event.dart';
@@ -57,8 +58,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
     try {
       await _votingRepository.logout();
-    } catch (_) {
-      // Ignore logout errors - user should be logged out locally regardless
+    } catch (e) {
+      // Log error but continue - user should be logged out locally regardless
+      debugPrint('⚠️ Logout error (non-fatal): $e');
+      // In production, consider sending to error tracking service
     }
     emit(AuthUnauthenticated());
   }

@@ -15,7 +15,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Эта функция показывает информационный диалог
+  // Эта функция показывает информационный диалог и запускает OAuth
   void _showRudnIdDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -51,7 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: const Text("Продолжить"),
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                context.read<AuthBloc>().add(const LoggedIn(login: "rudn_user", password: "password"));
+                // Trigger OAuth login flow (login/password params are ignored now)
+                context.read<AuthBloc>().add(const LoggedIn(login: "", password: ""));
               },
             ),
           ],
@@ -76,9 +77,28 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (_) => const HomeScreen()),
               );
+            } else if (state is AuthFailure) {
+              // Show error message if OAuth fails
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Ошибка авторизации: ${state.error}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
           },
-          child: Stack(
+          child: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              // Show loading overlay when authenticating
+              if (state is AuthLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                  ),
+                );
+              }
+              
+              return Stack(
             children: [
               Center(
                 child: Column(
@@ -152,7 +172,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ],
-          ),
+          );
+        },
+      ),
         ),
       ),
     );
