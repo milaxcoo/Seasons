@@ -25,7 +25,10 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.27.4'
           cache: true
+      
+      - run: flutter pub get
       
       - run: dart format --output=none --set-exit-if-changed .
 
@@ -38,6 +41,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.27.4'
           cache: true
       
       - run: flutter pub get
@@ -69,6 +73,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.27.4'
           cache: true
       
       - run: flutter pub get
@@ -118,6 +123,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.27.4'
           cache: true
       
       - run: flutter pub get
@@ -158,6 +164,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.27.4'
           cache: true
       
       - run: flutter pub get
