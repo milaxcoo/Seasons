@@ -200,7 +200,8 @@ class _ResultsTable extends StatelessWidget {
             ),
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Text(
                   '',
                   style: Theme.of(context)
@@ -210,7 +211,8 @@ class _ResultsTable extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Text(
                   'Количество голосов',
                   textAlign: TextAlign.center,
@@ -228,14 +230,16 @@ class _ResultsTable extends StatelessWidget {
               return TableRow(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     child: Text(
                       '${subject.name}',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     child: Center(
                       child: Text(entry.value.toString()),
                     ),

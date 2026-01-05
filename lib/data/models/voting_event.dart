@@ -107,7 +107,8 @@ class VotingEvent extends Equatable {
           if (resultsField is Map<String, dynamic> && resultsField.isNotEmpty) {
             // Проверяем, есть ли вложенный ключ 'details' на верхнем уровне (для multiple_variants)
             final topLevelDetails = resultsField['details'];
-            if (topLevelDetails is Map<String, dynamic> && topLevelDetails.isNotEmpty) {
+            if (topLevelDetails is Map<String, dynamic> &&
+                topLevelDetails.isNotEmpty) {
               // multiple_variants с заполненными данными
               topLevelDetails.forEach((variantName, voteCount) {
                 final count = voteCount is int ? voteCount : 0;
@@ -121,7 +122,7 @@ class VotingEvent extends Equatable {
               resultsField.forEach((subjectName, subjectData) {
                 // Пропускаем нечисловые ключи типа 'details' или 'total'
                 if (subjectName == 'details' || subjectName == 'total') return;
-                
+
                 // subjectData должен быть Map с 'details'
                 if (subjectData is Map<String, dynamic>) {
                   final details = subjectData['details'];
@@ -140,7 +141,7 @@ class VotingEvent extends Equatable {
             }
           }
           // Если results - пустой array [] или не Map, subjectResults останется пустым
-          
+
           parsedResults.add(QuestionResult(
               name: questionName,
               type: questionType,
