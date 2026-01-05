@@ -144,6 +144,19 @@ jobs:
           }
           EOF
       
+      # Patch legacy plugins that don't have namespace (AGP 8+ requirement)
+      - name: Patch Legacy Plugin Namespaces
+        run: |
+          # Find and patch webview_cookie_manager
+          PLUGIN_PATH=$(find ~/.pub-cache -name "webview_cookie_manager-*" -type d | head -1)
+          if [ -n "$PLUGIN_PATH" ]; then
+            BUILD_GRADLE="$PLUGIN_PATH/android/build.gradle"
+            if [ -f "$BUILD_GRADLE" ] && ! grep -q "namespace" "$BUILD_GRADLE"; then
+              sed -i 's/android {/android {\n    namespace "io.sirio.webview_cookie_manager"/' "$BUILD_GRADLE"
+              echo "Patched namespace in $BUILD_GRADLE"
+            fi
+          fi
+      
       - name: Build APK (Release)
         run: flutter build apk --release
       
