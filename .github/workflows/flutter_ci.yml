@@ -6,10 +6,107 @@ on:
   pull_request:
     branches: [ "main" ]
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # QUALITY CHECKS (Fast - runs in parallel)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  format:
+    name: 📐 Check Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - run: dart format --output=none --set-exit-if-changed .
+
+  analyze:
+    name: 🔍 Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - run: flutter pub get
+      
+      # Generate mock firebase_options.dart (real one is gitignored)
+      - name: Create Mock Configs
+        run: |
+          cat > lib/firebase_options.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'mock-api-key',
+              appId: 'mock-app-id',
+              messagingSenderId: 'mock-sender-id',
+              projectId: 'mock-project-id',
+            );
+          }
+          EOF
+      
+      - run: flutter analyze --fatal-infos
+
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - run: flutter pub get
+      
+      # Generate mock firebase_options.dart
+      - name: Create Mock Configs
+        run: |
+          cat > lib/firebase_options.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'mock-api-key',
+              appId: 'mock-app-id',
+              messagingSenderId: 'mock-sender-id',
+              projectId: 'mock-project-id',
+            );
+          }
+          EOF
+      
+      - name: Run Tests with Coverage
+        run: flutter test --coverage
+      
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BUILD VERIFICATION (Runs after quality checks pass)
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  build-android:
+    name: 🤖 Build Android
+    runs-on: ubuntu-latest
+    needs: [format, analyze, test]
     steps:
       - uses: actions/checkout@v4
       
@@ -17,27 +114,69 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-
+      
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # flutter-version: '3.38.5' # Optional, use latest stable usually
-
-      - name: Install dependencies
-        run: flutter pub get
-
+          cache: true
+      
+      - run: flutter pub get
+      
+      # Generate mock firebase_options.dart
       - name: Create Mock Configs
         run: |
-          echo "import 'package:firebase_core/firebase_core.dart' show FirebaseOptions; class DefaultFirebaseOptions { static FirebaseOptions get currentPlatform => const FirebaseOptions(apiKey: 'mock', appId: 'mock', messagingSenderId: 'mock', projectId: 'mock'); }" > lib/firebase_options.dart
+          cat > lib/firebase_options.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'mock-api-key',
+              appId: 'mock-app-id',
+              messagingSenderId: 'mock-sender-id',
+              projectId: 'mock-project-id',
+            );
+          }
+          EOF
+      
+      - name: Build APK (Release)
+        run: flutter build apk --release
+      
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
 
-      - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
-
-      - name: Analyze project source
-        run: flutter analyze
-
-      - name: Run tests
-        run: flutter test
-
-      - name: Build Android APK (Debug)
-        run: flutter build apk --debug
+  build-ios:
+    name: 🍎 Build iOS
+    runs-on: macos-latest
+    needs: [format, analyze, test]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      
+      - run: flutter pub get
+      
+      # Generate mock firebase_options.dart
+      - name: Create Mock Configs
+        run: |
+          cat > lib/firebase_options.dart << 'EOF'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'mock-api-key',
+              appId: 'mock-app-id',
+              messagingSenderId: 'mock-sender-id',
+              projectId: 'mock-project-id',
+            );
+          }
+          EOF
+      
+      - name: Build iOS (No Codesign)
+        run: flutter build ios --release --no-codesign
