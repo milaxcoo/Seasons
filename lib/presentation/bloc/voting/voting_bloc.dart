@@ -40,7 +40,8 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
 
   // FIXED: Обработчик теперь получает полный 'event' из события SubmitVote
   // и ему больше не нужно искать его в 'state'.
-  Future<void> _onSubmitVote(SubmitVote event, Emitter<VotingState> emit) async {
+  Future<void> _onSubmitVote(
+      SubmitVote event, Emitter<VotingState> emit) async {
     emit(VotingLoadInProgress());
     try {
       // Теперь мы передаем 'event.event' (полный объект VotingEvent)
@@ -63,4 +64,3 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     }
   }
 }
-

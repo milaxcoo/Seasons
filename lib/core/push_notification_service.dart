@@ -40,12 +40,12 @@ class PushNotificationService {
       print('Firebase Cloud Messaging Token: $fcmToken');
     }
 
-
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Got a message whilst in the foreground!');
       if (message.notification != null) {
-        print('Message also contained a notification: ${message.notification!.title}');
+        print(
+            'Message also contained a notification: ${message.notification!.title}');
       }
     });
 
@@ -57,7 +57,8 @@ class PushNotificationService {
     // Handle notification tap when app is terminated
     final initialMessage = await _fcm.getInitialMessage();
     if (initialMessage != null) {
-      print('Message opened from terminated state: ${initialMessage.notification!.title}');
+      print(
+          'Message opened from terminated state: ${initialMessage.notification!.title}');
     }
   }
 }

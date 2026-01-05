@@ -17,11 +17,6 @@ class UserProfile {
 
   factory UserProfile.empty() {
     return const UserProfile(
-      surname: '', 
-      name: '', 
-      patronymic: '', 
-      email: '', 
-      jobTitle: ''
-    );
+        surname: '', name: '', patronymic: '', email: '', jobTitle: '');
   }
 }

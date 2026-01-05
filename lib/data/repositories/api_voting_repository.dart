@@ -11,7 +11,7 @@ import 'package:seasons/core/services/rudn_auth_service.dart';
 class ApiVotingRepository implements VotingRepository {
   final String _baseUrl = 'https://seasons.rudn.ru';
   // No longer needed internal state given we use the service
-  // String? _userLogin; 
+  // String? _userLogin;
   // String? _authToken;
 
   // Helper to retrieve the current headers with the valid cookie
@@ -35,13 +35,11 @@ class ApiVotingRepository implements VotingRepository {
 
   @override
   Future<void> logout() async {
-     await RudnAuthService().logout();
+    await RudnAuthService().logout();
   }
 
   @override
   Future<String?> getAuthToken() async => await RudnAuthService().getCookie();
-
-
 
   // --- Методы для голосований ---
   @override
@@ -64,34 +62,36 @@ class ApiVotingRepository implements VotingRepository {
       final headers = await _headers;
       final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
-    // ...
+        // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);
-        
+
         if (kDebugMode) {
-           print("DEBUG: API Response: $decodedBody");
+          print("DEBUG: API Response: $decodedBody");
         }
 
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
         String statusString;
-         switch(status){
-            case VotingStatus.registration:
-              statusString = 'registration';
-              break;
-            case VotingStatus.active:
-              statusString = 'active';
-              break;
-            case VotingStatus.completed:
-              statusString = 'completed';
-              break;
-         }
+        switch (status) {
+          case VotingStatus.registration:
+            statusString = 'registration';
+            break;
+          case VotingStatus.active:
+            statusString = 'active';
+            break;
+          case VotingStatus.completed:
+            statusString = 'completed';
+            break;
+        }
         for (var votingJson in data) {
-          if (votingJson is Map<String, dynamic> && votingJson['status'] == null) {
+          if (votingJson is Map<String, dynamic> &&
+              votingJson['status'] == null) {
             votingJson['status'] = statusString;
           }
         }
         return data.map((json) => VotingEvent.fromJson(json)).toList();
       } else {
-        throw Exception('Не удалось загрузить события. Код ответа: ${response.statusCode}');
+        throw Exception(
+            'Не удалось загрузить события. Код ответа: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Ошибка при получении событий: $e');
@@ -109,7 +109,8 @@ class ApiVotingRepository implements VotingRepository {
     final body = {'voting_id': eventId};
     try {
       final response = await http.post(url, headers: headers, body: body);
-      if (response.statusCode != 200 || !response.body.contains('"status":"registered"')) {
+      if (response.statusCode != 200 ||
+          !response.body.contains('"status":"registered"')) {
         throw Exception('Ошибка регистрации. Сервер ответил: ${response.body}');
       }
     } catch (e) {
@@ -131,9 +132,10 @@ class ApiVotingRepository implements VotingRepository {
 
   // FIXED: Полностью переписан метод для отправки голоса
   @override
-  Future<bool> submitVote(VotingEvent event, Map<String, String> answers) async {
-     final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
-    
+  Future<bool> submitVote(
+      VotingEvent event, Map<String, String> answers) async {
+    final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
+
     final baseHeaders = await _headers;
     final headers = {
       ...baseHeaders,
@@ -183,18 +185,20 @@ class ApiVotingRepository implements VotingRepository {
       }
 
       // Успешный ответ
-      if (response.statusCode == 200 && response.body.contains('"status":"voted"')) {
+      if (response.statusCode == 200 &&
+          response.body.contains('"status":"voted"')) {
         return true; // Голос УСПЕШНО принят
       }
-      
+
       // Ошибка "Уже проголосовал"
-      if (response.statusCode == 409 && response.body.contains("User already voted")) {
+      if (response.statusCode == 409 &&
+          response.body.contains("User already voted")) {
         return false; // Голос НЕ принят (но это не ошибка)
       }
 
       // Любая другая ошибка
-      throw Exception('Ошибка при отправке голоса. Сервер ответил: ${response.body}');
-      
+      throw Exception(
+          'Ошибка при отправке голоса. Сервер ответил: ${response.body}');
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -217,7 +221,10 @@ class ApiVotingRepository implements VotingRepository {
         // Regex to find <a href="/account">Name</a>
         // We use a flexible regex to handle potential attributes or whitespace
         // dotAll: true allows '.' to match newlines
-        final RegExp nameRegExp = RegExp(r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>', caseSensitive: false, dotAll: true);
+        final RegExp nameRegExp = RegExp(
+            r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
+            caseSensitive: false,
+            dotAll: true);
         final match = nameRegExp.firstMatch(response.body);
 
         if (match != null) {
@@ -241,21 +248,27 @@ class ApiVotingRepository implements VotingRepository {
       final url = Uri.parse('$_baseUrl/account');
       final headers = await _headers;
       final response = await http.get(url, headers: headers);
-      
+
       if (response.statusCode == 200) {
         String surname = "";
         String name = "";
         String patronymic = "";
         String email = "";
         String jobTitle = "";
-        
+
         // 1. Extract Full Name (from header)
         // Regex: <a href="/account" ...>(Name)</a>
-        final RegExp nameRegExp = RegExp(r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>', caseSensitive: false, dotAll: true);
+        final RegExp nameRegExp = RegExp(
+            r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
+            caseSensitive: false,
+            dotAll: true);
         final nameMatch = nameRegExp.firstMatch(response.body);
         if (nameMatch != null) {
           final fullNameRaw = nameMatch.group(1)?.trim() ?? "";
-          final parts = fullNameRaw.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+          final parts = fullNameRaw
+              .split(RegExp(r'\s+'))
+              .where((s) => s.isNotEmpty)
+              .toList();
           if (parts.isNotEmpty) surname = parts[0];
           if (parts.length > 1) name = parts[1];
           if (parts.length > 2) patronymic = parts[2];
@@ -264,21 +277,25 @@ class ApiVotingRepository implements VotingRepository {
         // 2. Extract Email
         // HTML: <th style="...">Email</th> ... <td>value</td>
         // Regex must handle attributes in <th> and newlines
-        final RegExp emailRegExp = RegExp(r'<th[^>]*>\s*Email\s*</th>[\s\S]*?<td>([^<]+)</td>', caseSensitive: false);
+        final RegExp emailRegExp = RegExp(
+            r'<th[^>]*>\s*Email\s*</th>[\s\S]*?<td>([^<]+)</td>',
+            caseSensitive: false);
         final emailMatch = emailRegExp.firstMatch(response.body);
         if (emailMatch != null) {
           email = emailMatch.group(1)?.trim() ?? "";
         }
 
         // 3. Extract Job Title (Position / Должность)
-        final RegExp jobRegExp = RegExp(r'<th[^>]*>\s*(?:Position|Должность)\s*</th>[\s\S]*?<td>([^<]+)</td>', caseSensitive: false);
+        final RegExp jobRegExp = RegExp(
+            r'<th[^>]*>\s*(?:Position|Должность)\s*</th>[\s\S]*?<td>([^<]+)</td>',
+            caseSensitive: false);
         final jobMatch = jobRegExp.firstMatch(response.body);
         if (jobMatch != null) {
-           // Value might be empty or &nbsp;
-           final rawJob = jobMatch.group(1)?.trim() ?? "";
-           if (rawJob != "&nbsp;") {
-             jobTitle = rawJob;
-           }
+          // Value might be empty or &nbsp;
+          final rawJob = jobMatch.group(1)?.trim() ?? "";
+          if (rawJob != "&nbsp;") {
+            jobTitle = rawJob;
+          }
         }
 
         return UserProfile(
@@ -299,22 +316,23 @@ class ApiVotingRepository implements VotingRepository {
 
   // Formats "Ivanov Ivan Ivanovich" -> "Ivanov I.I."
   String _formatFio(String fullName) {
-    final parts = fullName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    final parts =
+        fullName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
     if (parts.isEmpty) return fullName;
-    
+
     // If we have at least Surname and Name
     if (parts.length >= 2) {
       final surname = parts[0];
       final nameInitial = parts[1][0];
       final patronymicInitial = parts.length > 2 ? parts[2][0] : null;
-      
+
       if (patronymicInitial != null) {
         return "$surname $nameInitial.$patronymicInitial.";
       } else {
         return "$surname $nameInitial.";
       }
     }
-    
+
     // Just return as is if specific format logic doesn't apply
     return fullName;
   }

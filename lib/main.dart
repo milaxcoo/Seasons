@@ -36,12 +36,14 @@ class SeasonsApp extends StatelessWidget {
         providers: [
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(
-              votingRepository: RepositoryProvider.of<VotingRepository>(context),
+              votingRepository:
+                  RepositoryProvider.of<VotingRepository>(context),
             )..add(AppStarted()),
           ),
           BlocProvider<VotingBloc>(
             create: (context) => VotingBloc(
-              votingRepository: RepositoryProvider.of<VotingRepository>(context),
+              votingRepository:
+                  RepositoryProvider.of<VotingRepository>(context),
             ),
           ),
         ],
@@ -52,7 +54,8 @@ class SeasonsApp extends StatelessWidget {
           home: BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
               if (state is AuthInitial) {
-                return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()));
               }
               if (state is AuthAuthenticated) {
                 PushNotificationService().initialize();

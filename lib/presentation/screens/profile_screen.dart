@@ -42,10 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               title: Text(
                 'Данные пользователя',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
@@ -56,23 +53,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               future: _profileFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                  return const Center(
+                      child: CircularProgressIndicator(color: Colors.white));
                 }
-                
+
                 final profile = snapshot.data;
-                
+
                 if (profile == null) {
-                   return Center(
-                     child: Text(
-                       "Не удалось загрузить данные профиля",
-                       style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                     )
-                   );
+                  return Center(
+                      child: Text(
+                    "Не удалось загрузить данные профиля",
+                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  ));
                 }
 
                 return SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 16.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFE4DCC5).withOpacity(0.9),
@@ -103,8 +100,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const Divider(height: 24),
                         _UserInfoRow(
-                           label: 'Должность',
-                           value: profile.jobTitle,
+                          label: 'Должность',
+                          value: profile.jobTitle,
                         ),
                       ],
                     ),
@@ -141,12 +138,10 @@ class _UserInfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Colors.black,
-                  fontWeight: FontWeight.w600, // Slightly bolder for better read
+                  fontWeight:
+                      FontWeight.w600, // Slightly bolder for better read
                 ),
           ),
         ),

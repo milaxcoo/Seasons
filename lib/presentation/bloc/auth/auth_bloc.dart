@@ -12,7 +12,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final RudnAuthService _authService;
 
   AuthBloc({
-    required VotingRepository votingRepository, 
+    required VotingRepository votingRepository,
     RudnAuthService? authService,
   })  : _votingRepository = votingRepository,
         _authService = authService ?? RudnAuthService(),
@@ -25,12 +25,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
     final bool hasToken = await _authService.isAuthenticated();
     if (hasToken) {
-      // For now, we don't have a way to get the user login from the cookie easily 
-      // without making an API call. For this MVP, we will assume if cookie is there, 
+      // For now, we don't have a way to get the user login from the cookie easily
+      // without making an API call. For this MVP, we will assume if cookie is there,
       // we are authenticated. The user login string can be fetched if needed or mocked.
-      
-      // Attempt to get user login or just use a placeholder if appropriate, 
-      // but Repository might not have it yet. 
+
+      // Attempt to get user login or just use a placeholder if appropriate,
+      // but Repository might not have it yet.
       // Let's assume the repository can get it or we just set a default.
       final userLogin = await _votingRepository.getUserLogin() ?? "RUDN User";
       emit(AuthAuthenticated(userLogin: userLogin));

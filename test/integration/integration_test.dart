@@ -9,7 +9,9 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 
 class MockVotingRepository extends Mock implements VotingRepository {}
-class MockRudnAuthService extends Mock implements RudnAuthService {} // Mock Service
+
+class MockRudnAuthService extends Mock
+    implements RudnAuthService {} // Mock Service
 
 void main() {
   group('Integration Tests - Auth and Voting Flow', () {
@@ -50,7 +52,7 @@ void main() {
 
     test('Complete user flow: login -> fetch events -> logout', () async {
       // Arrange
-      // NOTE: login() is no longer called on repository by AuthBloc. 
+      // NOTE: login() is no longer called on repository by AuthBloc.
       // AuthBloc checks getUserLogin() directly.
       when(() => mockRepository.getUserLogin()).thenAnswer((_) async => 'user');
       when(() =>
@@ -68,7 +70,8 @@ void main() {
                 ),
               ]);
       when(() => mockRepository.logout()).thenAnswer((_) async {});
-      when(() => mockAuthService.logout()).thenAnswer((_) async {}); // Mock auth service logout
+      when(() => mockAuthService.logout())
+          .thenAnswer((_) async {}); // Mock auth service logout
 
       // Act & Assert - Login
       authBloc.add(const LoggedIn(login: 'user', password: 'pass'));
@@ -99,7 +102,8 @@ void main() {
       );
 
       // Verify all interactions
-      verifyNever(() => mockRepository.login(any(), any())); // Ensure login NOT called
+      verifyNever(
+          () => mockRepository.login(any(), any())); // Ensure login NOT called
       verify(() => mockRepository.getUserLogin()).called(1);
       verify(() =>
               mockRepository.getEventsByStatus(model.VotingStatus.registration))
@@ -171,30 +175,30 @@ void main() {
           .called(1);
       verify(() => mockRepository.submitVote(any(), any())).called(1);
     });
-    
+
     test('Error handling: failed login prevents further actions', () async {
-       // Arrange
-       // Old behavior: login() threw exception.
-       // New behavior: getUserLogin() throws or returns null (AuthBloc handles null as failure? No, default user).
-       // AuthBloc: emit(AuthFailure(error: e.toString())); if getUserLogin throws.
-       
-       when(() => mockRepository.getUserLogin())
-           .thenThrow(Exception('Invalid credentials')); // Simulate failure
+      // Arrange
+      // Old behavior: login() threw exception.
+      // New behavior: getUserLogin() throws or returns null (AuthBloc handles null as failure? No, default user).
+      // AuthBloc: emit(AuthFailure(error: e.toString())); if getUserLogin throws.
 
-       // Act & Assert - Failed Login
-       authBloc.add(const LoggedIn(login: 'wrong', password: 'wrong'));
-       await expectLater(
-         authBloc.stream,
-         emitsInOrder([
-           isA<AuthLoading>(),
-           isA<AuthFailure>(), 
-           isA<AuthUnauthenticated>(),
-         ]),
-       );
+      when(() => mockRepository.getUserLogin())
+          .thenThrow(Exception('Invalid credentials')); // Simulate failure
 
-       // Verify
-       verifyNever(() => mockRepository.login(any(), any()));
-       verify(() => mockRepository.getUserLogin()).called(1);
+      // Act & Assert - Failed Login
+      authBloc.add(const LoggedIn(login: 'wrong', password: 'wrong'));
+      await expectLater(
+        authBloc.stream,
+        emitsInOrder([
+          isA<AuthLoading>(),
+          isA<AuthFailure>(),
+          isA<AuthUnauthenticated>(),
+        ]),
+      );
+
+      // Verify
+      verifyNever(() => mockRepository.login(any(), any()));
+      verify(() => mockRepository.getUserLogin()).called(1);
     });
 
     test('Error handling: failed registration allows retry', () async {

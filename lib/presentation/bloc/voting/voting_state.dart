@@ -50,4 +50,3 @@ class RegistrationFailure extends VotingState {
   final String error;
   const RegistrationFailure({required this.error});
 }
-

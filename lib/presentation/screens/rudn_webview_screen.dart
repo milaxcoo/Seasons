@@ -23,7 +23,6 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
-
           onPageStarted: (String url) {
             // print("Webview: Page started: $url");
             setState(() {
@@ -63,13 +62,15 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     if (!mounted) return;
 
     // Set a standard User Agent to avoid being blocked/looping
-    const userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
+    const userAgent =
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
     await _controller.setUserAgent(userAgent);
 
     _controller.loadRequest(Uri.parse('https://seasons.rudn.ru'));
 
     // Start periodic check
-    _cookieCheckTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+    _cookieCheckTimer =
+        Timer.periodic(const Duration(seconds: 2), (timer) async {
       await _checkCookies("current");
     });
   }
@@ -80,45 +81,43 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     super.dispose();
   }
 
-
-
-
   Future<void> _checkCookies(String url) async {
     try {
       final cookieManager = WebviewCookieManager();
-      
+
       final domainsToCheck = [
-        url == "current" ? null : url, 
-        'https://seasons.rudn.ru',    // The user states this is the ONLY place 
-        'https://id.rudn.ru',         
-        'https://rudn.ru',           
+        url == "current" ? null : url,
+        'https://seasons.rudn.ru', // The user states this is the ONLY place
+        'https://id.rudn.ru',
+        'https://rudn.ru',
       ].whereType<String>().toSet().toList(); // Unique and non-null
 
       for (final domain in domainsToCheck) {
         if (domain.isEmpty || domain == 'about:blank') continue;
-        
+
         try {
           final cookies = await cookieManager.getCookies(domain);
           if (cookies.isNotEmpty) {
-             // print("Webview: Checking domain $domain. Found ${cookies.length} cookies."); // Reduced spam
-             for (final cookie in cookies) {
-               // Only log if we find something interesting or for very verbose debug (commented out)
-               // print("Webview: Cookie [$domain]: ${cookie.name} = ..."); 
-               
-               if (cookie.name == 'session' && cookie.value.isNotEmpty) {
-                  print("Webview: !!! MATCH FOUND !!! Saving session cookie from $domain.");
-                  await RudnAuthService().saveCookie(cookie.value);
-                  
-                  if (mounted) {
-                    _cookieCheckTimer?.cancel();
-                    Navigator.of(context).pop(true);
-                  }
-                  return;
-               }
-             }
+            // print("Webview: Checking domain $domain. Found ${cookies.length} cookies."); // Reduced spam
+            for (final cookie in cookies) {
+              // Only log if we find something interesting or for very verbose debug (commented out)
+              // print("Webview: Cookie [$domain]: ${cookie.name} = ...");
+
+              if (cookie.name == 'session' && cookie.value.isNotEmpty) {
+                print(
+                    "Webview: !!! MATCH FOUND !!! Saving session cookie from $domain.");
+                await RudnAuthService().saveCookie(cookie.value);
+
+                if (mounted) {
+                  _cookieCheckTimer?.cancel();
+                  Navigator.of(context).pop(true);
+                }
+                return;
+              }
+            }
           }
         } catch (e) {
-           // ignore specific domain errors
+          // ignore specific domain errors
         }
       }
     } catch (e) {

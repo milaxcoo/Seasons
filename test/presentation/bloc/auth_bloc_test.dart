@@ -7,7 +7,9 @@ import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 
 // A mock class for the repository, allowing us to control its behavior.
 class MockVotingRepository extends Mock implements VotingRepository {}
-class MockRudnAuthService extends Mock implements RudnAuthService {} // Added mock class
+
+class MockRudnAuthService extends Mock
+    implements RudnAuthService {} // Added mock class
 
 void main() {
   // Group all tests related to the AuthBloc.
@@ -41,7 +43,8 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthAuthenticated] when token and userLogin are found',
         build: () {
-          when(() => mockAuthService.isAuthenticated()).thenAnswer((_) async => true); // Changed from getAuthToken
+          when(() => mockAuthService.isAuthenticated())
+              .thenAnswer((_) async => true); // Changed from getAuthToken
           when(() => mockVotingRepository.getUserLogin())
               .thenAnswer((_) async => 'testuser');
           return authBloc;
@@ -49,7 +52,8 @@ void main() {
         act: (bloc) => bloc.add(AppStarted()),
         expect: () => [const AuthAuthenticated(userLogin: 'testuser')],
         verify: (_) {
-          verify(() => mockAuthService.isAuthenticated()).called(1); // Changed from getAuthToken
+          verify(() => mockAuthService.isAuthenticated())
+              .called(1); // Changed from getAuthToken
           verify(() => mockVotingRepository.getUserLogin()).called(1);
         },
       );
@@ -58,14 +62,16 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthUnauthenticated] when token is not found',
         build: () {
-          when(() => mockAuthService.isAuthenticated()).thenAnswer((_) async => false); // Changed from getAuthToken
+          when(() => mockAuthService.isAuthenticated())
+              .thenAnswer((_) async => false); // Changed from getAuthToken
           // isAuthenticated returning false means no need to call getUserLogin
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
         expect: () => [AuthUnauthenticated()],
         verify: (_) {
-          verify(() => mockAuthService.isAuthenticated()).called(1); // Changed from getAuthToken
+          verify(() => mockAuthService.isAuthenticated())
+              .called(1); // Changed from getAuthToken
           verifyNever(() => mockVotingRepository.getUserLogin());
         },
       );
@@ -74,7 +80,8 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthAuthenticated] when token exists but userLogin is null (defaults to RUDN User)',
         build: () {
-          when(() => mockAuthService.isAuthenticated()).thenAnswer((_) async => true);
+          when(() => mockAuthService.isAuthenticated())
+              .thenAnswer((_) async => true);
           when(() => mockVotingRepository.getUserLogin())
               .thenAnswer((_) async => null);
           return authBloc;
@@ -93,7 +100,7 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthAuthenticated] for a successful login',
         build: () {
-          // LoggedIn event now relies on UI having set cookie/token, 
+          // LoggedIn event now relies on UI having set cookie/token,
           // but inside _onLoggedIn we only call getUserLogin.
           when(() => mockVotingRepository.getUserLogin())
               .thenAnswer((_) async => 'user');
@@ -124,15 +131,15 @@ void main() {
             bloc.add(const LoggedIn(login: 'user', password: 'pass')),
         expect: () => [
           AuthLoading(),
-          isA<AuthFailure>()
-              .having((s) => s.error, 'error', contains('Profile fetch failed')),
+          isA<AuthFailure>().having(
+              (s) => s.error, 'error', contains('Profile fetch failed')),
           AuthUnauthenticated(),
         ],
         verify: (_) {
           verify(() => mockVotingRepository.getUserLogin()).called(1);
         },
       );
-      
+
       // Test success but null login
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoading, AuthAuthenticated] when profile fetch returns null (defaults to RUDN User)',
@@ -158,19 +165,19 @@ void main() {
         build: () {
           when(() => mockVotingRepository.login('wrong', 'wrong'))
               .thenThrow(Exception('Invalid credentials'));
-          // Also need to stub failure for getUserLogin if login fails? 
+          // Also need to stub failure for getUserLogin if login fails?
           // Actually if login throws, it doesn't call getUserLogin?
           // Wait, AuthBloc structure:
           // try {
           //   // cookie logic
           //   getUserLogin()
           // } catch...
-          // So login() isn't called unless I put it back. 
+          // So login() isn't called unless I put it back.
           // The tests are using mockVotingRepository.login() which is NOT CALLED.
-          
+
           // Let's assume validation happens at getUserLogin for this test scenario
           when(() => mockVotingRepository.getUserLogin())
-             .thenThrow(Exception('Invalid credentials'));
+              .thenThrow(Exception('Invalid credentials'));
           return authBloc;
         },
         act: (bloc) =>
@@ -205,8 +212,9 @@ void main() {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthUnauthenticated] even when logout throws an error',
         build: () {
-          when(() => mockAuthService.logout()).thenThrow(Exception('Logout error'));
-          // If authService throws, repository.logout might be skipped? 
+          when(() => mockAuthService.logout())
+              .thenThrow(Exception('Logout error'));
+          // If authService throws, repository.logout might be skipped?
           // Implementation: try { await service.logout(); await repo.logout(); } catch...
           // So yes, verification of repo.logout() depends on service success.
           return authBloc;

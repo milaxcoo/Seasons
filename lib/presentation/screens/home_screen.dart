@@ -77,9 +77,7 @@ class _Header extends StatelessWidget {
                   color: Colors.white,
                   shadows: [
                     const Shadow(blurRadius: 10, color: Colors.black54),
-                    const Shadow(
-                        blurRadius: 2,
-                        color: Colors.black87)
+                    const Shadow(blurRadius: 2, color: Colors.black87)
                   ],
                   fontWeight: FontWeight.w900,
                 ),
@@ -90,9 +88,7 @@ class _Header extends StatelessWidget {
                   color: Colors.white.withOpacity(0.9),
                   shadows: [
                     const Shadow(blurRadius: 8, color: Colors.black54),
-                    const Shadow(
-                        blurRadius: 2,
-                        color: Colors.black54)
+                    const Shadow(blurRadius: 2, color: Colors.black54)
                   ],
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w900,
@@ -138,7 +134,7 @@ class _PanelSelector extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 16),
-      height: barHeight + moundHeight, 
+      height: barHeight + moundHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
@@ -146,7 +142,7 @@ class _PanelSelector extends StatelessWidget {
 
           return Stack(
             clipBehavior: Clip.none, // Оставляем
-            alignment: Alignment.topCenter, 
+            alignment: Alignment.topCenter,
             children: [
               // --- Слой 1: ЕДИНЫЙ РАЗМЫТЫЙ БАР-БУГОРОК ---
               Positioned(
@@ -174,10 +170,10 @@ class _PanelSelector extends StatelessWidget {
 
               // --- Слой 2: Ряд с Кнопками ---
               Positioned(
-                top: moundHeight, 
+                top: moundHeight,
                 left: horizontalMargin,
                 right: horizontalMargin,
-                height: barHeight, 
+                height: barHeight,
                 child: Row(
                   children: [
                     // Слот 1
@@ -358,7 +354,7 @@ class _PanelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Duration animDuration = Duration(milliseconds: 600);
-    const double buttonPopUpHeight = 15.0; 
+    const double buttonPopUpHeight = 15.0;
 
     Color backgroundColor;
     if (hasActiveEvents) {
@@ -369,9 +365,9 @@ class _PanelButton extends StatelessWidget {
 
     final double buttonYTranslation = isSelected ? -buttonPopUpHeight : 0.0;
     final double scale = isSelected ? 1.0 : 0.8;
-    
+
     // Иконка (1.2 * 25.0 = 30.0)
-    final double iconSize = buttonRadius * 1.2; 
+    final double iconSize = buttonRadius * 1.2;
 
     return GestureDetector(
       onTap: onTap,
@@ -459,8 +455,10 @@ class _EventList extends StatelessWidget {
         if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+              margin:
+                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -477,12 +475,12 @@ class _EventList extends StatelessWidget {
                 child: Text(
                   'Нет активных голосований',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: 20.0,
-                        shadows: [
-                          const Shadow(blurRadius: 6, color: Colors.black87)
-                        ],
-                      ),
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    shadows: [
+                      const Shadow(blurRadius: 6, color: Colors.black87)
+                    ],
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -563,7 +561,6 @@ class _VotingEventCard extends StatelessWidget {
                   color: Colors.black87,
                   fontWeight: FontWeight.w900,
                 ),
-                
           ),
         ),
         subtitle: Column(
@@ -579,7 +576,13 @@ class _VotingEventCard extends StatelessWidget {
                 event.status == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
               Text(
-                event.status == model.VotingStatus.registration ? (event.isRegistered ? "Зарегистрирован(-а)" : "Не зарегистрирован(-а)") : (event.hasVoted ? "Проголосовал(-а)" : "Не проголосовал(-а)"),
+                event.status == model.VotingStatus.registration
+                    ? (event.isRegistered
+                        ? "Зарегистрирован(-а)"
+                        : "Не зарегистрирован(-а)")
+                    : (event.hasVoted
+                        ? "Проголосовал(-а)"
+                        : "Не проголосовал(-а)"),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: (event.status == model.VotingStatus.registration
                               ? event.isRegistered
@@ -644,7 +647,7 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
   final double barHeight;
   final double moundHeight;
   final double moundWidth;
-  final double horizontalMargin; 
+  final double horizontalMargin;
 
   _UnifiedBarClipper({
     required this.moundIndex,
@@ -668,13 +671,13 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
     // X-координаты "виртуального" бара
     final double barLeftX = horizontalMargin;
     final double barRightX = size.width - horizontalMargin;
-    
+
     // X-координаты "бугорка"
     final double moundCenterX =
         barLeftX + (moundIndex * buttonSlotWidth) + (buttonSlotWidth / 2);
     final double moundStart = moundCenterX - (moundWidth / 2);
     final double moundEnd = moundCenterX + (moundWidth / 2);
-    
+
     // X-координаты углов (для проверки)
     final double topLeftCornerX = barLeftX + cornerRadius;
     final double topRightCornerX = barRightX - cornerRadius;
@@ -693,13 +696,11 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
     if (moundIndex == 0) {
       path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
       path.lineTo(topRightCornerX, barTopY);
-    } 
-    else if (moundIndex == 1) {
+    } else if (moundIndex == 1) {
       path.lineTo(moundStart, barTopY);
       path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
       path.lineTo(topRightCornerX, barTopY);
-    }
-    else {
+    } else {
       path.lineTo(moundStart, barTopY);
       path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
     }
@@ -720,7 +721,7 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     // 6. Рисуем нижнюю грань
     path.lineTo(topLeftCornerX, barBottomY); // (barLeftX + cornerRadius)
 
@@ -730,7 +731,7 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     // 8. Замыкаем путь (рисуем левую грань)
     path.close();
     return path;

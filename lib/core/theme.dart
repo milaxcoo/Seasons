@@ -63,9 +63,9 @@ class AppTheme {
           ),
         )
         .apply(
-      bodyColor: textColor,
-      displayColor: textColor,
-    );
+          bodyColor: textColor,
+          displayColor: textColor,
+        );
 
     // 2. --- ИСПРАВЛЕНИЕ ---
     // Теперь переопределяем ЗАГОЛОВКИ,

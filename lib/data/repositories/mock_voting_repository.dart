@@ -75,7 +75,7 @@
 //     await Future.delayed(const Duration(seconds: 1));
 //     return;
 //   }
-  
+
 //   @override
 //   Future<List<Nominee>> getNomineesForEvent(String eventId) async {
 //     await Future.delayed(const Duration(seconds: 1));

@@ -7,7 +7,6 @@ import 'home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'rudn_webview_screen.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -27,7 +26,9 @@ class _LoginScreenState extends State<LoginScreen> {
       // отправляем событие в AuthBloc для обновления состояния
       // (Передаем пустые строки, так как логика теперь другая,
       // или можно создать отдельное событие, но для совместимости оставим LoggedIn)
-      context.read<AuthBloc>().add(const LoggedIn(login: "rudn_user", password: ""));
+      context
+          .read<AuthBloc>()
+          .add(const LoggedIn(login: "rudn_user", password: ""));
     }
   }
 
@@ -35,7 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     // FIXED: Получаем тему из централизованного файла
     final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!; // Октябрь по умолчанию
+    final theme = monthlyThemes[currentMonth] ??
+        monthlyThemes[10]!; // Октябрь по умолчанию
 
     return AppBackground(
       imagePath: theme.imagePath, // FIXED: Используем динамический фон
@@ -62,16 +64,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Seasons',
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              color: const Color(0xFF42445A),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 40,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  color: const Color(0xFF42445A),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 40,
+                                ),
                       ),
                     ),
                     const SizedBox(height: 10),
                     _SkewedContainer(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 30),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 30),
                       color: const Color(0xFF4A5C7A),
                       onTap: () => _startRudnAuth(context),
                       child: Row(
@@ -111,12 +115,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         '© RUDN University 2025',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'seasons-helpdesk@rudn.ru',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: Colors.white),
                       ),
                     ],
                   ),

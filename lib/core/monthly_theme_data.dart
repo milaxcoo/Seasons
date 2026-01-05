@@ -3,7 +3,8 @@ class MonthlyTheme {
   final String poem;
   final String author;
 
-  MonthlyTheme({required this.imagePath, required this.poem, required this.author});
+  MonthlyTheme(
+      {required this.imagePath, required this.poem, required this.author});
 }
 
 final Map<int, MonthlyTheme> monthlyThemes = {
