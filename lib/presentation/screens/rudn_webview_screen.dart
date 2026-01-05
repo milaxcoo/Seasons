@@ -84,20 +84,20 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
       // Parse the cookie string (format: "name1=value1; name2=value2")
       final cookies = cookieString.toString();
-      
+
       // Remove quotes if present (JavaScript returns quoted string)
       final cleanCookies = cookies.replaceAll('"', '');
-      
+
       if (cleanCookies.isNotEmpty && cleanCookies != 'null') {
         // Split into individual cookies
         final cookieList = cleanCookies.split(';');
-        
+
         for (final cookie in cookieList) {
           final parts = cookie.trim().split('=');
           if (parts.length >= 2) {
             final name = parts[0].trim();
             final value = parts.sublist(1).join('=').trim();
-            
+
             if (name == 'session' && value.isNotEmpty) {
               // Session cookie found
               await RudnAuthService().saveCookie(value);
