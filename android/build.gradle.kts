@@ -19,18 +19,16 @@ subprojects {
 // Workaround for legacy plugins that don't specify namespace in build.gradle
 // Required for AGP 8+ compatibility
 subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            val android = project.extensions.findByName("android")
-            if (android is com.android.build.gradle.LibraryExtension) {
-                if (android.namespace == null || android.namespace!!.isEmpty()) {
-                    val manifestFile = file("${project.projectDir}/src/main/AndroidManifest.xml")
-                    if (manifestFile.exists()) {
-                        val manifest = groovy.xml.XmlSlurper().parse(manifestFile)
-                        val packageName = manifest.getProperty("@package")?.toString()
-                        if (!packageName.isNullOrEmpty()) {
-                            android.namespace = packageName
-                        }
+    afterEvaluate {
+        val androidExtension = extensions.findByName("android")
+        if (androidExtension is com.android.build.gradle.LibraryExtension) {
+            if (androidExtension.namespace.isNullOrEmpty()) {
+                val manifestFile = file("${projectDir}/src/main/AndroidManifest.xml")
+                if (manifestFile.exists()) {
+                    val manifest = groovy.xml.XmlSlurper().parse(manifestFile)
+                    val packageName = manifest.getProperty("@package")?.toString()
+                    if (!packageName.isNullOrEmpty()) {
+                        androidExtension.namespace = packageName
                     }
                 }
             }
