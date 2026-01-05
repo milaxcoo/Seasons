@@ -233,7 +233,7 @@ class _ResultsTable extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     child: Text(
-                      '${subject.name}',
+                      subject.name,
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
