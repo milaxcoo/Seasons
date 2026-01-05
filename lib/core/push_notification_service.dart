@@ -16,9 +16,9 @@ class PushNotificationService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('User granted permission for notifications.');
+      // User granted permission
     } else {
-      print('User declined or has not accepted permission.');
+      // User declined or has not accepted permission
     }
 
     // FIXED: Only try to get the FCM token on real devices, not simulators.
@@ -28,37 +28,34 @@ class PushNotificationService {
       // On a real iOS device, you can get the APNS token.
       final apnsToken = await _fcm.getAPNSToken();
       if (apnsToken != null) {
-        final fcmToken = await _fcm.getToken();
-        print('Firebase Cloud Messaging Token: $fcmToken');
+        // APNS and FCM tokens obtained
+        await _fcm.getToken();
       } else {
         // This will run on a simulator, preventing the crash.
-        print('Could not get APNS token, probably running on a simulator.');
+        // This will run on a simulator, preventing the crash.
       }
     } else if (!kIsWeb && Platform.isAndroid) {
       // Android doesn't need an APNS token.
-      final fcmToken = await _fcm.getToken();
-      print('Firebase Cloud Messaging Token: $fcmToken');
+      await _fcm.getToken();
+      // print('Firebase Cloud Messaging Token: $fcmToken');
     }
 
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Got a message whilst in the foreground!');
       if (message.notification != null) {
-        print(
-            'Message also contained a notification: ${message.notification!.title}');
+        // Handle notification
       }
     });
 
     // Handle notification tap when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Message opened from background: ${message.notification!.title}');
+      // Handle notification tap
     });
 
     // Handle notification tap when app is terminated
     final initialMessage = await _fcm.getInitialMessage();
     if (initialMessage != null) {
-      print(
-          'Message opened from terminated state: ${initialMessage.notification!.title}');
+      // Handle initial message
     }
   }
 }

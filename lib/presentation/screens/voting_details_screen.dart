@@ -30,7 +30,7 @@ class VotingDetailsScreen extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
         child: Scaffold(
-          backgroundColor: Colors.black.withOpacity(0.2),
+          backgroundColor: Colors.black.withValues(alpha: 0.2),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -532,7 +532,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     fontWeight: FontWeight.w900,
                   ),
             ),
@@ -569,7 +569,7 @@ class _CustomCheckboxTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onChanged != null ? () => onChanged!(!value) : null,
-      splashColor: rudnGreenColor.withOpacity(0.2),
+      splashColor: rudnGreenColor.withValues(alpha: 0.2),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(

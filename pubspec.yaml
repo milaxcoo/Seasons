@@ -33,6 +33,7 @@ dependencies:
   shared_preferences: ^2.5.3
   webview_flutter: ^4.13.0
   webview_cookie_manager: ^2.0.6
+  bloc: ^9.2.0
 
 # ----------------- DEV DEPENDENCIES -----------------
 dev_dependencies:

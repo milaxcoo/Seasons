@@ -32,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
           child: Scaffold(
-            backgroundColor: Colors.black.withOpacity(0.25),
+            backgroundColor: Colors.black.withValues(alpha: 0.25),
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -63,7 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   return Center(
                       child: Text(
                     "Не удалось загрузить данные профиля",
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                   ));
                 }
 
@@ -72,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       horizontal: 16.0, vertical: 16.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE4DCC5).withOpacity(0.9),
+                      color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.all(16.0),

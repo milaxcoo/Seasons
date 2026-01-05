@@ -38,7 +38,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             await _checkCookies(url);
           },
           onWebResourceError: (WebResourceError error) {
-            print("Webview: Error: ${error.description}");
+            // Error logging removed for production
           },
           onNavigationRequest: (NavigationRequest request) {
             // print("Webview: Navigating to: ${request.url}");
@@ -54,9 +54,9 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     try {
       await _controller.clearCache();
       await WebviewCookieManager().clearCookies();
-      if (mounted) print("Webview: Cache and Cookies cleared for fresh login.");
+      if (mounted) {}
     } catch (e) {
-      print("Webview: Error clearing data: $e");
+      // Error ignored
     }
 
     if (!mounted) return;
@@ -101,11 +101,8 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             // print("Webview: Checking domain $domain. Found ${cookies.length} cookies."); // Reduced spam
             for (final cookie in cookies) {
               // Only log if we find something interesting or for very verbose debug (commented out)
-              // print("Webview: Cookie [$domain]: ${cookie.name} = ...");
-
               if (cookie.name == 'session' && cookie.value.isNotEmpty) {
-                print(
-                    "Webview: !!! MATCH FOUND !!! Saving session cookie from $domain.");
+                // Session cookie found
                 await RudnAuthService().saveCookie(cookie.value);
 
                 if (mounted) {
@@ -122,7 +119,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       }
     } catch (e) {
       if (!e.toString().contains("MissingPluginException")) {
-        print("Webview: Error checking cookies with manager: $e");
+        // Error ignored
       }
     }
   }

@@ -16,7 +16,7 @@ import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
-import 'package:seasons/data/repositories/voting_repository.dart';
+
 
 class _TopBar extends StatelessWidget {
   @override
@@ -85,7 +85,7 @@ class _Header extends StatelessWidget {
           Text(
             'времена года',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   shadows: [
                     const Shadow(blurRadius: 8, color: Colors.black54),
                     const Shadow(blurRadius: 2, color: Colors.black54)
@@ -126,9 +126,9 @@ class _PanelSelector extends StatelessWidget {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        Colors.black.withOpacity(0.5),
-        Colors.black.withOpacity(0.3),
-        Colors.black.withOpacity(0.5),
+        Colors.black.withValues(alpha: 0.5),
+        Colors.black.withValues(alpha: 0.3),
+        Colors.black.withValues(alpha: 0.5),
       ],
     );
 
@@ -277,9 +277,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.35),
-                    Colors.black.withOpacity(0.25),
-                    Colors.black.withOpacity(0.35),
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.25),
+                    Colors.black.withValues(alpha: 0.35),
                   ],
                 ),
               ),
@@ -464,9 +464,9 @@ class _EventList extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.5),
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(30),

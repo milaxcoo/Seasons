@@ -28,9 +28,9 @@ class ResultsScreen extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.35),
-                    Colors.black.withOpacity(0.25),
-                    Colors.black.withOpacity(0.35),
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.25),
+                    Colors.black.withValues(alpha: 0.35),
                   ],
                 ),
               ),
@@ -98,7 +98,7 @@ class _ResultsView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
@@ -197,7 +197,7 @@ class _ResultsTable extends StatelessWidget {
       children: [
         TableRow(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
           ),
           children: columns.map((colName) {
             return Padding(

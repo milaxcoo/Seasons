@@ -36,9 +36,9 @@ class RegistrationDetailsScreen extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.35),
-                      Colors.black.withOpacity(0.25),
-                      Colors.black.withOpacity(0.35),
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.25),
+                      Colors.black.withValues(alpha: 0.35),
                     ],
                   ),
                 ),
@@ -151,7 +151,7 @@ class _RegistrationDetailsView extends StatelessWidget {
                         return Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
+                            color: Colors.black.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Center(
