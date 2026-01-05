@@ -63,7 +63,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   return Center(
                       child: Text(
                     "Не удалось загрузить данные профиля",
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                    style:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                   ));
                 }
 

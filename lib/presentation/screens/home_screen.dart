@@ -17,7 +17,6 @@ import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
 
-
 class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
