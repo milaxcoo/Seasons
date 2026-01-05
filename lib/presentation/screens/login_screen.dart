@@ -5,6 +5,7 @@ import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'rudn_webview_screen.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -15,49 +16,19 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Эта функция показывает информационный диалог
-  void _showRudnIdDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(
-            "Авторизация через РУДН ID",
-            style: TextStyle(
-              fontFamily: GoogleFonts.exo2().fontFamily,
-              fontStyle: FontStyle.normal,
-              fontWeight: FontWeight.w900,
-              fontSize: 26.0,
-              shadows: [],
-            ),
-          ),
-          content: const SingleChildScrollView(
-            child: Text(
-              "Вы будете перенаправлены на сайт авторизации с помощью РУДН ID.\n\n"
-              "Пользователям, не являющимся сотрудниками РУДН и не имеющим "
-              "корпоративный аккаунт, необходимо пройти единовременную регистрацию, "
-              "нажав на кнопку «Создать аккаунт в РУДН ID» на следующей странице, а "
-              "затем выполнить повторный вход в систему.",
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Отмена"),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            ElevatedButton(
-              child: const Text("Продолжить"),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                context.read<AuthBloc>().add(const LoggedIn(login: "rudn_user", password: "password"));
-              },
-            ),
-          ],
-        );
-      },
+  // Эта функция запускает процесс авторизации через WebView
+  void _startRudnAuth(BuildContext context) async {
+    final bool? success = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RudnWebviewScreen()),
     );
+
+    if (success == true && context.mounted) {
+      // Если авторизация прошла успешно (куки получены),
+      // отправляем событие в AuthBloc для обновления состояния
+      // (Передаем пустые строки, так как логика теперь другая,
+      // или можно создать отдельное событие, но для совместимости оставим LoggedIn)
+      context.read<AuthBloc>().add(const LoggedIn(login: "rudn_user", password: ""));
+    }
   }
 
   @override
@@ -102,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     _SkewedContainer(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 30),
                       color: const Color(0xFF4A5C7A),
-                      onTap: () => _showRudnIdDialog(context),
+                      onTap: () => _startRudnAuth(context),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,

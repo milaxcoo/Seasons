@@ -33,6 +33,8 @@ dependencies:
   http: ^1.5.0
   html: ^0.15.6
   shared_preferences: ^2.5.3
+  webview_flutter: ^4.13.0
+  webview_cookie_manager: ^2.0.6
 
 # ----------------- DEV DEPENDENCIES -----------------
 dev_dependencies:

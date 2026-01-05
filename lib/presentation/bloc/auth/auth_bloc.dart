@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 
 part 'auth_event.dart';
@@ -18,18 +19,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    final bool hasToken = await _votingRepository.getAuthToken() != null;
+    final bool hasToken = await RudnAuthService().isAuthenticated();
     if (hasToken) {
-      // FIXED: Получаем userLogin, который теперь может быть null.
-      final userLogin = await _votingRepository.getUserLogin();
-
-      // FIXED: Добавляем проверку на null.
-      if (userLogin != null) {
-        emit(AuthAuthenticated(userLogin: userLogin));
-      } else {
-        // Если токен есть, а логина нет - что-то не так, считаем пользователя неавторизованным.
-        emit(AuthUnauthenticated());
-      }
+      // For now, we don't have a way to get the user login from the cookie easily 
+      // without making an API call. For this MVP, we will assume if cookie is there, 
+      // we are authenticated. The user login string can be fetched if needed or mocked.
+      
+      // Attempt to get user login or just use a placeholder if appropriate, 
+      // but Repository might not have it yet. 
+      // Let's assume the repository can get it or we just set a default.
+      final userLogin = await _votingRepository.getUserLogin() ?? "RUDN User";
+      emit(AuthAuthenticated(userLogin: userLogin));
     } else {
       emit(AuthUnauthenticated());
     }
@@ -38,27 +38,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onLoggedIn(LoggedIn event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     try {
-      await _votingRepository.login(event.login, event.password);
-      final userLogin = await _votingRepository.getUserLogin();
-
-      // FIXED: Здесь тоже добавляем проверку на null.
-      if (userLogin != null) {
-        emit(AuthAuthenticated(userLogin: userLogin));
-      } else {
-        throw Exception('User login not found after authentication.');
-      }
+      // The secure cookie is already saved by the UI (RudnWebviewScreen) before calling this.
+      // Now we fetch the real name
+      final userLogin = await _votingRepository.getUserLogin() ?? "RUDN User";
+      emit(AuthAuthenticated(userLogin: userLogin));
     } catch (e) {
       emit(AuthFailure(error: e.toString()));
-      // После ошибки возвращаем в неавторизованное состояние.
       emit(AuthUnauthenticated());
     }
   }
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
     try {
+      await RudnAuthService().logout();
       await _votingRepository.logout();
     } catch (_) {
-      // Ignore logout errors - user should be logged out locally regardless
+      // Ignore logout errors
     }
     emit(AuthUnauthenticated());
   }

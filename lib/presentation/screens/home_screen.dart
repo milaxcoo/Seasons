@@ -16,6 +16,7 @@ import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
+import 'package:seasons/data/repositories/voting_repository.dart';
 
 class _TopBar extends StatelessWidget {
   @override
@@ -256,6 +257,12 @@ class _HomeScreenState extends State<HomeScreen> {
       model.VotingStatus.completed,
     ][_selectedPanelIndex];
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEventsForPanel(_selectedPanelIndex);
   }
 
   @override

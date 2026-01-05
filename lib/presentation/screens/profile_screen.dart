@@ -1,20 +1,34 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:seasons/core/monthly_theme_data.dart'; // Импортируем наш файл с темами
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
+import 'package:seasons/data/repositories/voting_repository.dart';
+import 'package:seasons/data/models/user_profile.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<UserProfile?> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = context.read<VotingRepository>().getUserProfile();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Получаем тему для текущего месяца
     final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ??
-        monthlyThemes[10]!; // Октябрь по умолчанию
+    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
 
     return AppBackground(
-        imagePath: theme.imagePath, // Используем динамический фон
+        imagePath: theme.imagePath,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
           child: Scaffold(
@@ -22,64 +36,87 @@ class ProfileScreen extends StatelessWidget {
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
               title: Text(
                 'Данные пользователя',
                 style: Theme.of(context)
                     .textTheme
-                    .bodyLarge // Используем 'bodyLarge' (Exo 2 w700)
+                    .bodyLarge
                     ?.copyWith(
                       color: Colors.white,
-                      fontSize: 20, // Делаем крупнее
-                      fontWeight: FontWeight.w900, // Делаем жирнее
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
                     ),
               ),
             ),
-            body: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE4DCC5).withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _UserInfoRow(
-                      label: 'Фамилия',
-                      value: 'Лебедев',
+            body: FutureBuilder<UserProfile?>(
+              future: _profileFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Colors.white));
+                }
+                
+                final profile = snapshot.data;
+                
+                if (profile == null) {
+                   return Center(
+                     child: Text(
+                       "Не удалось загрузить данные профиля",
+                       style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                     )
+                   );
+                }
+
+                return SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE4DCC5).withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const Divider(height: 24),
-                    _UserInfoRow(
-                      label: 'Имя',
-                      value: 'Михаил',
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _UserInfoRow(
+                          label: 'Фамилия',
+                          value: profile.surname,
+                        ),
+                        const Divider(height: 24),
+                        _UserInfoRow(
+                          label: 'Имя',
+                          value: profile.name,
+                        ),
+                        const Divider(height: 24),
+                        _UserInfoRow(
+                          label: 'Отчество',
+                          value: profile.patronymic,
+                        ),
+                        const Divider(height: 24),
+                        _UserInfoRow(
+                          label: 'Электронная почта',
+                          value: profile.email,
+                        ),
+                        const Divider(height: 24),
+                        _UserInfoRow(
+                           label: 'Должность',
+                           value: profile.jobTitle,
+                        ),
+                      ],
                     ),
-                    const Divider(height: 24),
-                    _UserInfoRow(
-                      label: 'Отчество',
-                      value: 'Александрович',
-                    ),
-                    const Divider(height: 24),
-                    _UserInfoRow(
-                      label: 'Электронная почта',
-                      value: 'lebedev_ma@pfur.ru',
-                    ),
-                    const Divider(height: 24),
-                    _UserInfoRow(
-                      label: 'Должность',
-                      value: 'Студент',
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ));
   }
 }
 
-// Вспомогательный виджет для отображения строк с информацией
 class _UserInfoRow extends StatelessWidget {
   final String label;
   final String value;
@@ -106,9 +143,10 @@ class _UserInfoRow extends StatelessWidget {
             value,
             style: Theme.of(context)
                 .textTheme
-                .bodyLarge // Используем 'bodyLarge' (Exo 2 w700)
+                .bodyLarge
                 ?.copyWith(
                   color: Colors.black,
+                  fontWeight: FontWeight.w600, // Slightly bolder for better read
                 ),
           ),
         ),

@@ -5,17 +5,20 @@ import 'package:seasons/data/models/nominee.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
+import 'package:seasons/data/models/user_profile.dart';
+import 'package:seasons/core/services/rudn_auth_service.dart';
 
 class ApiVotingRepository implements VotingRepository {
   final String _baseUrl = 'https://seasons.rudn.ru';
-  String? _userLogin;
-  String? _authToken;
+  // No longer needed internal state given we use the service
+  // String? _userLogin; 
+  // String? _authToken;
 
-  Map<String, String> get _baseHeaders {
-    // ВАЖНО: Убедитесь, что здесь ваше актуальное значение cookie
-    const String sessionCookie = '3edf387097f0adc228b4bd7794d4c832';
+  // Helper to retrieve the current headers with the valid cookie
+  Future<Map<String, String>> get _headers async {
+    final cookie = await RudnAuthService().getCookie() ?? '';
     return {
-      'Cookie': 'session=$sessionCookie',
+      'Cookie': 'session=$cookie',
       'X-Requested-With': 'XMLHttpRequest',
     };
   }
@@ -23,22 +26,22 @@ class ApiVotingRepository implements VotingRepository {
   // --- Методы аутентификации ---
   @override
   Future<String> login(String login, String password) async {
-    _authToken = 'fake_token_for_testing';
-    _userLogin = 'Лебедев М.А.';
-    return _authToken!;
+    // This is now handled by the UI and RudnAuthService directly.
+    // We can just return the token if we have it, or throw.
+    final token = await RudnAuthService().getCookie();
+    if (token != null) return token;
+    throw Exception("Login logic moved to WebView");
   }
 
   @override
   Future<void> logout() async {
-    _authToken = null;
-    _userLogin = null;
+     await RudnAuthService().logout();
   }
 
   @override
-  Future<String?> getAuthToken() async => _authToken;
+  Future<String?> getAuthToken() async => await RudnAuthService().getCookie();
 
-  @override
-  Future<String?> getUserLogin() async => _userLogin;
+
 
   // --- Методы для голосований ---
   @override
@@ -56,10 +59,18 @@ class ApiVotingRepository implements VotingRepository {
         break;
     }
     final url = Uri.parse('$_baseUrl$path');
+    // ... (rest of method)
     try {
-      final response = await http.get(url, headers: _baseHeaders);
+      final headers = await _headers;
+      final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
+    // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);
+        
+        if (kDebugMode) {
+           print("DEBUG: API Response: $decodedBody");
+        }
+
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
         String statusString;
          switch(status){
@@ -90,8 +101,9 @@ class ApiVotingRepository implements VotingRepository {
   @override
   Future<void> registerForEvent(String eventId) async {
     final url = Uri.parse('$_baseUrl/api/v1/voter/register_in_voting');
+    final baseHeaders = await _headers;
     final headers = {
-      ..._baseHeaders,
+      ...baseHeaders,
       'Content-Type': 'application/x-www-form-urlencoded',
     };
     final body = {'voting_id': eventId};
@@ -122,8 +134,9 @@ class ApiVotingRepository implements VotingRepository {
   Future<bool> submitVote(VotingEvent event, Map<String, String> answers) async {
      final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
     
+    final baseHeaders = await _headers;
     final headers = {
-      ..._baseHeaders,
+      ...baseHeaders,
       'Content-Type': 'application/x-www-form-urlencoded',
     };
 
@@ -191,5 +204,118 @@ class ApiVotingRepository implements VotingRepository {
   Future<List<QuestionResult>> getResultsForEvent(String eventId) async {
     // Этот метод больше не используется
     return [];
+  }
+
+  @override
+  Future<String?> getUserLogin() async {
+    try {
+      final url = Uri.parse('$_baseUrl/');
+      final headers = await _headers;
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        // Regex to find <a href="/account">Name</a>
+        // We use a flexible regex to handle potential attributes or whitespace
+        // dotAll: true allows '.' to match newlines
+        final RegExp nameRegExp = RegExp(r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>', caseSensitive: false, dotAll: true);
+        final match = nameRegExp.firstMatch(response.body);
+
+        if (match != null) {
+          final fullName = match.group(1)?.trim() ?? "";
+          if (fullName.isNotEmpty) {
+            return _formatFio(fullName);
+          }
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error fetching user login: $e");
+      }
+    }
+    return "RUDN User"; // Fallback
+  }
+
+  @override
+  Future<UserProfile?> getUserProfile() async {
+    try {
+      final url = Uri.parse('$_baseUrl/account');
+      final headers = await _headers;
+      final response = await http.get(url, headers: headers);
+      
+      if (response.statusCode == 200) {
+        String surname = "";
+        String name = "";
+        String patronymic = "";
+        String email = "";
+        String jobTitle = "";
+        
+        // 1. Extract Full Name (from header)
+        // Regex: <a href="/account" ...>(Name)</a>
+        final RegExp nameRegExp = RegExp(r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>', caseSensitive: false, dotAll: true);
+        final nameMatch = nameRegExp.firstMatch(response.body);
+        if (nameMatch != null) {
+          final fullNameRaw = nameMatch.group(1)?.trim() ?? "";
+          final parts = fullNameRaw.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+          if (parts.isNotEmpty) surname = parts[0];
+          if (parts.length > 1) name = parts[1];
+          if (parts.length > 2) patronymic = parts[2];
+        }
+
+        // 2. Extract Email
+        // HTML: <th style="...">Email</th> ... <td>value</td>
+        // Regex must handle attributes in <th> and newlines
+        final RegExp emailRegExp = RegExp(r'<th[^>]*>\s*Email\s*</th>[\s\S]*?<td>([^<]+)</td>', caseSensitive: false);
+        final emailMatch = emailRegExp.firstMatch(response.body);
+        if (emailMatch != null) {
+          email = emailMatch.group(1)?.trim() ?? "";
+        }
+
+        // 3. Extract Job Title (Position / Должность)
+        final RegExp jobRegExp = RegExp(r'<th[^>]*>\s*(?:Position|Должность)\s*</th>[\s\S]*?<td>([^<]+)</td>', caseSensitive: false);
+        final jobMatch = jobRegExp.firstMatch(response.body);
+        if (jobMatch != null) {
+           // Value might be empty or &nbsp;
+           final rawJob = jobMatch.group(1)?.trim() ?? "";
+           if (rawJob != "&nbsp;") {
+             jobTitle = rawJob;
+           }
+        }
+
+        return UserProfile(
+          surname: surname,
+          name: name,
+          patronymic: patronymic,
+          email: email,
+          jobTitle: jobTitle,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error fetching profile: $e");
+    }
+    return null;
+  }
+
+  // Formats "Ivanov Ivan Ivanovich" -> "Ivanov I.I."
+
+  // Formats "Ivanov Ivan Ivanovich" -> "Ivanov I.I."
+  String _formatFio(String fullName) {
+    final parts = fullName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    if (parts.isEmpty) return fullName;
+    
+    // If we have at least Surname and Name
+    if (parts.length >= 2) {
+      final surname = parts[0];
+      final nameInitial = parts[1][0];
+      final patronymicInitial = parts.length > 2 ? parts[2][0] : null;
+      
+      if (patronymicInitial != null) {
+        return "$surname $nameInitial.$patronymicInitial.";
+      } else {
+        return "$surname $nameInitial.";
+      }
+    }
+    
+    // Just return as is if specific format logic doesn't apply
+    return fullName;
   }
 }
