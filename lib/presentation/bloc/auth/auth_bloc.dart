@@ -9,9 +9,13 @@ part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final VotingRepository _votingRepository;
+  final RudnAuthService _authService;
 
-  AuthBloc({required VotingRepository votingRepository})
-      : _votingRepository = votingRepository,
+  AuthBloc({
+    required VotingRepository votingRepository, 
+    RudnAuthService? authService,
+  })  : _votingRepository = votingRepository,
+        _authService = authService ?? RudnAuthService(),
         super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoggedIn>(_onLoggedIn);
@@ -19,7 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    final bool hasToken = await RudnAuthService().isAuthenticated();
+    final bool hasToken = await _authService.isAuthenticated();
     if (hasToken) {
       // For now, we don't have a way to get the user login from the cookie easily 
       // without making an API call. For this MVP, we will assume if cookie is there, 
@@ -50,7 +54,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
     try {
-      await RudnAuthService().logout();
+      await _authService.logout();
       await _votingRepository.logout();
     } catch (_) {
       // Ignore logout errors

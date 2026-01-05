@@ -81,71 +81,7 @@ void main() {
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
 
-    testWidgets('shows info dialog when login button is tapped',
-        (tester) async {
-      // Arrange
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
-
-      // Act
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-
-      // Tap the login button
-      await tester.tap(find.text('Войти'));
-      await tester.pumpAndSettle();
-
-      // Assert: Verify that the dialog is shown
-      expect(find.text('Авторизация через РУДН ID'), findsOneWidget);
-      expect(find.text('Отмена'), findsOneWidget);
-      expect(find.text('Продолжить'), findsOneWidget);
-    });
-
-    testWidgets('triggers login when Continue is tapped in dialog',
-        (tester) async {
-      // Arrange
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
-
-      // Act
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-
-      // Tap the login button to show dialog
-      await tester.tap(find.text('Войти'));
-      await tester.pumpAndSettle();
-
-      // Tap the Continue button
-      await tester.tap(find.text('Продолжить'));
-      await tester.pumpAndSettle();
-
-      // Assert: Verify that LoggedIn event was added
-      verify(() => mockAuthBloc.add(
-          const LoggedIn(login: 'rudn_user', password: 'password'))).called(1);
-    });
-
-    testWidgets('closes dialog when Cancel is tapped', (tester) async {
-      // Arrange
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-
-      // Act
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-
-      // Tap the login button to show dialog
-      await tester.tap(find.text('Войти'));
-      await tester.pumpAndSettle();
-
-      // Tap the Cancel button
-      await tester.tap(find.text('Отмена'));
-      await tester.pumpAndSettle();
-
-      // Assert: Verify that the dialog is closed
-      expect(find.text('Авторизация через РУДН ID'), findsNothing);
-    });
+    // Dialog tests removed as the dialog was replaced by direct navigation to RudnWebviewScreen
 
     testWidgets('navigates to HomeScreen when AuthAuthenticated',
         (tester) async {

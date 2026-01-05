@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:seasons/core/services/rudn_auth_service.dart'; // Import Service
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
@@ -8,16 +9,22 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 
 class MockVotingRepository extends Mock implements VotingRepository {}
+class MockRudnAuthService extends Mock implements RudnAuthService {} // Mock Service
 
 void main() {
   group('Integration Tests - Auth and Voting Flow', () {
     late MockVotingRepository mockRepository;
+    late MockRudnAuthService mockAuthService; // Mock Instance
     late AuthBloc authBloc;
     late VotingBloc votingBloc;
 
     setUp(() {
       mockRepository = MockVotingRepository();
-      authBloc = AuthBloc(votingRepository: mockRepository);
+      mockAuthService = MockRudnAuthService(); // Initialize
+      authBloc = AuthBloc(
+        votingRepository: mockRepository,
+        authService: mockAuthService, // Inject
+      );
       votingBloc = VotingBloc(votingRepository: mockRepository);
     });
 
@@ -43,8 +50,8 @@ void main() {
 
     test('Complete user flow: login -> fetch events -> logout', () async {
       // Arrange
-      when(() => mockRepository.login('user', 'pass'))
-          .thenAnswer((_) async => 'token');
+      // NOTE: login() is no longer called on repository by AuthBloc. 
+      // AuthBloc checks getUserLogin() directly.
       when(() => mockRepository.getUserLogin()).thenAnswer((_) async => 'user');
       when(() =>
               mockRepository.getEventsByStatus(model.VotingStatus.registration))
@@ -61,6 +68,7 @@ void main() {
                 ),
               ]);
       when(() => mockRepository.logout()).thenAnswer((_) async {});
+      when(() => mockAuthService.logout()).thenAnswer((_) async {}); // Mock auth service logout
 
       // Act & Assert - Login
       authBloc.add(const LoggedIn(login: 'user', password: 'pass'));
@@ -91,16 +99,22 @@ void main() {
       );
 
       // Verify all interactions
-      verify(() => mockRepository.login('user', 'pass')).called(1);
+      verifyNever(() => mockRepository.login(any(), any())); // Ensure login NOT called
       verify(() => mockRepository.getUserLogin()).called(1);
       verify(() =>
               mockRepository.getEventsByStatus(model.VotingStatus.registration))
           .called(1);
       verify(() => mockRepository.logout()).called(1);
+      verify(() => mockAuthService.logout()).called(1);
     });
+
+    // ... (Keep other tests, updating auth injection if needed - actually setup handles it)
+    // We need to check if 'Error handling: failed login' test is still valid.
+    // 'failed login' now implies getUserLogin failing.
 
     test('Complete voting flow: register -> fetch event -> submit vote',
         () async {
+      // (This test doesn't use authBloc, so it should be fine with just setUp changes)
       // Arrange
       final testEvent = model.VotingEvent(
         id: 'event-01',
@@ -157,26 +171,30 @@ void main() {
           .called(1);
       verify(() => mockRepository.submitVote(any(), any())).called(1);
     });
-
+    
     test('Error handling: failed login prevents further actions', () async {
-      // Arrange
-      when(() => mockRepository.login(any(), any()))
-          .thenThrow(Exception('Invalid credentials'));
+       // Arrange
+       // Old behavior: login() threw exception.
+       // New behavior: getUserLogin() throws or returns null (AuthBloc handles null as failure? No, default user).
+       // AuthBloc: emit(AuthFailure(error: e.toString())); if getUserLogin throws.
+       
+       when(() => mockRepository.getUserLogin())
+           .thenThrow(Exception('Invalid credentials')); // Simulate failure
 
-      // Act & Assert - Failed Login
-      authBloc.add(const LoggedIn(login: 'wrong', password: 'wrong'));
-      await expectLater(
-        authBloc.stream,
-        emitsInOrder([
-          isA<AuthLoading>(),
-          isA<AuthFailure>(),
-          isA<AuthUnauthenticated>(),
-        ]),
-      );
+       // Act & Assert - Failed Login
+       authBloc.add(const LoggedIn(login: 'wrong', password: 'wrong'));
+       await expectLater(
+         authBloc.stream,
+         emitsInOrder([
+           isA<AuthLoading>(),
+           isA<AuthFailure>(), 
+           isA<AuthUnauthenticated>(),
+         ]),
+       );
 
-      // Verify
-      verify(() => mockRepository.login('wrong', 'wrong')).called(1);
-      verifyNever(() => mockRepository.getUserLogin());
+       // Verify
+       verifyNever(() => mockRepository.login(any(), any()));
+       verify(() => mockRepository.getUserLogin()).called(1);
     });
 
     test('Error handling: failed registration allows retry', () async {

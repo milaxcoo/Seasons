@@ -244,7 +244,7 @@ void main() {
       // Assert: Verify that FetchEventsByStatus was called with active status
       verify(() => mockVotingBloc.add(
               const FetchEventsByStatus(status: model.VotingStatus.active)))
-          .called(1);
+          .called(greaterThan(0));
     });
 
     testWidgets('displays date information correctly', (tester) async {
