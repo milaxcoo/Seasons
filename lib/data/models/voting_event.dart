@@ -87,38 +87,60 @@ class VotingEvent extends Equatable {
             json['resultsData']['results'] as Map<String, dynamic>;
 
         resultsMap.forEach((questionName, questionData) {
-          final questionValue = questionData as Map<String, dynamic>;
+          // Проверяем, что questionData - это Map
+          if (questionData is! Map<String, dynamic>) {
+            parsedResults.add(QuestionResult(
+              name: questionName,
+              type: 'unknown',
+              subjectResults: [],
+            ));
+            return;
+          }
+
+          final questionValue = questionData;
           final questionType = questionValue['type'] as String? ?? 'unknown';
           final List<SubjectResult> subjectResults = [];
 
-          if (questionValue['results'] is Map) {
-            final subjectsMap =
-                questionValue['results'] as Map<String, dynamic>;
+          final resultsField = questionValue['results'];
 
-            // Проверяем, есть ли вложенный ключ 'details' (для multiple_variants)
-            if (subjectsMap['details'] is Map) {
-              final details = subjectsMap['details'] as Map<String, dynamic>;
-              details.forEach((variantName, voteCount) {
+          // Проверяем, что results - это Map (не пустой array и не null)
+          if (resultsField is Map<String, dynamic> && resultsField.isNotEmpty) {
+            // Проверяем, есть ли вложенный ключ 'details' на верхнем уровне (для multiple_variants)
+            final topLevelDetails = resultsField['details'];
+            if (topLevelDetails is Map<String, dynamic> && topLevelDetails.isNotEmpty) {
+              // multiple_variants с заполненными данными
+              topLevelDetails.forEach((variantName, voteCount) {
+                final count = voteCount is int ? voteCount : 0;
                 subjectResults.add(SubjectResult(
                   name: variantName,
-                  voteCounts: {variantName: voteCount as int? ?? 0},
+                  voteCounts: {variantName: count},
                 ));
               });
             } else {
               // Стандартный парсинг для yes_no, yes_no_abstained, subject_oriented
-              subjectsMap.forEach((subjectName, subjectData) {
-                final details =
-                    subjectData['details'] as Map<String, dynamic>? ?? {};
-                final voteCounts = details
-                    .map((key, value) => MapEntry(key, value as int? ?? 0));
-
-                subjectResults.add(SubjectResult(
-                  name: subjectName,
-                  voteCounts: voteCounts,
-                ));
+              resultsField.forEach((subjectName, subjectData) {
+                // Пропускаем нечисловые ключи типа 'details' или 'total'
+                if (subjectName == 'details' || subjectName == 'total') return;
+                
+                // subjectData должен быть Map с 'details'
+                if (subjectData is Map<String, dynamic>) {
+                  final details = subjectData['details'];
+                  if (details is Map<String, dynamic>) {
+                    final voteCounts = <String, int>{};
+                    details.forEach((key, value) {
+                      voteCounts[key] = value is int ? value : 0;
+                    });
+                    subjectResults.add(SubjectResult(
+                      name: subjectName,
+                      voteCounts: voteCounts,
+                    ));
+                  }
+                }
               });
             }
           }
+          // Если results - пустой array [] или не Map, subjectResults останется пустым
+          
           parsedResults.add(QuestionResult(
               name: questionName,
               type: questionType,

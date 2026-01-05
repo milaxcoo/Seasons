@@ -178,20 +178,96 @@ class _ResultsTable extends StatelessWidget {
   }
 
   Widget _buildDataTable(BuildContext context, QuestionResult data) {
+    // Для qualification_council показываем варианты ответов как строки, а не колонки
+    if (data.type == 'qualification_council') {
+      return Table(
+        border: TableBorder(
+          verticalInside: BorderSide(
+            color: Colors.black.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        columnWidths: const {
+          0: IntrinsicColumnWidth(),
+          1: IntrinsicColumnWidth(),
+        },
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: [
+          // Заголовок таблицы
+          TableRow(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.1),
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  '',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  'Количество голосов',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          // Строки с данными - каждая комбинация субъект-ответ это отдельная строка
+          ...data.subjectResults.expand((subject) {
+            return subject.voteCounts.entries.map((entry) {
+              return TableRow(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Text(
+                      '${subject.name}',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Center(
+                      child: Text(entry.value.toString()),
+                    ),
+                  ),
+                ],
+              );
+            });
+          }),
+        ],
+      );
+    }
+
+    // Для остальных типов (yes_no, yes_no_abstained, multiple_variants, subject_oriented)
     List<String> columns;
     if (data.type == 'multiple_variants') {
-      columns = ['Варианты ответов', 'Количество голосов'];
+      columns = ['', 'Количество голосов'];
     } else {
       columns = ['', ...data.allColumns];
     }
 
-    // FIXED: Все колонки теперь имеют ширину по своему содержимому
     Map<int, TableColumnWidth> columnWidths = {};
     for (int i = 0; i < columns.length; i++) {
       columnWidths[i] = const IntrinsicColumnWidth();
     }
 
     return Table(
+      border: TableBorder(
+        verticalInside: BorderSide(
+          color: Colors.black.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       columnWidths: columnWidths,
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
