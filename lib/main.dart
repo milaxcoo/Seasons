@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:seasons/core/push_notification_service.dart';
 import 'package:seasons/core/theme.dart';
@@ -15,6 +17,12 @@ import 'firebase_options.dart';
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Register background message handler
+    FirebaseMessaging.onBackgroundMessage(
+      firebaseMessagingBackgroundHandler,
+    );
+    
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -58,7 +66,24 @@ class SeasonsApp extends StatelessWidget {
                     body: Center(child: CircularProgressIndicator()));
               }
               if (state is AuthAuthenticated) {
-                PushNotificationService().initialize();
+                // Initialize FCM and set up navigation callback
+                final fcmService = PushNotificationService();
+                fcmService.onNotificationTap = (votingId) {
+                  // Navigate to voting details when notification is tapped
+                  // Note: This is a simplified navigation - you may need to adjust
+                  // based on your actual routing implementation
+                  if (kDebugMode) {
+                    print('Navigating to voting: $votingId');
+                  }
+                  // TODO: Implement navigation to voting details screen
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder: (context) => VotingDetailScreen(votingId: votingId),
+                  //   ),
+                  // );
+                };
+                fcmService.initialize();
                 return const HomeScreen();
               }
               if (state is AuthUnauthenticated) {
