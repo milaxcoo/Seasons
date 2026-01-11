@@ -17,12 +17,12 @@ import 'firebase_options.dart';
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     // Register background message handler
     FirebaseMessaging.onBackgroundMessage(
       firebaseMessagingBackgroundHandler,
     );
-    
+
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );

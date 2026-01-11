@@ -84,7 +84,8 @@ class PushNotificationService {
     final initialMessage = await _fcm.getInitialMessage();
     if (initialMessage != null) {
       if (kDebugMode) {
-        print('App opened from notification (terminated): ${initialMessage.data}');
+        print(
+            'App opened from notification (terminated): ${initialMessage.data}');
       }
       // Delay to ensure navigation context is ready
       Future.delayed(const Duration(seconds: 1), () {
@@ -94,7 +95,8 @@ class PushNotificationService {
   }
 
   Future<void> _initializeLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -187,7 +189,8 @@ class PushNotificationService {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
         },
-        body: '{"fcm_token": "$token", "platform": "${Platform.operatingSystem}"}',
+        body:
+            '{"fcm_token": "$token", "platform": "${Platform.operatingSystem}"}',
       );
 
       if (response.statusCode == 200) {
@@ -196,7 +199,8 @@ class PushNotificationService {
         }
       } else {
         if (kDebugMode) {
-          print('FCM: Failed to send token (${response.statusCode}): ${response.body}');
+          print(
+              'FCM: Failed to send token (${response.statusCode}): ${response.body}');
         }
       }
     } catch (e) {
