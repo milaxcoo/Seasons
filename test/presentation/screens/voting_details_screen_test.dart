@@ -14,6 +14,9 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:seasons/l10n/app_localizations.dart';
+
 import '../../mocks.dart';
 
 void main() {
@@ -83,13 +86,21 @@ void main() {
     );
   });
 
-  Widget createTestWidget() {
+  Widget createTestWidget({model.VotingEvent? event}) {
     return RepositoryProvider<VotingRepository>.value(
       value: mockVotingRepository,
       child: BlocProvider<VotingBloc>.value(
         value: mockVotingBloc,
         child: MaterialApp(
-          home: VotingDetailsScreen(event: testEvent, imagePath: ''),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('ru'), Locale('en')],
+          locale: const Locale('ru'),
+          home: VotingDetailsScreen(event: event ?? testEvent, imagePath: ''),
         ),
       ),
     );
@@ -281,17 +292,7 @@ void main() {
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
 
       // Act
-      await tester.pumpWidget(
-        RepositoryProvider<VotingRepository>.value(
-          value: mockVotingRepository,
-          child: BlocProvider<VotingBloc>.value(
-            value: mockVotingBloc,
-            child: MaterialApp(
-              home: VotingDetailsScreen(event: votedEvent, imagePath: ''),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(event: votedEvent));
       await tester.pumpAndSettle();
 
       // Assert: Submit button should show "already voted" text and be disabled
@@ -334,18 +335,7 @@ void main() {
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
       // Act
-      await tester.pumpWidget(
-        RepositoryProvider<VotingRepository>.value(
-          value: mockVotingRepository,
-          child: BlocProvider<VotingBloc>.value(
-            value: mockVotingBloc,
-            child: MaterialApp(
-              home:
-                  VotingDetailsScreen(event: multiQuestionEvent, imagePath: ''),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(event: multiQuestionEvent));
       await tester.pumpAndSettle();
 
       // Select only one answer
@@ -377,17 +367,7 @@ void main() {
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
 
       // Act
-      await tester.pumpWidget(
-        RepositoryProvider<VotingRepository>.value(
-          value: mockVotingRepository,
-          child: BlocProvider<VotingBloc>.value(
-            value: mockVotingBloc,
-            child: MaterialApp(
-              home: VotingDetailsScreen(event: noQuestionsEvent, imagePath: ''),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(createTestWidget(event: noQuestionsEvent));
       await tester.pumpAndSettle();
 
       // Assert

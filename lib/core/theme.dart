@@ -19,12 +19,10 @@ class AppTheme {
         seedColor: primaryColor,
         primary: primaryColor,
         secondary: secondaryColor,
-        background: backgroundColor,
-        surface: Colors.white,
+        surface: backgroundColor, // Background became surface
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onBackground: textColor,
-        onSurface: textColor,
+        onSurface: textColor, // onBackground became onSurface
       ),
     );
 

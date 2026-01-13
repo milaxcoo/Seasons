@@ -27,7 +27,7 @@ void main() async {
     await initializeDateFormatting('en_US', null);
     runApp(const SeasonsApp());
   } catch (e) {
-    print('Не удалось инициализировать приложение: $e');
+    debugPrint('Не удалось инициализировать приложение: $e');
   }
 }
 

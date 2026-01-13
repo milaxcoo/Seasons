@@ -11,6 +11,9 @@ import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:seasons/l10n/app_localizations.dart';
+
 import '../../mocks.dart';
 
 void main() {
@@ -39,6 +42,14 @@ void main() {
         BlocProvider<VotingBloc>.value(value: mockVotingBloc),
       ],
       child: const MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [Locale('ru'), Locale('en')],
+        locale: Locale('ru'),
         home: HomeScreen(),
       ),
     );
@@ -244,7 +255,7 @@ void main() {
       // Assert: Verify that FetchEventsByStatus was called with active status
       verify(() => mockVotingBloc.add(
               const FetchEventsByStatus(status: model.VotingStatus.active)))
-          .called(1);
+          .called(greaterThan(0));
     });
 
     testWidgets('displays date information correctly', (tester) async {

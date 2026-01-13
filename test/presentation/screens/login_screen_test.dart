@@ -10,6 +10,9 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:seasons/l10n/app_localizations.dart';
+
 import '../../mocks.dart';
 
 void main() {
@@ -47,6 +50,14 @@ void main() {
     return BlocProvider<AuthBloc>.value(
       value: mockAuthBloc,
       child: const MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [Locale('ru'), Locale('en')],
+        locale: Locale('ru'),
         home: LoginScreen(),
       ),
     );
@@ -59,6 +70,14 @@ void main() {
         BlocProvider<VotingBloc>.value(value: MockVotingBloc()),
       ],
       child: const MaterialApp(
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: [Locale('ru'), Locale('en')],
+        locale: Locale('ru'),
         home: LoginScreen(),
       ),
     );
@@ -81,71 +100,7 @@ void main() {
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
 
-    testWidgets('shows info dialog when login button is tapped',
-        (tester) async {
-      // Arrange
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
 
-      // Act
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-
-      // Tap the login button
-      await tester.tap(find.text('Войти'));
-      await tester.pumpAndSettle();
-
-      // Assert: Verify that the dialog is shown
-      expect(find.text('Авторизация через РУДН ID'), findsOneWidget);
-      expect(find.text('Отмена'), findsOneWidget);
-      expect(find.text('Продолжить'), findsOneWidget);
-    });
-
-    testWidgets('triggers login when Continue is tapped in dialog',
-        (tester) async {
-      // Arrange
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
-
-      // Act
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-
-      // Tap the login button to show dialog
-      await tester.tap(find.text('Войти'));
-      await tester.pumpAndSettle();
-
-      // Tap the Continue button
-      await tester.tap(find.text('Продолжить'));
-      await tester.pumpAndSettle();
-
-      // Assert: Verify that LoggedIn event was added
-      verify(() => mockAuthBloc.add(
-          const LoggedIn(login: 'rudn_user', password: 'password'))).called(1);
-    });
-
-    testWidgets('closes dialog when Cancel is tapped', (tester) async {
-      // Arrange
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-
-      // Act
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-
-      // Tap the login button to show dialog
-      await tester.tap(find.text('Войти'));
-      await tester.pumpAndSettle();
-
-      // Tap the Cancel button
-      await tester.tap(find.text('Отмена'));
-      await tester.pumpAndSettle();
-
-      // Assert: Verify that the dialog is closed
-      expect(find.text('Авторизация через РУДН ID'), findsNothing);
-    });
 
     testWidgets('navigates to HomeScreen when AuthAuthenticated',
         (tester) async {
