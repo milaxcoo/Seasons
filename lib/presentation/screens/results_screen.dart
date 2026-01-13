@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/widgets/app_background.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class ResultsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -59,14 +60,16 @@ class _ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd.MM.yyyy\nHH:mm:ss', 'ru');
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).languageCode;
+    final dateFormat = DateFormat('dd.MM.yyyy\nHH:mm:ss', localeName);
 
     final startDate = event.votingStartDate != null
         ? dateFormat.format(event.votingStartDate!)
-        : 'Не установлено';
+        : l10n.notSet;
     final endDate = event.votingEndDate != null
         ? dateFormat.format(event.votingEndDate!)
-        : 'Не установлено';
+        : l10n.notSet;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -89,9 +92,14 @@ class _ResultsView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Divider(),
-            _InfoRow(label: 'Описание', value: event.description),
-            _InfoRow(label: 'Начало\nголосования', value: startDate),
-            _InfoRow(label: 'Завершение\nголосования', value: endDate),
+            Text(
+              event.description,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 8),
+            const Divider(),
+            _InfoRow(label: l10n.votingStartLabel, value: startDate),
+            _InfoRow(label: l10n.votingEndLabel, value: endDate),
             const SizedBox(height: 24),
             _ResultsTable(results: event.results),
             const SizedBox(height: 32),
@@ -103,7 +111,7 @@ class _ResultsView extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'Заседание завершено',
+                  l10n.sessionCompleted,
                   style: Theme.of(context)
                       .textTheme
                       .bodyLarge
@@ -125,8 +133,9 @@ class _ResultsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (results.isEmpty) {
-      return const Text("Результаты для этого голосования отсутствуют.");
+      return Text(l10n.resultsUnavailable);
     }
 
     return Container(
@@ -139,7 +148,7 @@ class _ResultsTable extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Результаты голосования',
+            l10n.votingResults,
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
@@ -166,7 +175,7 @@ class _ResultsTable extends StatelessWidget {
                   // Оборачиваем таблицу в SingleChildScrollView для горизонтальной прокрутки
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: _buildDataTable(context, questionResult),
+                    child: _buildDataTable(context, questionResult, l10n),
                   ),
                 ],
               ),
@@ -177,7 +186,7 @@ class _ResultsTable extends StatelessWidget {
     );
   }
 
-  Widget _buildDataTable(BuildContext context, QuestionResult data) {
+  Widget _buildDataTable(BuildContext context, QuestionResult data, AppLocalizations l10n) {
     // Для qualification_council показываем варианты ответов как строки, а не колонки
     if (data.type == 'qualification_council') {
       return Table(
@@ -214,7 +223,7 @@ class _ResultsTable extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Text(
-                  'Количество голосов',
+                  l10n.voteCount,
                   textAlign: TextAlign.center,
                   style: Theme.of(context)
                       .textTheme
@@ -255,7 +264,7 @@ class _ResultsTable extends StatelessWidget {
     // Для остальных типов (yes_no, yes_no_abstained, multiple_variants, subject_oriented)
     List<String> columns;
     if (data.type == 'multiple_variants') {
-      columns = ['', 'Количество голосов'];
+      columns = ['', l10n.voteCount];
     } else {
       columns = ['', ...data.allColumns];
     }

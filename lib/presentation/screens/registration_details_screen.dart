@@ -8,6 +8,7 @@ import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class RegistrationDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -68,22 +69,24 @@ class _RegistrationDetailsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
+    final locale = Localizations.localeOf(context);
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', locale.languageCode == 'ru' ? 'ru' : 'en');
+    final l10n = AppLocalizations.of(context)!;
 
     final startDate = event.votingStartDate != null
         ? dateFormat.format(event.votingStartDate!)
-        : 'Не установлено';
+        : l10n.notSet;
 
     final endDate = event.registrationEndDate != null
         ? dateFormat.format(event.registrationEndDate!)
-        : 'Не установлено';
+        : l10n.notSet;
 
     return BlocListener<VotingBloc, VotingState>(
       listener: (context, state) {
         if (state is RegistrationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Вы были успешно зарегистрированы!'),
+            SnackBar(
+                content: Text(l10n.registrationSuccess),
                 backgroundColor: Colors.green),
           );
           Navigator.of(context).pop(true);
@@ -91,7 +94,7 @@ class _RegistrationDetailsView extends StatelessWidget {
         if (state is RegistrationFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('Ошибка регистрации: ${state.error}'),
+                content: Text(l10n.registrationError(state.error)),
                 backgroundColor: Colors.red),
           );
         }
@@ -131,15 +134,15 @@ class _RegistrationDetailsView extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 24),
-                  _InfoRow(label: 'Начало\nрегистрации', value: startDate),
+                  _InfoRow(label: l10n.registrationStart, value: startDate),
                   const Divider(),
-                  _InfoRow(label: 'Завершение\nрегистрации', value: endDate),
+                  _InfoRow(label: l10n.registrationEnd, value: endDate),
                   const Divider(),
                   _InfoRow(
-                    label: 'Статус',
+                    label: l10n.status,
                     value: event.isRegistered
-                        ? 'Зарегистрирован(-а)'
-                        : 'Не зарегистрирован(-а)',
+                        ? l10n.registered
+                        : l10n.notRegistered,
                     valueColor: event.isRegistered
                         ? const Color(0xFF00A94F)
                         : Colors.red,
@@ -156,7 +159,7 @@ class _RegistrationDetailsView extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              'Идет регистрация...',
+                              l10n.registering,
                               // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
                               style: Theme.of(context)
                                   .textTheme
@@ -191,8 +194,8 @@ class _RegistrationDetailsView extends StatelessWidget {
                               },
                         child: Text(
                           event.isRegistered
-                              ? 'Вы уже зарегистрированы'
-                              : 'Зарегистрироваться',
+                              ? l10n.alreadyRegistered
+                              : l10n.registerButton,
                           // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
                           style:
                               Theme.of(context).textTheme.bodyLarge?.copyWith(

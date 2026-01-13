@@ -10,6 +10,7 @@ import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 const Color rudnGreenColor = Color(0xFF23a74c);
 
@@ -87,28 +88,28 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
   }
 
   void _showConfirmationDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
-          "Вы уверены?",
+          l10n.areYouSure,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w900,
               ),
         ),
-        content: const Text(
-            "После подтверждения ваш голос будет засчитан, и изменить его будет нельзя."),
+        content: Text(l10n.voteConfirmationMessage),
         actions: <Widget>[
           TextButton(
-            child: const Text("Отмена"),
+            child: Text(l10n.cancel),
             onPressed: () {
               Navigator.of(dialogContext).pop();
             },
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: rudnGreenColor),
-            child: const Text("Проголосовать",
-                style: TextStyle(color: Colors.white)),
+            child: Text(l10n.vote,
+                style: const TextStyle(color: Colors.white)),
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.read<VotingBloc>().add(
@@ -135,10 +136,11 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
     }
 
     if (_selectedAnswers.length < totalItemsToVoteOn) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(
-          content: Text('Пожалуйста, ответьте на все вопросы.'),
+        ..showSnackBar(SnackBar(
+          content: Text(l10n.answerAllQuestions),
           backgroundColor: Colors.orange,
         ));
       return;
@@ -154,16 +156,18 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
           child: CircularProgressIndicator(color: Colors.white));
     }
 
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
+    final locale = Localizations.localeOf(context);
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', locale.languageCode == 'ru' ? 'ru' : 'en');
+    final l10n = AppLocalizations.of(context)!;
     final startDate = widget.event.votingStartDate != null
         ? dateFormat.format(widget.event.votingStartDate!)
-        : 'Не установлено';
+        : l10n.notSet;
     final endDate = widget.event.votingEndDate != null
         ? dateFormat.format(widget.event.votingEndDate!)
-        : 'Не установлено';
+        : l10n.notSet;
 
     final statusText =
-        widget.event.hasVoted ? "Проголосовал" : "Не проголосовал";
+        widget.event.hasVoted ? l10n.voted : l10n.notVoted;
     final statusColor = widget.event.hasVoted ? rudnGreenColor : Colors.black;
 
     final now = DateTime.now();
@@ -180,13 +184,13 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             barrierDismissible: false,
             builder: (dialogContext) => AlertDialog(
               title: Text(
-                'Голос принят',
+                l10n.voteAccepted,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       fontSize: 18,
                     ),
               ),
-              content: const Text('Спасибо за участие!'),
+              content: Text(l10n.thankYou),
               actionsAlignment: MainAxisAlignment.center,
               actions: [
                 ElevatedButton(
@@ -207,18 +211,20 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
         } else if (state is VotingFailure) {
           final errorMessage = state.error.toLowerCase();
           if (errorMessage.contains("user already voted")) {
+            final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(
-                content: const Text('Ваш голос уже был учтен ранее.'),
+                content: Text(l10n.alreadyVotedError),
                 backgroundColor: Colors.blue,
               ));
             Navigator.of(context).pop(true);
           } else {
+            final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(
-                content: Text('Ошибка: ${state.error}'),
+                content: Text(l10n.error(state.error)),
                 backgroundColor: Colors.redAccent,
               ));
           }
@@ -226,9 +232,10 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
       },
       builder: (context, state) {
         if (widget.event.questions.isEmpty) {
+          final l10n = AppLocalizations.of(context)!;
           return Center(
             child: Text(
-              'Вопросы для этого голосования отсутствуют.',
+              l10n.noQuestionsAvailable,
               style: Theme.of(context)
                   .textTheme
                   .bodyLarge
@@ -282,15 +289,15 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                     const Divider(
                                         color: Colors.black12, height: 1),
                                   _InfoRow(
-                                      label: 'Начало голосования',
+                                      label: l10n.votingStart,
                                       value: startDate),
                                   const Divider(color: Colors.black12),
                                   _InfoRow(
-                                      label: 'Завершение голосования',
+                                      label: l10n.votingEnd,
                                       value: endDate),
                                   const Divider(color: Colors.black12),
                                   _InfoRow(
-                                    label: 'Статус',
+                                    label: l10n.status,
                                     value: statusText,
                                     valueColor: statusColor,
                                   ),
@@ -311,7 +318,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                     ),
                                   ),
                                   child: Text(
-                                    'Идет голосование',
+                                    l10n.votingInProgress,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyLarge
@@ -376,8 +383,8 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                         ? const CircularProgressIndicator(color: Colors.white)
                         : Text(
                             widget.event.hasVoted
-                                ? 'Вы уже проголосовали'
-                                : 'Проголосовать',
+                                ? l10n.alreadyVoted
+                                : l10n.vote,
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyLarge

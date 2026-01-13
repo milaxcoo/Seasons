@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
+import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'rudn_webview_screen.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -53,6 +56,44 @@ class _LoginScreenState extends State<LoginScreen> {
           },
           child: Stack(
             children: [
+              // Language switcher at top-right
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: PopupMenuButton<Locale>(
+                      icon: const Icon(Icons.language, color: Colors.white, size: 28),
+                      onSelected: (Locale locale) {
+                        context.read<LocaleBloc>().add(ChangeLocale(locale));
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<Locale>(
+                          value: const Locale('ru'),
+                          child: Row(
+                            children: [
+                              const Text('🇷🇺'),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.languageRussian),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<Locale>(
+                          value: const Locale('en'),
+                          child: Row(
+                            children: [
+                              const Text('🇬🇧'),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.languageEnglish),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -83,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Войти',
+                            AppLocalizations.of(context)!.login,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: GoogleFonts.exo2().fontFamily,
@@ -114,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '© RUDN University 2025',
+                        AppLocalizations.of(context)!.copyright,
                         style: Theme.of(context)
                             .textTheme
                             .bodyLarge
@@ -122,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'seasons-helpdesk@rudn.ru',
+                        AppLocalizations.of(context)!.helpEmail,
                         style: Theme.of(context)
                             .textTheme
                             .bodyLarge

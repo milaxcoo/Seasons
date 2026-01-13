@@ -9,6 +9,8 @@ import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
+import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
+import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
 import 'package:seasons/presentation/screens/profile_screen.dart';
 import 'package:seasons/presentation/screens/registration_details_screen.dart';
@@ -16,6 +18,7 @@ import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class _TopBar extends StatelessWidget {
   @override
@@ -29,8 +32,37 @@ class _TopBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Language switcher button (moved to left)
+          PopupMenuButton<Locale>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (Locale locale) {
+              context.read<LocaleBloc>().add(ChangeLocale(locale));
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<Locale>(
+                value: const Locale('ru'),
+                child: Row(
+                  children: [
+                    const Text('🇷🇺'),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.languageRussian),
+                  ],
+                ),
+              ),
+              PopupMenuItem<Locale>(
+                value: const Locale('en'),
+                child: Row(
+                  children: [
+                    const Text('🇬🇧'),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.languageEnglish),
+                  ],
+                ),
+              ),
+            ],
+          ),
           Row(
             children: [
               GestureDetector(
@@ -472,7 +504,7 @@ class _EventList extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  'Нет активных голосований',
+                  AppLocalizations.of(context)!.noActiveVotings,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.white,
                     fontSize: 20.0,
@@ -524,24 +556,26 @@ class _VotingEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat.yMMMd('ru');
+    final locale = Localizations.localeOf(context);
+    final dateFormat = DateFormat.yMMMd(locale.languageCode == 'ru' ? 'ru' : 'en');
+    final l10n = AppLocalizations.of(context)!;
     String dateInfo;
 
     switch (event.status) {
       case model.VotingStatus.registration:
         dateInfo = event.registrationEndDate != null
-            ? 'Регистрация до: ${dateFormat.format(event.registrationEndDate!)}'
-            : 'Регистрация открыта';
+            ? l10n.registrationUntil(dateFormat.format(event.registrationEndDate!))
+            : l10n.registrationOpen;
         break;
       case model.VotingStatus.active:
         dateInfo = event.votingEndDate != null
-            ? 'Голосование до: ${dateFormat.format(event.votingEndDate!)}'
-            : 'Голосование активно';
+            ? l10n.votingUntil(dateFormat.format(event.votingEndDate!))
+            : l10n.votingActive;
         break;
       case model.VotingStatus.completed:
         dateInfo = event.votingEndDate != null
-            ? 'Завершено: ${dateFormat.format(event.votingEndDate!)}'
-            : 'Завершено';
+            ? l10n.completedOn(dateFormat.format(event.votingEndDate!))
+            : l10n.completed;
         break;
     }
 
@@ -577,11 +611,11 @@ class _VotingEventCard extends StatelessWidget {
               Text(
                 event.status == model.VotingStatus.registration
                     ? (event.isRegistered
-                        ? "Зарегистрирован(-а)"
-                        : "Не зарегистрирован(-а)")
+                        ? AppLocalizations.of(context)!.registered
+                        : AppLocalizations.of(context)!.notRegistered)
                     : (event.hasVoted
-                        ? "Проголосовал(-а)"
-                        : "Не проголосовал(-а)"),
+                        ? AppLocalizations.of(context)!.voted
+                        : AppLocalizations.of(context)!.notVoted),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: (event.status == model.VotingStatus.registration
                               ? event.isRegistered

@@ -5,6 +5,7 @@ import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/data/models/user_profile.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -41,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: () => Navigator.of(context).pop(),
               ),
               title: Text(
-                'Данные пользователя',
+                AppLocalizations.of(context)!.userData,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.white,
                       fontSize: 20,
@@ -62,7 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (profile == null) {
                   return Center(
                       child: Text(
-                    "Не удалось загрузить данные профиля",
+                    AppLocalizations.of(context)!.failedToLoadProfile,
                     style:
                         TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                   ));
@@ -81,27 +82,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _UserInfoRow(
-                          label: 'Фамилия',
+                          label: AppLocalizations.of(context)!.surname,
                           value: profile.surname,
                         ),
                         const Divider(height: 24),
                         _UserInfoRow(
-                          label: 'Имя',
+                          label: AppLocalizations.of(context)!.name,
                           value: profile.name,
                         ),
                         const Divider(height: 24),
                         _UserInfoRow(
-                          label: 'Отчество',
+                          label: AppLocalizations.of(context)!.patronymic,
                           value: profile.patronymic,
                         ),
                         const Divider(height: 24),
                         _UserInfoRow(
-                          label: 'Электронная почта',
+                          label: AppLocalizations.of(context)!.email,
                           value: profile.email,
                         ),
                         const Divider(height: 24),
                         _UserInfoRow(
-                          label: 'Должность',
+                          label: AppLocalizations.of(context)!.jobTitle,
                           value: profile.jobTitle,
                         ),
                       ],
