@@ -1,7 +1,7 @@
 name: seasons
 description: "Flutter-based application for voting at PFUR University"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -9,6 +9,8 @@ environment:
 # ------------------ APP DEPENDENCIES ------------------
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   # For iOS style icons
@@ -20,19 +22,22 @@ dependencies:
 
   # UI & Styling
   google_fonts: ^6.2.1
-  fl_chart: ^1.1.0
   intl: ^0.20.2
-
   # Secure Storage
   flutter_secure_storage: ^9.2.2
 
-  # Firebase for Push Notifications
+  # Firebase (If used)
   firebase_core: ^4.2.1
   firebase_messaging: ^16.0.4
+
+  # Local Notifications
+  flutter_local_notifications: ^18.0.1
+
   flutter_svg: ^2.2.2
   http: ^1.5.0
-  html: ^0.15.6
   shared_preferences: ^2.5.3
+  webview_flutter: ^4.13.1
+  bloc: ^9.2.0
 
 # ----------------- DEV DEPENDENCIES -----------------
 dev_dependencies:
@@ -51,6 +56,7 @@ dev_dependencies:
 # ----------------- FLUTTER CONFIG -----------------
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
     - assets/

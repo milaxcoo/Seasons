@@ -8,6 +8,7 @@ import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class RegistrationDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -36,9 +37,9 @@ class RegistrationDetailsScreen extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.35),
-                      Colors.black.withOpacity(0.25),
-                      Colors.black.withOpacity(0.35),
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.25),
+                      Colors.black.withValues(alpha: 0.35),
                     ],
                   ),
                 ),
@@ -65,35 +66,42 @@ class RegistrationDetailsScreen extends StatelessWidget {
 class _RegistrationDetailsView extends StatelessWidget {
   final model.VotingEvent event;
   const _RegistrationDetailsView({required this.event});
-  
+
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', 'ru');
-    
-    final startDate = event.votingStartDate != null 
-        ? dateFormat.format(event.votingStartDate!) 
-        : 'Не установлено';
-        
-    final endDate = event.registrationEndDate != null 
-        ? dateFormat.format(event.registrationEndDate!) 
-        : 'Не установлено';
+    final locale = Localizations.localeOf(context);
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', locale.languageCode == 'ru' ? 'ru' : 'en');
+    final l10n = AppLocalizations.of(context)!;
+
+    final startDate = event.votingStartDate != null
+        ? dateFormat.format(event.votingStartDate!)
+        : l10n.notSet;
+
+    final endDate = event.registrationEndDate != null
+        ? dateFormat.format(event.registrationEndDate!)
+        : l10n.notSet;
 
     return BlocListener<VotingBloc, VotingState>(
       listener: (context, state) {
         if (state is RegistrationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Вы были успешно зарегистрированы!'), backgroundColor: Colors.green),
+            SnackBar(
+                content: Text(l10n.registrationSuccess),
+                backgroundColor: Colors.green),
           );
           Navigator.of(context).pop(true);
         }
         if (state is RegistrationFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ошибка регистрации: ${state.error}'), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(l10n.registrationError(state.error)),
+                backgroundColor: Colors.red),
           );
         }
       },
       // FIXED: Поменяли местами Center и SingleChildScrollView и добавили SafeArea
-      child: SafeArea( // Добавили SafeArea, чтобы контент не залезал под "челку"
+      child: SafeArea(
+        // Добавили SafeArea, чтобы контент не залезал под "челку"
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0), // Перенесли отступ сюда
@@ -114,9 +122,9 @@ class _RegistrationDetailsView extends StatelessWidget {
                     // --- ИЗМЕНЕНИЕ: убираем курсив (headlineSmall -> bodyLarge) ---
                     // Также делаем его жирнее (w900), чтобы он выделялся как заголовок
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                    ),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   const Divider(),
@@ -126,14 +134,18 @@ class _RegistrationDetailsView extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 24),
-                  _InfoRow(label: 'Начало\nрегистрации', value: startDate),
+                  _InfoRow(label: l10n.registrationStart, value: startDate),
                   const Divider(),
-                  _InfoRow(label: 'Завершение\nрегистрации', value: endDate),
+                  _InfoRow(label: l10n.registrationEnd, value: endDate),
                   const Divider(),
                   _InfoRow(
-                    label: 'Статус',
-                    value: event.isRegistered ? 'Зарегистрирован(-а)' : 'Не зарегистрирован(-а)',
-                    valueColor: event.isRegistered ? const Color(0xFF00A94F) : Colors.red,
+                    label: l10n.status,
+                    value: event.isRegistered
+                        ? l10n.registered
+                        : l10n.notRegistered,
+                    valueColor: event.isRegistered
+                        ? const Color(0xFF00A94F)
+                        : Colors.red,
                   ),
                   const SizedBox(height: 32),
                   BlocBuilder<VotingBloc, VotingState>(
@@ -142,36 +154,55 @@ class _RegistrationDetailsView extends StatelessWidget {
                         return Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
+                            color: Colors.black.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Center(
                             child: Text(
-                              'Идет регистрация...',
+                              l10n.registering,
                               // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(color: Colors.white),
                             ),
                           ),
                         );
                       }
-                      
+
                       return ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          side: BorderSide(color: event.isRegistered ? Colors.grey : const Color(0xFF6A9457), width: 2),
-                          backgroundColor: event.isRegistered ? Colors.grey.shade300 : Colors.transparent,
+                          side: BorderSide(
+                              color: event.isRegistered
+                                  ? Colors.grey
+                                  : const Color(0xFF6A9457),
+                              width: 2),
+                          backgroundColor: event.isRegistered
+                              ? Colors.grey.shade300
+                              : Colors.transparent,
                           elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        onPressed: event.isRegistered ? null : () {
-                          context.read<VotingBloc>().add(RegisterForEvent(eventId: event.id));
-                        },
+                        onPressed: event.isRegistered
+                            ? null
+                            : () {
+                                context
+                                    .read<VotingBloc>()
+                                    .add(RegisterForEvent(eventId: event.id));
+                              },
                         child: Text(
-                          event.isRegistered ? 'Вы уже зарегистрированы' : 'Зарегистрироваться',
+                          event.isRegistered
+                              ? l10n.alreadyRegistered
+                              : l10n.registerButton,
                           // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: event.isRegistered ? Colors.black54 : const Color(0xFF6A9457),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    color: event.isRegistered
+                                        ? Colors.black54
+                                        : const Color(0xFF6A9457),
+                                  ),
                         ),
                       );
                     },
@@ -201,7 +232,11 @@ class _InfoRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.black54)),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.black54)),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
@@ -209,9 +244,10 @@ class _InfoRow extends StatelessWidget {
               textAlign: TextAlign.right,
               // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold, // bodyLarge уже w700, 'bold' это подтверждает
-                color: valueColor ?? Colors.black,
-              ),
+                    fontWeight: FontWeight
+                        .bold, // bodyLarge уже w700, 'bold' это подтверждает
+                    color: valueColor ?? Colors.black,
+                  ),
             ),
           ),
         ],
