@@ -1,0 +1,298 @@
+{
+  "@@locale": "ru",
+  
+  "appTagline": "времена года",
+  "@appTagline": {
+    "description": "App tagline shown below main title"
+  },
+  
+  "login": "Войти",
+  "@login": {
+    "description": "Login button text"
+  },
+  
+  "copyright": "© RUDN University 2025",
+  "@copyright": {
+    "description": "Copyright text"
+  },
+  
+  "helpEmail": "seasons-helpdesk@rudn.ru",
+  "@helpEmail": {
+    "description": "Help desk email"
+  },
+  
+  "noActiveVotings": "Нет активных голосований",
+  "@noActiveVotings": {
+    "description": "Message when no votings are available"
+  },
+  
+  "registrationUntil": "Регистрация до: {date}",
+  "@registrationUntil": {
+    "description": "Registration deadline text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "registrationOpen": "Регистрация открыта",
+  "@registrationOpen": {
+    "description": "Registration is open"
+  },
+  
+  "votingUntil": "Голосование до: {date}",
+  "@votingUntil": {
+    "description": "Voting deadline text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "votingActive": "Идет голосование",
+  "@votingActive": {
+    "description": "Voting is active"
+  },
+  
+  "completedOn": "Завершено: {date}",
+  "@completedOn": {
+    "description": "Completed date text",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "completed": "Завершено",
+  "@completed": {
+    "description": "Completed status"
+  },
+  
+  "registered": "Зарегистрирован(-а)",
+  "@registered": {
+    "description": "User is registered"
+  },
+  
+  "notRegistered": "Не зарегистрирован(-а)",
+  "@notRegistered": {
+    "description": "User is not registered"
+  },
+  
+  "voted": "Проголосовал(-а)",
+  "@voted": {
+    "description": "User has voted"
+  },
+  
+  "notVoted": "Не проголосовал(-а)",
+  "@notVoted": {
+    "description": "User has not voted"
+  },
+  
+  "userData": "Данные пользователя",
+  "@userData": {
+    "description": "User data screen title"
+  },
+  
+  "failedToLoadProfile": "Не удалось загрузить данные профиля",
+  "@failedToLoadProfile": {
+    "description": "Error message when profile fails to load"
+  },
+  
+  "surname": "Фамилия",
+  "@surname": {
+    "description": "Surname field label"
+  },
+  
+  "name": "Имя",
+  "@name": {
+    "description": "Name field label"
+  },
+  
+  "patronymic": "Отчество",
+  "@patronymic": {
+    "description": "Patronymic field label"
+  },
+  
+  "email": "Электронная почта",
+  "@email": {
+    "description": "Email field label"
+  },
+  
+  "jobTitle": "Должность",
+  "@jobTitle": {
+    "description": "Job title field label"
+  },
+  
+  "registrationStart": "Начало\nрегистрации",
+  "@registrationStart": {
+    "description": "Registration start label"
+  },
+  
+  "registrationEnd": "Завершение\nрегистрации",
+  "@registrationEnd": {
+    "description": "Registration end label"
+  },
+  
+  "status": "Статус",
+  "@status": {
+    "description": "Status label"
+  },
+  
+  "registerButton": "Зарегистрироваться",
+  "@registerButton": {
+    "description": "Register button text"
+  },
+  
+  "alreadyRegistered": "Вы уже зарегистрированы",
+  "@alreadyRegistered": {
+    "description": "Already registered message"
+  },
+  
+  "registering": "Идет регистрация...",
+  "@registering": {
+    "description": "Registration in progress"
+  },
+  
+  "registrationSuccess": "Вы были успешно зарегистрированы!",
+  "@registrationSuccess": {
+    "description": "Registration success message"
+  },
+  
+  "registrationError": "Ошибка регистрации: {error}",
+  "@registrationError": {
+    "description": "Registration error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "notSet": "Не установлено",
+  "@notSet": {
+    "description": "Not set placeholder"
+  },
+  
+  "votingStart": "Начало голосования",
+  "@votingStart": {
+    "description": "Voting start label"
+  },
+  
+  "votingEnd": "Завершение голосования",
+  "@votingEnd": {
+    "description": "Voting end label"
+  },
+  
+  "votingInProgress": "Идет голосование",
+  "@votingInProgress": {
+    "description": "Voting in progress badge"
+  },
+  
+  "areYouSure": "Вы уверены?",
+  "@areYouSure": {
+    "description": "Confirmation dialog title"
+  },
+  
+  "voteConfirmationMessage": "После подтверждения ваш голос будет засчитан, и изменить его будет нельзя.",
+  "@voteConfirmationMessage": {
+    "description": "Vote confirmation dialog message"
+  },
+  
+  "cancel": "Отмена",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  
+  "vote": "Проголосовать",
+  "@vote": {
+    "description": "Vote button"
+  },
+  
+  "answerAllQuestions": "Пожалуйста, ответьте на все вопросы.",
+  "@answerAllQuestions": {
+    "description": "Validation message for incomplete voting"
+  },
+  
+  "voteAccepted": "Голос принят",
+  "@voteAccepted": {
+    "description": "Vote accepted dialog title"
+  },
+  
+  "thankYou": "Спасибо за участие!",
+  "@thankYou": {
+    "description": "Thank you message"
+  },
+  
+  "alreadyVotedError": "Ваш голос уже был учтен ранее.",
+  "@alreadyVotedError": {
+    "description": "Already voted error message"
+  },
+  
+  "error": "Ошибка: {error}",
+  "@error": {
+    "description": "Generic error message",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  
+  "noQuestionsAvailable": "Вопросы для этого голосования отсутствуют.",
+  "@noQuestionsAvailable": {
+    "description": "No questions available message"
+  },
+  
+  "alreadyVoted": "Вы уже проголосовали",
+  "@alreadyVoted": {
+    "description": "Already voted button text"
+  },
+  
+  "description": "Описание",
+  "@description": {
+    "description": "Description label"
+  },
+  
+  "votingStartLabel": "Начало\nголосования",
+  "@votingStartLabel": {
+    "description": "Voting start label for results screen"
+  },
+  
+  "votingEndLabel": "Завершение\nголосования",
+  "@votingEndLabel": {
+    "description": "Voting end label for results screen"
+  },
+  
+  "sessionCompleted": "Заседание завершено",
+  "@sessionCompleted": {
+    "description": "Session completed message"
+  },
+  
+  "resultsUnavailable": "Результаты для этого голосования отсутствуют.",
+  "@resultsUnavailable": {
+    "description": "Results unavailable message"
+  },
+  
+  "votingResults": "Результаты голосования",
+  "@votingResults": {
+    "description": "Voting results title"
+  },
+  
+  "voteCount": "Количество голосов",
+  "@voteCount": {
+    "description": "Vote count column header"
+  },
+  
+  "languageRussian": "Русский",
+  "@languageRussian": {
+    "description": "Russian language option"
+  },
+  
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "English language option"
+  }
+}

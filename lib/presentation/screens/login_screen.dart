@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
+import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'rudn_webview_screen.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,56 +18,29 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Эта функция показывает информационный диалог
-  void _showRudnIdDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(
-            "Авторизация через РУДН ID",
-            style: TextStyle(
-              fontFamily: GoogleFonts.exo2().fontFamily,
-              fontStyle: FontStyle.normal,
-              fontWeight: FontWeight.w900,
-              fontSize: 26.0,
-              shadows: [],
-            ),
-          ),
-          content: const SingleChildScrollView(
-            child: Text(
-              "Вы будете перенаправлены на сайт авторизации с помощью РУДН ID.\n\n"
-              "Пользователям, не являющимся сотрудниками РУДН и не имеющим "
-              "корпоративный аккаунт, необходимо пройти единовременную регистрацию, "
-              "нажав на кнопку «Создать аккаунт в РУДН ID» на следующей странице, а "
-              "затем выполнить повторный вход в систему.",
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Отмена"),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            ElevatedButton(
-              child: const Text("Продолжить"),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                context.read<AuthBloc>().add(const LoggedIn(login: "rudn_user", password: "password"));
-              },
-            ),
-          ],
-        );
-      },
+  // Эта функция запускает процесс авторизации через WebView
+  void _startRudnAuth(BuildContext context) async {
+    final bool? success = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RudnWebviewScreen()),
     );
+
+    if (success == true && context.mounted) {
+      // Если авторизация прошла успешно (куки получены),
+      // отправляем событие в AuthBloc для обновления состояния
+      // (Передаем пустые строки, так как логика теперь другая,
+      // или можно создать отдельное событие, но для совместимости оставим LoggedIn)
+      context
+          .read<AuthBloc>()
+          .add(const LoggedIn(login: "rudn_user", password: ""));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     // FIXED: Получаем тему из централизованного файла
     final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!; // Октябрь по умолчанию
+    final theme = monthlyThemes[currentMonth] ??
+        monthlyThemes[10]!; // Октябрь по умолчанию
 
     return AppBackground(
       imagePath: theme.imagePath, // FIXED: Используем динамический фон
@@ -80,6 +56,44 @@ class _LoginScreenState extends State<LoginScreen> {
           },
           child: Stack(
             children: [
+              // Language switcher at top-right
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: PopupMenuButton<Locale>(
+                      icon: const Icon(Icons.language, color: Colors.white, size: 28),
+                      onSelected: (Locale locale) {
+                        context.read<LocaleBloc>().add(ChangeLocale(locale));
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<Locale>(
+                          value: const Locale('ru'),
+                          child: Row(
+                            children: [
+                              const Text('🇷🇺'),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.languageRussian),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<Locale>(
+                          value: const Locale('en'),
+                          child: Row(
+                            children: [
+                              const Text('🇬🇧'),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.languageEnglish),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -91,24 +105,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Seasons',
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              color: const Color(0xFF42445A),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 40,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  color: const Color(0xFF42445A),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 40,
+                                ),
                       ),
                     ),
                     const SizedBox(height: 10),
                     _SkewedContainer(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 30),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 30),
                       color: const Color(0xFF4A5C7A),
-                      onTap: () => _showRudnIdDialog(context),
+                      onTap: () => _startRudnAuth(context),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Войти',
+                            AppLocalizations.of(context)!.login,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: GoogleFonts.exo2().fontFamily,
@@ -139,13 +155,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '© RUDN University 2025',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                        AppLocalizations.of(context)!.copyright,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'seasons-helpdesk@rudn.ru',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                        AppLocalizations.of(context)!.helpEmail,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: Colors.white),
                       ),
                     ],
                   ),
