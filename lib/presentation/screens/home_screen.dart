@@ -9,6 +9,8 @@ import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
+import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
+import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
 import 'package:seasons/presentation/screens/profile_screen.dart';
 import 'package:seasons/presentation/screens/registration_details_screen.dart';
@@ -16,6 +18,7 @@ import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class _TopBar extends StatelessWidget {
   @override
@@ -29,8 +32,37 @@ class _TopBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Language switcher button (moved to left)
+          PopupMenuButton<Locale>(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onSelected: (Locale locale) {
+              context.read<LocaleBloc>().add(ChangeLocale(locale));
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<Locale>(
+                value: const Locale('ru'),
+                child: Row(
+                  children: [
+                    const Text('🇷🇺'),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.languageRussian),
+                  ],
+                ),
+              ),
+              PopupMenuItem<Locale>(
+                value: const Locale('en'),
+                child: Row(
+                  children: [
+                    const Text('🇬🇧'),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context)!.languageEnglish),
+                  ],
+                ),
+              ),
+            ],
+          ),
           Row(
             children: [
               GestureDetector(
@@ -76,9 +108,7 @@ class _Header extends StatelessWidget {
                   color: Colors.white,
                   shadows: [
                     const Shadow(blurRadius: 10, color: Colors.black54),
-                    const Shadow(
-                        blurRadius: 2,
-                        color: Colors.black87)
+                    const Shadow(blurRadius: 2, color: Colors.black87)
                   ],
                   fontWeight: FontWeight.w900,
                 ),
@@ -86,12 +116,10 @@ class _Header extends StatelessWidget {
           Text(
             'времена года',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   shadows: [
                     const Shadow(blurRadius: 8, color: Colors.black54),
-                    const Shadow(
-                        blurRadius: 2,
-                        color: Colors.black54)
+                    const Shadow(blurRadius: 2, color: Colors.black54)
                   ],
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w900,
@@ -129,15 +157,15 @@ class _PanelSelector extends StatelessWidget {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
-        Colors.black.withOpacity(0.5),
-        Colors.black.withOpacity(0.3),
-        Colors.black.withOpacity(0.5),
+        Colors.black.withValues(alpha: 0.5),
+        Colors.black.withValues(alpha: 0.3),
+        Colors.black.withValues(alpha: 0.5),
       ],
     );
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 16),
-      height: barHeight + moundHeight, 
+      height: barHeight + moundHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
@@ -145,7 +173,7 @@ class _PanelSelector extends StatelessWidget {
 
           return Stack(
             clipBehavior: Clip.none, // Оставляем
-            alignment: Alignment.topCenter, 
+            alignment: Alignment.topCenter,
             children: [
               // --- Слой 1: ЕДИНЫЙ РАЗМЫТЫЙ БАР-БУГОРОК ---
               Positioned(
@@ -173,10 +201,10 @@ class _PanelSelector extends StatelessWidget {
 
               // --- Слой 2: Ряд с Кнопками ---
               Positioned(
-                top: moundHeight, 
+                top: moundHeight,
                 left: horizontalMargin,
                 right: horizontalMargin,
-                height: barHeight, 
+                height: barHeight,
                 child: Row(
                   children: [
                     // Слот 1
@@ -259,6 +287,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _fetchEventsForPanel(_selectedPanelIndex);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentMonth = DateTime.now().month;
     final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
@@ -274,9 +308,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.35),
-                    Colors.black.withOpacity(0.25),
-                    Colors.black.withOpacity(0.35),
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.25),
+                    Colors.black.withValues(alpha: 0.35),
                   ],
                 ),
               ),
@@ -351,7 +385,7 @@ class _PanelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Duration animDuration = Duration(milliseconds: 600);
-    const double buttonPopUpHeight = 15.0; 
+    const double buttonPopUpHeight = 15.0;
 
     Color backgroundColor;
     if (hasActiveEvents) {
@@ -362,9 +396,9 @@ class _PanelButton extends StatelessWidget {
 
     final double buttonYTranslation = isSelected ? -buttonPopUpHeight : 0.0;
     final double scale = isSelected ? 1.0 : 0.8;
-    
+
     // Иконка (1.2 * 25.0 = 30.0)
-    final double iconSize = buttonRadius * 1.2; 
+    final double iconSize = buttonRadius * 1.2;
 
     return GestureDetector(
       onTap: onTap,
@@ -452,30 +486,32 @@ class _EventList extends StatelessWidget {
         if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+              margin:
+                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.5),
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.7),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Center(
                 child: Text(
-                  'Нет активных голосований',
+                  AppLocalizations.of(context)!.noActiveVotings,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: 20.0,
-                        shadows: [
-                          const Shadow(blurRadius: 6, color: Colors.black87)
-                        ],
-                      ),
+                    color: Colors.white,
+                    fontSize: 20.0,
+                    shadows: [
+                      const Shadow(blurRadius: 6, color: Colors.black87)
+                    ],
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -520,24 +556,26 @@ class _VotingEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat.yMMMd('ru');
+    final locale = Localizations.localeOf(context);
+    final dateFormat = DateFormat.yMMMd(locale.languageCode == 'ru' ? 'ru' : 'en');
+    final l10n = AppLocalizations.of(context)!;
     String dateInfo;
 
     switch (event.status) {
       case model.VotingStatus.registration:
         dateInfo = event.registrationEndDate != null
-            ? 'Регистрация до: ${dateFormat.format(event.registrationEndDate!)}'
-            : 'Регистрация открыта';
+            ? l10n.registrationUntil(dateFormat.format(event.registrationEndDate!))
+            : l10n.registrationOpen;
         break;
       case model.VotingStatus.active:
         dateInfo = event.votingEndDate != null
-            ? 'Голосование до: ${dateFormat.format(event.votingEndDate!)}'
-            : 'Голосование активно';
+            ? l10n.votingUntil(dateFormat.format(event.votingEndDate!))
+            : l10n.votingActive;
         break;
       case model.VotingStatus.completed:
         dateInfo = event.votingEndDate != null
-            ? 'Завершено: ${dateFormat.format(event.votingEndDate!)}'
-            : 'Завершено';
+            ? l10n.completedOn(dateFormat.format(event.votingEndDate!))
+            : l10n.completed;
         break;
     }
 
@@ -556,7 +594,6 @@ class _VotingEventCard extends StatelessWidget {
                   color: Colors.black87,
                   fontWeight: FontWeight.w900,
                 ),
-                
           ),
         ),
         subtitle: Column(
@@ -572,7 +609,13 @@ class _VotingEventCard extends StatelessWidget {
                 event.status == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
               Text(
-                event.status == model.VotingStatus.registration ? (event.isRegistered ? "Зарегистрирован(-а)" : "Не зарегистрирован(-а)") : (event.hasVoted ? "Проголосовал(-а)" : "Не проголосовал(-а)"),
+                event.status == model.VotingStatus.registration
+                    ? (event.isRegistered
+                        ? AppLocalizations.of(context)!.registered
+                        : AppLocalizations.of(context)!.notRegistered)
+                    : (event.hasVoted
+                        ? AppLocalizations.of(context)!.voted
+                        : AppLocalizations.of(context)!.notVoted),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: (event.status == model.VotingStatus.registration
                               ? event.isRegistered
@@ -637,7 +680,7 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
   final double barHeight;
   final double moundHeight;
   final double moundWidth;
-  final double horizontalMargin; 
+  final double horizontalMargin;
 
   _UnifiedBarClipper({
     required this.moundIndex,
@@ -661,13 +704,13 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
     // X-координаты "виртуального" бара
     final double barLeftX = horizontalMargin;
     final double barRightX = size.width - horizontalMargin;
-    
+
     // X-координаты "бугорка"
     final double moundCenterX =
         barLeftX + (moundIndex * buttonSlotWidth) + (buttonSlotWidth / 2);
     final double moundStart = moundCenterX - (moundWidth / 2);
     final double moundEnd = moundCenterX + (moundWidth / 2);
-    
+
     // X-координаты углов (для проверки)
     final double topLeftCornerX = barLeftX + cornerRadius;
     final double topRightCornerX = barRightX - cornerRadius;
@@ -686,13 +729,11 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
     if (moundIndex == 0) {
       path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
       path.lineTo(topRightCornerX, barTopY);
-    } 
-    else if (moundIndex == 1) {
+    } else if (moundIndex == 1) {
       path.lineTo(moundStart, barTopY);
       path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
       path.lineTo(topRightCornerX, barTopY);
-    }
-    else {
+    } else {
       path.lineTo(moundStart, barTopY);
       path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
     }
@@ -713,7 +754,7 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     // 6. Рисуем нижнюю грань
     path.lineTo(topLeftCornerX, barBottomY); // (barLeftX + cornerRadius)
 
@@ -723,7 +764,7 @@ class _UnifiedBarClipper extends CustomClipper<Path> {
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     // 8. Замыкаем путь (рисуем левую грань)
     path.close();
     return path;

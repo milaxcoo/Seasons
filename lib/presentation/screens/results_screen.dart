@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/widgets/app_background.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 class ResultsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -28,9 +29,9 @@ class ResultsScreen extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.35),
-                    Colors.black.withOpacity(0.25),
-                    Colors.black.withOpacity(0.35),
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.25),
+                    Colors.black.withValues(alpha: 0.35),
                   ],
                 ),
               ),
@@ -59,14 +60,16 @@ class _ResultsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd.MM.yyyy\nHH:mm:ss', 'ru');
+    final l10n = AppLocalizations.of(context)!;
+    final localeName = Localizations.localeOf(context).languageCode;
+    final dateFormat = DateFormat('dd.MM.yyyy\nHH:mm:ss', localeName);
 
     final startDate = event.votingStartDate != null
         ? dateFormat.format(event.votingStartDate!)
-        : 'Не установлено';
+        : l10n.notSet;
     final endDate = event.votingEndDate != null
         ? dateFormat.format(event.votingEndDate!)
-        : 'Не установлено';
+        : l10n.notSet;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -89,21 +92,26 @@ class _ResultsView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Divider(),
-            _InfoRow(label: 'Описание', value: event.description),
-            _InfoRow(label: 'Начало\nголосования', value: startDate),
-            _InfoRow(label: 'Завершение\nголосования', value: endDate),
+            Text(
+              event.description,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 8),
+            const Divider(),
+            _InfoRow(label: l10n.votingStartLabel, value: startDate),
+            _InfoRow(label: l10n.votingEndLabel, value: endDate),
             const SizedBox(height: 24),
             _ResultsTable(results: event.results),
             const SizedBox(height: 32),
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: Text(
-                  'Заседание завершено',
+                  l10n.sessionCompleted,
                   style: Theme.of(context)
                       .textTheme
                       .bodyLarge
@@ -125,8 +133,9 @@ class _ResultsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (results.isEmpty) {
-      return const Text("Результаты для этого голосования отсутствуют.");
+      return Text(l10n.resultsUnavailable);
     }
 
     return Container(
@@ -139,7 +148,7 @@ class _ResultsTable extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Результаты голосования',
+            l10n.votingResults,
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
@@ -166,7 +175,7 @@ class _ResultsTable extends StatelessWidget {
                   // Оборачиваем таблицу в SingleChildScrollView для горизонтальной прокрутки
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: _buildDataTable(context, questionResult),
+                    child: _buildDataTable(context, questionResult, l10n),
                   ),
                 ],
               ),
@@ -177,27 +186,107 @@ class _ResultsTable extends StatelessWidget {
     );
   }
 
-  Widget _buildDataTable(BuildContext context, QuestionResult data) {
+  Widget _buildDataTable(BuildContext context, QuestionResult data, AppLocalizations l10n) {
+    // Для qualification_council показываем варианты ответов как строки, а не колонки
+    if (data.type == 'qualification_council') {
+      return Table(
+        border: TableBorder(
+          verticalInside: BorderSide(
+            color: Colors.black.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        columnWidths: const {
+          0: IntrinsicColumnWidth(),
+          1: IntrinsicColumnWidth(),
+        },
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: [
+          // Заголовок таблицы
+          TableRow(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.1),
+            ),
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  '',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  l10n.voteCount,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          // Строки с данными - каждая комбинация субъект-ответ это отдельная строка
+          ...data.subjectResults.expand((subject) {
+            return subject.voteCounts.entries.map((entry) {
+              return TableRow(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Text(
+                      subject.name,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Center(
+                      child: Text(entry.value.toString()),
+                    ),
+                  ),
+                ],
+              );
+            });
+          }),
+        ],
+      );
+    }
+
+    // Для остальных типов (yes_no, yes_no_abstained, multiple_variants, subject_oriented)
     List<String> columns;
     if (data.type == 'multiple_variants') {
-      columns = ['Варианты ответов', 'Количество голосов'];
+      columns = ['', l10n.voteCount];
     } else {
       columns = ['', ...data.allColumns];
     }
 
-    // FIXED: Все колонки теперь имеют ширину по своему содержимому
     Map<int, TableColumnWidth> columnWidths = {};
     for (int i = 0; i < columns.length; i++) {
       columnWidths[i] = const IntrinsicColumnWidth();
     }
 
     return Table(
+      border: TableBorder(
+        verticalInside: BorderSide(
+          color: Colors.black.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       columnWidths: columnWidths,
       defaultVerticalAlignment: TableCellVerticalAlignment.middle,
       children: [
         TableRow(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
           ),
           children: columns.map((colName) {
             return Padding(

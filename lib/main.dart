@@ -11,6 +11,11 @@ import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
 import 'firebase_options.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
+import 'package:seasons/presentation/bloc/locale/locale_event.dart';
+import 'package:seasons/presentation/bloc/locale/locale_state.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 
 void main() async {
   try {
@@ -19,6 +24,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     await initializeDateFormatting('ru_RU', null);
+    await initializeDateFormatting('en_US', null);
     runApp(const SeasonsApp());
   } catch (e) {
     print('Не удалось инициализировать приложение: $e');
@@ -34,6 +40,9 @@ class SeasonsApp extends StatelessWidget {
       create: (context) => ApiVotingRepository(),
       child: MultiBlocProvider(
         providers: [
+          BlocProvider<LocaleBloc>(
+            create: (context) => LocaleBloc()..add(const LoadLocale()),
+          ),
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(
               votingRepository: RepositoryProvider.of<VotingRepository>(context),
@@ -45,25 +54,41 @@ class SeasonsApp extends StatelessWidget {
             ),
           ),
         ],
-        child: MaterialApp(
-          title: 'Seasons',
-          theme: AppTheme.lightTheme,
-          debugShowCheckedModeBanner: false,
-          home: BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              if (state is AuthInitial) {
-                return const Scaffold(body: Center(child: CircularProgressIndicator()));
-              }
-              if (state is AuthAuthenticated) {
-                PushNotificationService().initialize();
-                return const HomeScreen();
-              }
-              if (state is AuthUnauthenticated) {
-                return const LoginScreen();
-              }
-              return const LoginScreen();
-            },
-          ),
+        child: BlocBuilder<LocaleBloc, LocaleState>(
+          builder: (context, localeState) {
+            return MaterialApp(
+              title: 'Seasons',
+              theme: AppTheme.lightTheme,
+              debugShowCheckedModeBanner: false,
+              locale: localeState.locale,
+              supportedLocales: const [
+                Locale('ru'),
+                Locale('en'),
+              ],
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              home: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthInitial) {
+                    return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()));
+                  }
+                  if (state is AuthAuthenticated) {
+                    PushNotificationService().initialize();
+                    return const HomeScreen();
+                  }
+                  if (state is AuthUnauthenticated) {
+                    return const LoginScreen();
+                  }
+                  return const LoginScreen();
+                },
+              ),
+            );
+          },
         ),
       ),
     );
