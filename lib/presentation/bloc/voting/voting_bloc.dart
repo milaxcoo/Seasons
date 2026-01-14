@@ -11,6 +11,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       : _votingRepository = votingRepository,
         super(VotingInitial()) {
     on<FetchEventsByStatus>(_onFetchEventsByStatus);
+    on<RefreshEventsSilent>(_onRefreshEventsSilent);
     on<RegisterForEvent>(_onRegisterForEvent);
     on<SubmitVote>(_onSubmitVote);
     on<FetchResults>(_onFetchResults);
@@ -21,9 +22,28 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     emit(VotingLoadInProgress());
     try {
       final events = await _votingRepository.getEventsByStatus(event.status);
-      emit(VotingEventsLoadSuccess(events: events));
+      emit(VotingEventsLoadSuccess(
+        events: events,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      ));
     } catch (e) {
       emit(VotingFailure(error: e.toString()));
+    }
+  }
+
+  // Silent refresh for FCM - no loading spinner
+  Future<void> _onRefreshEventsSilent(
+      RefreshEventsSilent event, Emitter<VotingState> emit) async {
+    // Don't emit loading state - update silently in background
+    try {
+      final events = await _votingRepository.getEventsByStatus(event.status);
+      emit(VotingEventsLoadSuccess(
+        events: events,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      ));
+    } catch (e) {
+      // Silently fail - don't show error to user for background refresh
+      print('Silent refresh failed: $e');
     }
   }
 

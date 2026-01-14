@@ -14,9 +14,18 @@ class VotingInitial extends VotingState {}
 class VotingLoadInProgress extends VotingState {}
 
 // Состояние для успешной загрузки списка голосований
+// Состояние для успешной загрузки списка голосований
 class VotingEventsLoadSuccess extends VotingState {
   final List<model.VotingEvent> events;
-  const VotingEventsLoadSuccess({required this.events});
+  final int timestamp; // Force unique state for refresh
+  
+  const VotingEventsLoadSuccess({
+    required this.events,
+    this.timestamp = 0,
+  });
+  
+  @override
+  List<Object> get props => [events, timestamp];
 }
 
 // Новое состояние для успешной загрузки деталей одного голосования

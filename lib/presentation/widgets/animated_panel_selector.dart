@@ -24,113 +24,118 @@ class AnimatedPanelSelector extends StatelessWidget {
     const Duration animDuration = Duration(milliseconds: 600);
     const Curve animCurve = Curves.easeOutCubic;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      height: totalHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
-          final double buttonSlotWidth = barWidth / 3;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 16),
+          height: totalHeight,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
+              final double buttonSlotWidth = barWidth / 3;
 
-          return TweenAnimationBuilder<double>(
-            tween: Tween<double>(
-              begin: selectedIndex.toDouble(),
-              end: selectedIndex.toDouble(),
-            ),
-            duration: animDuration,
-            curve: animCurve,
-            builder: (context, animationValue, child) {
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Unified background with blur
-                  ClipPath(
-                    clipper: _UnifiedShapeClipper(
-                      animationValue: animationValue,
-                      buttonSlotWidth: buttonSlotWidth,
-                      barHeight: barHeight,
-                      totalHeight: totalHeight,
-                      horizontalMargin: horizontalMargin,
-                      totalWidth: constraints.maxWidth,
-                    ),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: Container(
-                        width: constraints.maxWidth,
-                        height: totalHeight,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.5),
-                              Colors.black.withValues(alpha: 0.3),
-                              Colors.black.withValues(alpha: 0.5),
-                            ],
+              return TweenAnimationBuilder<double>(
+                tween: Tween<double>(
+                  begin: selectedIndex.toDouble(),
+                  end: selectedIndex.toDouble(),
+                ),
+                duration: animDuration,
+                curve: animCurve,
+                builder: (context, animationValue, child) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Unified background with blur
+                      ClipPath(
+                        clipper: _UnifiedShapeClipper(
+                          animationValue: animationValue,
+                          buttonSlotWidth: buttonSlotWidth,
+                          barHeight: barHeight,
+                          totalHeight: totalHeight,
+                          horizontalMargin: horizontalMargin,
+                          totalWidth: constraints.maxWidth,
+                        ),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                          child: Container(
+                            width: constraints.maxWidth,
+                            height: totalHeight,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.5),
+                                  Colors.black.withValues(alpha: 0.3),
+                                  Colors.black.withValues(alpha: 0.5),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
 
-                  // Buttons (positioned on top)
-                  Positioned(
-                    top: totalHeight - barHeight,
-                    left: horizontalMargin,
-                    right: horizontalMargin,
-                    height: barHeight,
-                    child: Row(
-                      children: [
-                        // Button 1 - Registration
-                        SizedBox(
-                          width: buttonSlotWidth,
-                          child: _AnimatedButton(
-                            icon: RegistrationIcon(isSelected: false),
-                            isSelected: selectedIndex == 0,
-                            onTap: () => onPanelSelected(0),
-                            hasActiveEvents:
-                                (hasEvents[model.VotingStatus.registration] ?? 0) > 0,
-                            buttonRadius: buttonRadius,
-                            animDuration: animDuration,
-                            animCurve: animCurve,
-                          ),
+                      // Buttons (positioned on top)
+                      Positioned(
+                        top: totalHeight - barHeight,
+                        left: horizontalMargin,
+                        right: horizontalMargin,
+                        height: barHeight,
+                        child: Row(
+                          children: [
+                            // Button 1 - Registration
+                            SizedBox(
+                              width: buttonSlotWidth,
+                              child: _AnimatedButton(
+                                icon: RegistrationIcon(isSelected: false),
+                                isSelected: selectedIndex == 0,
+                                onTap: () => onPanelSelected(0),
+                                hasActiveEvents:
+                                    (hasEvents[model.VotingStatus.registration] ?? 0) > 0,
+                                buttonRadius: buttonRadius,
+                                animDuration: animDuration,
+                                animCurve: animCurve,
+                              ),
+                            ),
+                            // Button 2 - Active Voting
+                            SizedBox(
+                              width: buttonSlotWidth,
+                              child: _AnimatedButton(
+                                icon: ActiveVotingIcon(isSelected: false),
+                                isSelected: selectedIndex == 1,
+                                onTap: () => onPanelSelected(1),
+                                hasActiveEvents:
+                                    (hasEvents[model.VotingStatus.active] ?? 0) > 0,
+                                buttonRadius: buttonRadius,
+                                animDuration: animDuration,
+                                animCurve: animCurve,
+                              ),
+                            ),
+                            // Button 3 - Results
+                            SizedBox(
+                              width: buttonSlotWidth,
+                              child: _AnimatedButton(
+                                icon: ResultsIcon(isSelected: false),
+                                isSelected: selectedIndex == 2,
+                                onTap: () => onPanelSelected(2),
+                                hasActiveEvents:
+                                    (hasEvents[model.VotingStatus.completed] ?? 0) > 0,
+                                buttonRadius: buttonRadius,
+                                animDuration: animDuration,
+                                animCurve: animCurve,
+                              ),
+                            ),
+                          ],
                         ),
-                        // Button 2 - Active Voting
-                        SizedBox(
-                          width: buttonSlotWidth,
-                          child: _AnimatedButton(
-                            icon: ActiveVotingIcon(isSelected: false),
-                            isSelected: selectedIndex == 1,
-                            onTap: () => onPanelSelected(1),
-                            hasActiveEvents:
-                                (hasEvents[model.VotingStatus.active] ?? 0) > 0,
-                            buttonRadius: buttonRadius,
-                            animDuration: animDuration,
-                            animCurve: animCurve,
-                          ),
-                        ),
-                        // Button 3 - Results
-                        SizedBox(
-                          width: buttonSlotWidth,
-                          child: _AnimatedButton(
-                            icon: ResultsIcon(isSelected: false),
-                            isSelected: selectedIndex == 2,
-                            onTap: () => onPanelSelected(2),
-                            hasActiveEvents:
-                                (hasEvents[model.VotingStatus.completed] ?? 0) > 0,
-                            buttonRadius: buttonRadius,
-                            animDuration: animDuration,
-                            animCurve: animCurve,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }

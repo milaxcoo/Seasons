@@ -130,7 +130,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('RUDN ID Login'),
+        title: const Text(''),
       ),
       body: Stack(
         children: [
