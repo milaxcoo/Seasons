@@ -320,43 +320,50 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               body: SafeArea(
-                child: Column(
-                  children: [
-                    _TopBar(),
-                    _Header(),
-                    BlocListener<VotingBloc, VotingState>(
-                      listener: (context, state) {
-                        if (state is VotingEventsLoadSuccess) {
-                          _updateEventsCount(
-                              [
-                                model.VotingStatus.registration,
-                                model.VotingStatus.active,
-                                model.VotingStatus.completed,
-                              ][_selectedPanelIndex],
-                              state.events.length);
-                        }
-                      },
-                      child: _PanelSelector(
-                        selectedIndex: _selectedPanelIndex,
-                        onPanelSelected: _fetchEventsForPanel,
-                        hasEvents: _eventsCount,
-                      ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(child: _TopBar()),
+                        SliverToBoxAdapter(child: _Header()),
+                        SliverToBoxAdapter(
+                          child: BlocListener<VotingBloc, VotingState>(
+                            listener: (context, state) {
+                              if (state is VotingEventsLoadSuccess) {
+                                _updateEventsCount(
+                                    [
+                                      model.VotingStatus.registration,
+                                      model.VotingStatus.active,
+                                      model.VotingStatus.completed,
+                                    ][_selectedPanelIndex],
+                                    state.events.length);
+                              }
+                            },
+                            child: _PanelSelector(
+                              selectedIndex: _selectedPanelIndex,
+                              onPanelSelected: _fetchEventsForPanel,
+                              hasEvents: _eventsCount,
+                            ),
+                          ),
+                        ),
+                        _EventList(
+                          key: ValueKey(_selectedPanelIndex),
+                          status: [
+                            model.VotingStatus.registration,
+                            model.VotingStatus.active,
+                            model.VotingStatus.completed,
+                          ][_selectedPanelIndex],
+                          imagePath: theme.imagePath,
+                          onRefresh: () =>
+                              _fetchEventsForPanel(_selectedPanelIndex),
+                        ),
+                        SliverToBoxAdapter(
+                            child: _Footer(
+                                poem: theme.poem, author: theme.author)),
+                      ],
                     ),
-                    Expanded(
-                      child: _EventList(
-                        key: ValueKey(_selectedPanelIndex),
-                        status: [
-                          model.VotingStatus.registration,
-                          model.VotingStatus.active,
-                          model.VotingStatus.completed,
-                        ][_selectedPanelIndex],
-                        imagePath: theme.imagePath,
-                        onRefresh: () =>
-                            _fetchEventsForPanel(_selectedPanelIndex),
-                      ),
-                    ),
-                    _Footer(poem: theme.poem, author: theme.author),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -438,27 +445,29 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            poem,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white,
-              height: 1.5,
-              shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+      child: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              poem,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                height: 1.5,
+                shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            author,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white,
-              fontStyle: FontStyle.italic,
-              shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+            const SizedBox(height: 8),
+            Text(
+              author,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontStyle: FontStyle.italic,
+                shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -480,64 +489,74 @@ class _EventList extends StatelessWidget {
     return BlocBuilder<VotingBloc, VotingState>(
       builder: (context, state) {
         if (state is VotingLoadInProgress) {
-          return const Center(
-              child: CircularProgressIndicator(color: Colors.white));
+          return const SliverFillRemaining(
+            child: Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
         }
         if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
-            return Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              margin:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.7),
-                    Colors.black.withValues(alpha: 0.5),
-                    Colors.black.withValues(alpha: 0.7),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Center(
-                child: Text(
-                  AppLocalizations.of(context)!.noActiveVotings,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white,
-                    fontSize: 20.0,
-                    shadows: [
-                      const Shadow(blurRadius: 6, color: Colors.black87)
+            return SliverFillRemaining(
+              hasScrollBody: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 24.0),
+                margin: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 72.0),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.7),
+                      Colors.black.withValues(alpha: 0.5),
+                      Colors.black.withValues(alpha: 0.7),
                     ],
                   ),
-                  textAlign: TextAlign.center,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.noActiveVotings,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white,
+                      fontSize: 20.0,
+                      shadows: [
+                        const Shadow(blurRadius: 6, color: Colors.black87)
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            itemCount: state.events.length,
-            itemBuilder: (context, index) {
-              return _VotingEventCard(
-                event: state.events[index],
-                imagePath: imagePath,
-                onActionComplete: onRefresh,
-              );
-            },
+          return SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                return _VotingEventCard(
+                  event: state.events[index],
+                  imagePath: imagePath,
+                  onActionComplete: onRefresh,
+                );
+              },
+              childCount: state.events.length,
+            ),
           );
         }
         if (state is VotingFailure) {
-          return Center(
+          return SliverToBoxAdapter(
+            child: Center(
               child: Text('Error: ${state.error}',
                   style: Theme.of(context)
                       .textTheme
                       .bodyLarge
-                      ?.copyWith(color: Colors.white)));
+                      ?.copyWith(color: Colors.white)),
+            ),
+          );
         }
-        return const SizedBox.shrink();
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
       },
     );
   }
