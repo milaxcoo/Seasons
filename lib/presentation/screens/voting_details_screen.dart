@@ -244,122 +244,153 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
           );
         }
 
-        // --- ИСПРАВЛЕНИЕ: Обертка в Stack для кнопки ---
-        return Stack(
-          children: [
-            // --- ИСПРАВЛЕНИЕ: Используем Column + NestedScrollView ---
-            NestedScrollView(
-              // --- ИСПРАВЛЕНИЕ: headerSliverBuilder для "нелипких" плашек ---
-              headerSliverBuilder:
-                  (BuildContext context, bool innerBoxIsScrolled) {
-                return <Widget>[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFe4dcc5),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // --- ОПИСАНИЕ (внутри плашки) ---
-                            if (widget.event.description.isNotEmpty)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    return LayoutBuilder(builder: (context, constraints) {
+      final bool isPinnedButton = constraints.maxHeight > 500;
+      final double bottomPadding = isPinnedButton ? 120.0 : 24.0;
+
+      return Stack(
+        children: [
+          NestedScrollView(
+            headerSliverBuilder:
+                (BuildContext context, bool innerBoxIsScrolled) {
+              return <Widget>[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFe4dcc5),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.event.description.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                              child: Text(
+                                widget.event.description,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      color: Colors.black,
+                                    ),
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (widget.event.description.isNotEmpty)
+                                  const Divider(
+                                      color: Colors.black12, height: 1),
+                                _InfoRow(
+                                    label: l10n.votingStart, value: startDate),
+                                const Divider(color: Colors.black12),
+                                _InfoRow(label: l10n.votingEnd, value: endDate),
+                                const Divider(color: Colors.black12),
+                                _InfoRow(
+                                  label: l10n.status,
+                                  value: statusText,
+                                  valueColor: statusColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isOngoing && !widget.event.hasVoted)
+                            Align(
+                              alignment: Alignment.bottomLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF4a4a4a),
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(12),
+                                    bottomLeft: Radius.circular(12),
+                                  ),
+                                ),
                                 child: Text(
-                                  widget.event.description,
+                                  l10n.votingInProgress,
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyLarge
                                       ?.copyWith(
-                                        color: Colors.black,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                 ),
                               ),
-                            // --- ДАТЫ/СТАТУС (внутри плашки) ---
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (widget.event.description.isNotEmpty)
-                                    const Divider(
-                                        color: Colors.black12, height: 1),
-                                  _InfoRow(
-                                      label: l10n.votingStart,
-                                      value: startDate),
-                                  const Divider(color: Colors.black12),
-                                  _InfoRow(
-                                      label: l10n.votingEnd,
-                                      value: endDate),
-                                  const Divider(color: Colors.black12),
-                                  _InfoRow(
-                                    label: l10n.status,
-                                    value: statusText,
-                                    valueColor: statusColor,
-                                  ),
-                                ],
-                              ),
                             ),
-                            if (isOngoing && !widget.event.hasVoted)
-                              Align(
-                                alignment: Alignment.bottomLeft,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF4a4a4a),
-                                    borderRadius: BorderRadius.only(
-                                      topRight: Radius.circular(12),
-                                      bottomLeft: Radius.circular(12),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    l10n.votingInProgress,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                ];
-              },
-              // --- ИСПРАВЛЕНИЕ: body - это сам список вопросов ---
-              body: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(
-                    16, 8, 16, 120), // Отступ для кнопки
-                itemCount: widget.event.questions.length,
-                itemBuilder: (context, index) {
-                  final question = widget.event.questions[index];
-                  return _QuestionCard(
-                    question: question,
-                    selectedAnswers: _selectedAnswers,
-                    onAnswerSelected: (key, answerId) {
-                      setState(() {
-                        _selectedAnswers[key] = answerId;
-                      });
-                      _saveDraft();
-                    },
-                    hasVoted: widget.event.hasVoted,
-                    isLoadingDraft: _isLoadingDraft,
+                ),
+              ];
+            },
+            body: ListView.builder(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+              itemCount:
+                  widget.event.questions.length + (isPinnedButton ? 0 : 1),
+              itemBuilder: (context, index) {
+                if (index == widget.event.questions.length) {
+                  // Button inside the list (for Landscape/Small screens)
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: widget.event.hasVoted
+                              ? Colors.grey
+                              : rudnGreenColor,
+                        ),
+                        onPressed: (state is VotingLoadInProgress ||
+                                _selectedAnswers.isEmpty ||
+                                widget.event.hasVoted)
+                            ? null
+                            : _submitVote,
+                        child: state is VotingLoadInProgress
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : Text(
+                                widget.event.hasVoted
+                                    ? l10n.alreadyVoted
+                                    : l10n.vote,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900),
+                              ),
+                      ),
+                    ),
                   );
-                },
-              ),
+                }
+                final question = widget.event.questions[index];
+                return _QuestionCard(
+                  question: question,
+                  selectedAnswers: _selectedAnswers,
+                  onAnswerSelected: (key, answerId) {
+                    setState(() {
+                      _selectedAnswers[key] = answerId;
+                    });
+                    _saveDraft();
+                  },
+                  hasVoted: widget.event.hasVoted,
+                  isLoadingDraft: _isLoadingDraft,
+                );
+              },
             ),
+          ),
 
-            // --- КНОПКА (остается прибитой к низу) ---
+          // Pinned Button (for Portrait/Large screens)
+          if (isPinnedButton)
             Positioned(
               left: 0,
               right: 0,
@@ -396,8 +427,9 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                 ),
               ),
             ),
-          ],
-        );
+        ],
+      );
+    });
       },
     );
   }
