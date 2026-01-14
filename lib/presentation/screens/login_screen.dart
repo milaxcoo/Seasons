@@ -94,58 +94,73 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _SkewedContainer(
-                      reverse: true,
-                      color: const Color(0xFFD9D9D9),
-                      child: Text(
-                        'Seasons',
-                        textAlign: TextAlign.center,
-                        style:
-                            Theme.of(context).textTheme.displaySmall?.copyWith(
-                                  color: const Color(0xFF42445A),
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 40,
-                                ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    _SkewedContainer(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 30),
-                      color: const Color(0xFF4A5C7A),
-                      onTap: () => _startRudnAuth(context),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.login,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: GoogleFonts.exo2().fontFamily,
-                              fontStyle: FontStyle.normal,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 26,
-                              color: Colors.white,
-                              shadows: [],
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            _SkewedContainer(
+                              reverse: true,
+                              color: const Color(0xFFD9D9D9),
+                              child: Text(
+                                'Seasons',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .displaySmall
+                                    ?.copyWith(
+                                      color: const Color(0xFF42445A),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 40,
+                                    ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white,
-                            size: 24,
-                          )
-                        ],
+                            const SizedBox(height: 10),
+                            _SkewedContainer(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 30),
+                              color: const Color(0xFF4A5C7A),
+                              onTap: () => _startRudnAuth(context),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(context)!.login,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: GoogleFonts.exo2().fontFamily,
+                                      fontStyle: FontStyle.normal,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 26,
+                                      color: Colors.white,
+                                      shadows: [],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Icon(
+                                    Icons.arrow_forward_ios,
+                                    color: Colors.white,
+                                    size: 24,
+                                  )
+                                ],
+                              ),
+                            ),
+                            // Safe space for footer in landscape
+                            const SizedBox(height: 100),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
               Align(
                 alignment: Alignment.bottomCenter,

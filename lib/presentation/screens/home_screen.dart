@@ -18,6 +18,7 @@ import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
+import 'package:seasons/presentation/widgets/animated_panel_selector.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 
 class _TopBar extends StatelessWidget {
@@ -262,6 +263,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedPanelIndex = 0;
+  int _previousPanelIndex = 0;
   final Map<model.VotingStatus, int> _eventsCount = {
     model.VotingStatus.registration: 0,
     model.VotingStatus.active: 0,
@@ -276,20 +278,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _fetchEventsForPanel(int index) {
     setState(() {
+      _previousPanelIndex = _selectedPanelIndex;
       _selectedPanelIndex = index;
     });
+    // Fetch data for the new panel
     final status = [
       model.VotingStatus.registration,
       model.VotingStatus.active,
       model.VotingStatus.completed,
-    ][_selectedPanelIndex];
+    ][index];
+    context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+  }
+
+  void _onPageChanged(int index) {
+    // This method is now used for refresh callbacks
+    final status = [
+      model.VotingStatus.registration,
+      model.VotingStatus.active,
+      model.VotingStatus.completed,
+    ][index];
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
   @override
   void initState() {
     super.initState();
-    _fetchEventsForPanel(_selectedPanelIndex);
+    // Fetch initial data
+    final initialStatus = [
+      model.VotingStatus.registration,
+      model.VotingStatus.active,
+      model.VotingStatus.completed,
+    ][_selectedPanelIndex];
+    context.read<VotingBloc>().add(FetchEventsByStatus(status: initialStatus));
   }
 
   @override
@@ -320,43 +340,77 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               body: SafeArea(
-                child: Column(
-                  children: [
-                    _TopBar(),
-                    _Header(),
-                    BlocListener<VotingBloc, VotingState>(
-                      listener: (context, state) {
-                        if (state is VotingEventsLoadSuccess) {
-                          _updateEventsCount(
-                              [
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: Column(
+                      children: [
+                        _TopBar(),
+                        _Header(),
+                        BlocListener<VotingBloc, VotingState>(
+                          listener: (context, state) {
+                            if (state is VotingEventsLoadSuccess) {
+                              _updateEventsCount(
+                                  [
+                                    model.VotingStatus.registration,
+                                    model.VotingStatus.active,
+                                    model.VotingStatus.completed,
+                                  ][_selectedPanelIndex],
+                                  state.events.length);
+                            }
+                          },
+                          child: AnimatedPanelSelector(
+                            selectedIndex: _selectedPanelIndex,
+                            onPanelSelected: _fetchEventsForPanel,
+                            hasEvents: _eventsCount,
+                          ),
+                        ),
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 600),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            layoutBuilder: (currentChild, previousChildren) {
+                              // Stack layout prevents width shifts during transition
+                              return Stack(
+                                alignment: Alignment.topCenter,
+                                children: <Widget>[
+                                  ...previousChildren,
+                                  if (currentChild != null) currentChild,
+                                ],
+                              );
+                            },
+                            transitionBuilder: (Widget child, Animation<double> animation) {
+                              // Determine slide direction based on index change
+                              final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
+                              final offsetBegin = isMovingForward 
+                                  ? const Offset(1.0, 0.0)  // Slide in from right
+                                  : const Offset(-1.0, 0.0); // Slide in from left
+                              
+                              return SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: offsetBegin,
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              );
+                            },
+                            child: _EventListPage(
+                              key: ValueKey(_selectedPanelIndex),
+                              status: [
                                 model.VotingStatus.registration,
                                 model.VotingStatus.active,
                                 model.VotingStatus.completed,
                               ][_selectedPanelIndex],
-                              state.events.length);
-                        }
-                      },
-                      child: _PanelSelector(
-                        selectedIndex: _selectedPanelIndex,
-                        onPanelSelected: _fetchEventsForPanel,
-                        hasEvents: _eventsCount,
-                      ),
+                              imagePath: theme.imagePath,
+                              onRefresh: () => _onPageChanged(_selectedPanelIndex),
+                            ),
+                          ),
+                        ),
+                        _Footer(poem: theme.poem, author: theme.author),
+                      ],
                     ),
-                    Expanded(
-                      child: _EventList(
-                        key: ValueKey(_selectedPanelIndex),
-                        status: [
-                          model.VotingStatus.registration,
-                          model.VotingStatus.active,
-                          model.VotingStatus.completed,
-                        ][_selectedPanelIndex],
-                        imagePath: theme.imagePath,
-                        onRefresh: () =>
-                            _fetchEventsForPanel(_selectedPanelIndex),
-                      ),
-                    ),
-                    _Footer(poem: theme.poem, author: theme.author),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -438,27 +492,29 @@ class _Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            poem,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white,
-              height: 1.5,
-              shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+      child: Center(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              poem,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                height: 1.5,
+                shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            author,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white,
-              fontStyle: FontStyle.italic,
-              shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+            const SizedBox(height: 8),
+            Text(
+              author,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontStyle: FontStyle.italic,
+                shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -480,16 +536,106 @@ class _EventList extends StatelessWidget {
     return BlocBuilder<VotingBloc, VotingState>(
       builder: (context, state) {
         if (state is VotingLoadInProgress) {
+          return const SliverFillRemaining(
+            child: Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        }
+        if (state is VotingEventsLoadSuccess) {
+          if (state.events.isEmpty) {
+            return SliverFillRemaining(
+              hasScrollBody: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 24.0),
+                margin: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 72.0),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.7),
+                      Colors.black.withValues(alpha: 0.5),
+                      Colors.black.withValues(alpha: 0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.noActiveVotings,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white,
+                      fontSize: 20.0,
+                      shadows: [
+                        const Shadow(blurRadius: 6, color: Colors.black87)
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            );
+          }
+          return SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                return _VotingEventCard(
+                  event: state.events[index],
+                  imagePath: imagePath,
+                  onActionComplete: onRefresh,
+                );
+              },
+              childCount: state.events.length,
+            ),
+          );
+        }
+        if (state is VotingFailure) {
+          return SliverToBoxAdapter(
+            child: Center(
+              child: Text('Error: ${state.error}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: Colors.white)),
+            ),
+          );
+        }
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
+      },
+    );
+  }
+}
+
+// Widget for each page in the PageView
+class _EventListPage extends StatelessWidget {
+  final model.VotingStatus status;
+  final String imagePath;
+  final VoidCallback onRefresh;
+
+  const _EventListPage({
+    super.key,
+    required this.status,
+    required this.imagePath,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<VotingBloc, VotingState>(
+      builder: (context, state) {
+        if (state is VotingLoadInProgress) {
           return const Center(
-              child: CircularProgressIndicator(color: Colors.white));
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
         if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             return Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              margin:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -508,9 +654,7 @@ class _EventList extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.white,
                     fontSize: 20.0,
-                    shadows: [
-                      const Shadow(blurRadius: 6, color: Colors.black87)
-                    ],
+                    shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -518,7 +662,7 @@ class _EventList extends StatelessWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
               return _VotingEventCard(
@@ -531,11 +675,11 @@ class _EventList extends StatelessWidget {
         }
         if (state is VotingFailure) {
           return Center(
-              child: Text('Error: ${state.error}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: Colors.white)));
+            child: Text(
+              'Error: ${state.error}',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+            ),
+          );
         }
         return const SizedBox.shrink();
       },
