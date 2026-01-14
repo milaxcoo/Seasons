@@ -13,6 +13,15 @@ class FetchEventsByStatus extends VotingEvent {
   const FetchEventsByStatus({required this.status});
 }
 
+// Silent refresh event for FCM push notifications
+class RefreshEventsSilent extends VotingEvent {
+  final model.VotingStatus status;
+  const RefreshEventsSilent({required this.status});
+  
+  @override
+  List<Object> get props => [status];
+}
+
 class RegisterForEvent extends VotingEvent {
   final String eventId;
   const RegisterForEvent({required this.eventId});

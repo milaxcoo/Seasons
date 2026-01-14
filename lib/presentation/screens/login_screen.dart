@@ -56,44 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
           },
           child: Stack(
             children: [
-              // Language switcher at top-right
-              Positioned(
-                top: 0,
-                right: 0,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: PopupMenuButton<Locale>(
-                      icon: const Icon(Icons.language, color: Colors.white, size: 28),
-                      onSelected: (Locale locale) {
-                        context.read<LocaleBloc>().add(ChangeLocale(locale));
-                      },
-                      itemBuilder: (BuildContext context) => [
-                        PopupMenuItem<Locale>(
-                          value: const Locale('ru'),
-                          child: Row(
-                            children: [
-                              const Text('🇷🇺'),
-                              const SizedBox(width: 8),
-                              Text(AppLocalizations.of(context)!.languageRussian),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem<Locale>(
-                          value: const Locale('en'),
-                          child: Row(
-                            children: [
-                              const Text('🇬🇧'),
-                              const SizedBox(width: 8),
-                              Text(AppLocalizations.of(context)!.languageEnglish),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
@@ -185,6 +147,44 @@ class _LoginScreenState extends State<LoginScreen> {
                             ?.copyWith(color: Colors.white),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              // Language switcher at top-right (must be last to render on top)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: PopupMenuButton<Locale>(
+                      icon: const Icon(Icons.language, color: Colors.white, size: 28),
+                      onSelected: (Locale locale) {
+                        context.read<LocaleBloc>().add(ChangeLocale(locale));
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<Locale>(
+                          value: const Locale('ru'),
+                          child: Row(
+                            children: [
+                              const Text('🇷🇺'),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.languageRussian),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem<Locale>(
+                          value: const Locale('en'),
+                          child: Row(
+                            children: [
+                              const Text('🇬🇧'),
+                              const SizedBox(width: 8),
+                              Text(AppLocalizations.of(context)!.languageEnglish),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

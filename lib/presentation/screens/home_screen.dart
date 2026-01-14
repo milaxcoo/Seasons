@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -99,13 +102,17 @@ class _TopBar extends StatelessWidget {
 class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
+      padding: EdgeInsets.symmetric(vertical: isLandscape ? 4.0 : 10.0),
       child: Column(
         children: [
           Text(
             'Seasons',
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+            style: (isLandscape 
+                ? Theme.of(context).textTheme.displaySmall 
+                : Theme.of(context).textTheme.displayMedium)?.copyWith(
                   color: Colors.white,
                   shadows: [
                     const Shadow(blurRadius: 10, color: Colors.black54),
@@ -124,8 +131,8 @@ class _Header extends StatelessWidget {
                   ],
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  letterSpacing: 7,
+                  fontSize: isLandscape ? 12 : 16,
+                  letterSpacing: isLandscape ? 5 : 7,
                 ),
           ),
         ],
@@ -261,7 +268,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedPanelIndex = 0;
   int _previousPanelIndex = 0;
   final Map<model.VotingStatus, int> _eventsCount = {
@@ -269,6 +276,61 @@ class _HomeScreenState extends State<HomeScreen> {
     model.VotingStatus.active: 0,
     model.VotingStatus.completed: 0,
   };
+  Timer? _pollingTimer;
+
+  // Hybrid Auto-Update Logic
+  void _setupAutoUpdate() {
+    if (Platform.isAndroid) {
+      // Android: Use Real-Time FCM (Silent Push)
+      try {
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          print('FCM message received: ${message.data}');
+          if (message.data['action'] == 'REFRESH_VOTES') {
+            print('FCM Refresh Triggered (Android)');
+            _fetchSilent();
+          }
+        });
+      } catch (e) {
+        print('FCM Listener Error: $e');
+      }
+    } else if (Platform.isIOS) {
+      // iOS: Fallback to Polling (every 10 seconds) due to no paid APNS
+      _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        print('iOS Polling tick: Refreshing votes...');
+        _fetchSilent();
+      });
+    }
+  }
+
+  // Helper for background refresh without loading spinner
+  void _fetchSilent() {
+    final currentStatus = [
+      model.VotingStatus.registration,
+      model.VotingStatus.active,
+      model.VotingStatus.completed,
+    ][_selectedPanelIndex];
+
+    context.read<VotingBloc>().add(RefreshEventsSilent(status: currentStatus));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // Save battery when app is backgrounded
+      _pollingTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      // Resume polling on iOS
+      if (Platform.isIOS) {
+        _pollingTimer?.cancel(); // Ensure no duplicates
+        _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+          print('iOS Polling tick (Resumed): Refreshing votes...');
+          _fetchSilent();
+        });
+        // Immediate fetch on resume for fresh data
+        _fetchSilent();
+      }
+    }
+  }
 
   void _updateEventsCount(model.VotingStatus status, int count) {
     setState(() {
@@ -300,9 +362,72 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
+  // Handle notification taps from background/terminated state
+  Future<void> _setupInteractedMessage() async {
+    // Get message that terminated the app (if any)
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    
+    if (initialMessage != null) {
+      _handleNotificationTap(initialMessage);
+    }
+    
+    // Handle notification tap when app is in background
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+  }
+  
+  void _handleNotificationTap(RemoteMessage message) {
+    print('Notification tapped: ${message.data}');
+    
+    // Extract tab index from message data
+    final tabIndexStr = message.data['tab_index'];
+    final status = message.data['status'];
+    
+    int? targetIndex;
+    
+    // Determine target index from data
+    if (tabIndexStr != null) {
+      targetIndex = int.tryParse(tabIndexStr);
+    } else if (status != null) {
+      // Map status string to index
+      switch (status) {
+        case 'registration':
+          targetIndex = 0;
+          break;
+        case 'active':
+          targetIndex = 1;
+          break;
+        case 'completed':
+          targetIndex = 2;
+          break;
+      }
+    }
+    
+    // Navigate to target tab if valid
+    if (targetIndex != null && targetIndex >= 0 && targetIndex <= 2) {
+      // Use the existing method to switch tabs
+      _fetchEventsForPanel(targetIndex);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Register lifecycle observer
+    
+    // Print the token to the console so you can copy it
+    FirebaseMessaging.instance.getToken().then((token) {
+      print("==================================");
+      print("MY DEVICE TOKEN:");
+      print(token);
+      print("==================================");
+    });
+
+    // Setup notification tap handling (background/terminated)
+    _setupInteractedMessage();
+    
+    // Setup Hybrid Auto-Update (FCM for Android, Polling for iOS)
+    _setupAutoUpdate();
+    
     // Fetch initial data
     final initialStatus = [
       model.VotingStatus.registration,
@@ -310,6 +435,13 @@ class _HomeScreenState extends State<HomeScreen> {
       model.VotingStatus.completed,
     ][_selectedPanelIndex];
     context.read<VotingBloc>().add(FetchEventsByStatus(status: initialStatus));
+  }
+  
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -343,72 +475,96 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 800),
-                    child: Column(
-                      children: [
-                        _TopBar(),
-                        _Header(),
-                        BlocListener<VotingBloc, VotingState>(
-                          listener: (context, state) {
-                            if (state is VotingEventsLoadSuccess) {
-                              _updateEventsCount(
-                                  [
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _TopBar(),
+                          _Header(),
+                          BlocListener<VotingBloc, VotingState>(
+                            listener: (context, state) {
+                              if (state is VotingEventsLoadSuccess) {
+                                _updateEventsCount(
+                                    [
+                                      model.VotingStatus.registration,
+                                      model.VotingStatus.active,
+                                      model.VotingStatus.completed,
+                                    ][_selectedPanelIndex],
+                                    state.events.length);
+                              }
+                            },
+                            child: AnimatedPanelSelector(
+                              selectedIndex: _selectedPanelIndex,
+                              onPanelSelected: _fetchEventsForPanel,
+                              hasEvents: _eventsCount,
+                            ),
+                          ),
+                          GestureDetector(
+                            onHorizontalDragEnd: (details) {
+                              // Detect swipe direction based on velocity
+                              final velocity = details.primaryVelocity ?? 0;
+                              
+                              if (velocity < -500) {
+                                // Swipe Left -> Move to Next tab
+                                if (_selectedPanelIndex < 2) {
+                                  _fetchEventsForPanel(_selectedPanelIndex + 1);
+                                }
+                              } else if (velocity > 500) {
+                                // Swipe Right -> Move to Previous tab
+                                if (_selectedPanelIndex > 0) {
+                                  _fetchEventsForPanel(_selectedPanelIndex - 1);
+                                }
+                              }
+                            },
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: MediaQuery.of(context).size.height * 0.5,
+                                maxHeight: MediaQuery.of(context).size.height * 0.7,
+                              ),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 600),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                layoutBuilder: (currentChild, previousChildren) {
+                                  // Stack layout prevents width shifts during transition
+                                  return Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: <Widget>[
+                                      ...previousChildren,
+                                      if (currentChild != null) currentChild,
+                                    ],
+                                  );
+                                },
+                                transitionBuilder: (Widget child, Animation<double> animation) {
+                                  // Determine slide direction based on index change
+                                  final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
+                                  final offsetBegin = isMovingForward 
+                                      ? const Offset(1.0, 0.0)  // Slide in from right
+                                      : const Offset(-1.0, 0.0); // Slide in from left
+                                  
+                                  return SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: offsetBegin,
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  );
+                                },
+                                child: _EventListPage(
+                                  key: ValueKey(_selectedPanelIndex),
+                                  status: [
                                     model.VotingStatus.registration,
                                     model.VotingStatus.active,
                                     model.VotingStatus.completed,
                                   ][_selectedPanelIndex],
-                                  state.events.length);
-                            }
-                          },
-                          child: AnimatedPanelSelector(
-                            selectedIndex: _selectedPanelIndex,
-                            onPanelSelected: _fetchEventsForPanel,
-                            hasEvents: _eventsCount,
-                          ),
-                        ),
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 600),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            layoutBuilder: (currentChild, previousChildren) {
-                              // Stack layout prevents width shifts during transition
-                              return Stack(
-                                alignment: Alignment.topCenter,
-                                children: <Widget>[
-                                  ...previousChildren,
-                                  if (currentChild != null) currentChild,
-                                ],
-                              );
-                            },
-                            transitionBuilder: (Widget child, Animation<double> animation) {
-                              // Determine slide direction based on index change
-                              final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
-                              final offsetBegin = isMovingForward 
-                                  ? const Offset(1.0, 0.0)  // Slide in from right
-                                  : const Offset(-1.0, 0.0); // Slide in from left
-                              
-                              return SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: offsetBegin,
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              );
-                            },
-                            child: _EventListPage(
-                              key: ValueKey(_selectedPanelIndex),
-                              status: [
-                                model.VotingStatus.registration,
-                                model.VotingStatus.active,
-                                model.VotingStatus.completed,
-                              ][_selectedPanelIndex],
-                              imagePath: theme.imagePath,
-                              onRefresh: () => _onPageChanged(_selectedPanelIndex),
+                                  imagePath: theme.imagePath,
+                                  onRefresh: () => _onPageChanged(_selectedPanelIndex),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                        _Footer(poem: theme.poem, author: theme.author),
-                      ],
+                          _Footer(poem: theme.poem, author: theme.author),
+                        ],
+                      ),
                     ),
                   ),
                 ),
