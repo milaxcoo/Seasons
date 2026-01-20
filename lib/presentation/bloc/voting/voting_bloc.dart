@@ -24,6 +24,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       final events = await _votingRepository.getEventsByStatus(event.status);
       emit(VotingEventsLoadSuccess(
         events: events,
+        status: event.status,
         timestamp: DateTime.now().millisecondsSinceEpoch,
       ));
     } catch (e) {
@@ -39,6 +40,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       final events = await _votingRepository.getEventsByStatus(event.status);
       emit(VotingEventsLoadSuccess(
         events: events,
+        status: event.status,
         timestamp: DateTime.now().millisecondsSinceEpoch,
       ));
     } catch (e) {
