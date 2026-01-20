@@ -122,6 +122,24 @@ class _UserInfoRow extends StatelessWidget {
 
   const _UserInfoRow({required this.label, required this.value});
 
+  void _showFullText(BuildContext context) {
+    if (value.isEmpty) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(label),
+        content: SelectableText(value),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -138,13 +156,17 @@ class _UserInfoRow extends StatelessWidget {
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.black,
-                  fontWeight:
-                      FontWeight.w600, // Slightly bolder for better read
-                ),
+          child: GestureDetector(
+            onTap: () => _showFullText(context),
+            child: Text(
+              value,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
           ),
         ),
       ],

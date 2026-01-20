@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     AppLocalizations.of(context)!.login,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontFamily: GoogleFonts.exo2().fontFamily,
+                                      fontFamily: GoogleFonts.gentiumBookPlus().fontFamily,
                                       fontStyle: FontStyle.normal,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 26,
@@ -221,7 +221,17 @@ class _SkewedContainer extends StatelessWidget {
         transform: Matrix4.skewX(skewValue),
         child: Container(
           padding: padding,
-          color: color,
+          decoration: BoxDecoration(
+            color: color,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 15,
+                offset: const Offset(5, 5),
+                spreadRadius: 2,
+              ),
+            ],
+          ),
           child: Transform(
             transform: Matrix4.skewX(-skewValue),
             child: child,

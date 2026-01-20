@@ -285,15 +285,20 @@ class ApiVotingRepository implements VotingRepository {
           email = emailMatch.group(1)?.trim() ?? "";
         }
 
-        // 3. Extract Job Title (Position / Должность)
+        // 3. Extract Job Title (Position / Должность / Job Title)
         final RegExp jobRegExp = RegExp(
-            r'<th[^>]*>\s*(?:Position|Должность)\s*</th>[\s\S]*?<td>([^<]+)</td>',
+            r'<th[^>]*>\s*(?:Position|Должность|Job\s*Title)\s*</th>[\s\S]*?<td>([\s\S]*?)</td>',
             caseSensitive: false);
         final jobMatch = jobRegExp.firstMatch(response.body);
         if (jobMatch != null) {
-          // Value might be empty or &nbsp;
-          final rawJob = jobMatch.group(1)?.trim() ?? "";
-          if (rawJob != "&nbsp;") {
+          // Value might be empty or &nbsp;, or contain tags
+          String rawJob = jobMatch.group(1)?.trim() ?? "";
+          
+          // Remove HTML tags if present (e.g. <span>...</span>)
+          rawJob = rawJob.replaceAll(RegExp(r'<[^>]*>'), '');
+          rawJob = rawJob.trim();
+
+          if (rawJob != "&nbsp;" && rawJob.isNotEmpty) {
             jobTitle = rawJob;
           }
         }
@@ -335,5 +340,33 @@ class ApiVotingRepository implements VotingRepository {
 
     // Just return as is if specific format logic doesn't apply
     return fullName;
+  }
+
+  // --- Push Notifications ---
+  @override
+  Future<void> registerDeviceToken(String fcmToken) async {
+    final url = Uri.parse('$_baseUrl/api/v1/voter/register_device');
+    final baseHeaders = await _headers;
+    final headers = {
+      ...baseHeaders,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    final body = {
+      'fcm_token': fcmToken,
+      'platform': 'android',
+    };
+    
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+      if (kDebugMode) {
+        print('Device token registration response: ${response.statusCode}');
+      }
+      // Silently accept any response - backend may not have endpoint yet
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to register device token: $e');
+      }
+      // Silently fail - push notifications are optional
+    }
   }
 }

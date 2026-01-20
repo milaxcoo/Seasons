@@ -22,4 +22,8 @@ abstract class VotingRepository {
   Future<bool> submitVote(VotingEvent event, Map<String, String> answers);
 
   Future<List<QuestionResult>> getResultsForEvent(String eventId);
+
+  // --- Push Notifications ---
+  /// Registers the device's FCM token with the backend for push notifications
+  Future<void> registerDeviceToken(String fcmToken);
 }
