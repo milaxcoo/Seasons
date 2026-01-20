@@ -83,9 +83,14 @@ class ApiVotingRepository implements VotingRepository {
             break;
         }
         for (var votingJson in data) {
-          if (votingJson is Map<String, dynamic> &&
-              votingJson['status'] == null) {
-            votingJson['status'] = statusString;
+          if (votingJson is Map<String, dynamic>) {
+             // DEBUG: Print all keys for the first voting to spot the date field
+             if (data.indexOf(votingJson) == 0 && kDebugMode) {
+                print("DEBUG: Voting Dump: $votingJson");
+             }
+             if (votingJson['status'] == null) {
+                votingJson['status'] = statusString;
+             }
           }
         }
         return data.map((json) => VotingEvent.fromJson(json)).toList();

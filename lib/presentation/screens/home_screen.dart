@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:io';
+
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -149,7 +148,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> {
   int _selectedPanelIndex = 0;
   int _previousPanelIndex = 0;
   // Track number of actionable items (unregistered for registration, unvoted for active, total for completed)
@@ -159,64 +158,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     model.VotingStatus.active: 0,
     model.VotingStatus.completed: 0,
   };
-  Timer? _pollingTimer;
+
 
   // Hybrid Auto-Update Logic
-  void _setupAutoUpdate() {
-    if (Platform.isAndroid) {
-      // Android: Use Real-Time FCM (Silent Push)
-      try {
-        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-          print('FCM message received: ${message.data}');
-          if (message.data['action'] == 'REFRESH_VOTES') {
-            print('FCM Refresh Triggered (Android)');
-            _fetchSilent();
-          }
-        });
-      } catch (e) {
-        print('FCM Listener Error: $e');
-      }
-    } else if (Platform.isIOS) {
-      // iOS: Fallback to Polling (every 10 seconds) due to no paid APNS
-      _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-        print('iOS Polling tick: Refreshing votes...');
-        _fetchSilent();
-      });
-    }
-  }
 
-  // Helper for background refresh without loading spinner
-  // Fetches both registration and active sections to update all navigation button colors
-  void _fetchSilent() {
-    // Fetch registration section
-    context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.registration));
-    
-    // Fetch active section after a short delay
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.active));
-      }
-    });
-  }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      // Save battery when app is backgrounded
-      _pollingTimer?.cancel();
-    } else if (state == AppLifecycleState.resumed) {
-      // Resume polling on iOS
-      if (Platform.isIOS) {
-        _pollingTimer?.cancel(); // Ensure no duplicates
-        _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-          print('iOS Polling tick (Resumed): Refreshing votes...');
-          _fetchSilent();
-        });
-        // Immediate fetch on resume for fresh data
-        _fetchSilent();
-      }
-    }
-  }
+
+
+
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -248,85 +197,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
-  // Handle notification taps from background/terminated state
-  Future<void> _setupInteractedMessage() async {
-    // Get message that terminated the app (if any)
-    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    
-    if (initialMessage != null) {
-      _handleNotificationTap(initialMessage);
-    }
-    
-    // Handle notification tap when app is in background
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-  }
-  
-  void _handleNotificationTap(RemoteMessage message) {
-    print('Notification tapped: ${message.data}');
-    
-    // Extract tab index from message data
-    final tabIndexStr = message.data['tab_index'];
-    final status = message.data['status'];
-    
-    int? targetIndex;
-    
-    // Determine target index from data
-    if (tabIndexStr != null) {
-      targetIndex = int.tryParse(tabIndexStr);
-    } else if (status != null) {
-      // Map status string to index
-      switch (status) {
-        case 'registration':
-          targetIndex = 0;
-          break;
-        case 'active':
-          targetIndex = 1;
-          break;
-        case 'completed':
-          targetIndex = 2;
-          break;
-      }
-    }
-    
-    // Navigate to target tab if valid
-    if (targetIndex != null && targetIndex >= 0 && targetIndex <= 2) {
-      // Use the existing method to switch tabs
-      _fetchEventsForPanel(targetIndex);
-    }
-  }
 
+
+  Timer? _ticker;
+  
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // Register lifecycle observer
     
-    // Print the token to the console so you can copy it
-    FirebaseMessaging.instance.getToken().then((token) {
-      print("==================================");
-      print("MY DEVICE TOKEN:");
-      print(token);
-      print("==================================");
+    // Ticker to update UI every 10 seconds AND fetch fresh data for ALL sections
+    // This keeps button colors up-to-date and handles backend updates not pushed via WebSocket
+    _ticker = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        // Rebuild UI for time-based checks
+        setState(() {});
+        // Fetch fresh data for ALL statuses to keep button colors updated
+        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.registration));
+        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.active));
+        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.completed));
+      }
     });
-
-    // Setup notification tap handling (background/terminated)
-    _setupInteractedMessage();
     
-    // Setup Hybrid Auto-Update (FCM for Android, Polling for iOS)
-    _setupAutoUpdate();
-    
-    // Fetch initial data
-    final initialStatus = [
-      model.VotingStatus.registration,
-      model.VotingStatus.active,
-      model.VotingStatus.completed,
-    ][_selectedPanelIndex];
-    context.read<VotingBloc>().add(FetchEventsByStatus(status: initialStatus));
+    // Fetch initial data for all sections to populate button colors
+    context.read<VotingBloc>().add(FetchEventsByStatus(status: model.VotingStatus.registration));
+    context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.active));
+    context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.completed));
   }
   
   @override
   void dispose() {
-    _pollingTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
+    _ticker?.cancel();
     super.dispose();
   }
 
@@ -358,7 +258,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               body: SafeArea(
-                child: Center(
+                child: Align(
+                  alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 800),
                     child: SingleChildScrollView(
@@ -375,14 +276,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 // Calculate actionable items count:
                                 // - Registration: count events where user is NOT registered
                                 // - Active: count events where user has NOT voted
-                                // - Completed: always 0 (no action needed)
+                                // - Completed: count ALL completed votings (results available)
                                 int actionableCount;
                                 if (status == model.VotingStatus.registration) {
                                   actionableCount = state.events.where((e) => !e.isRegistered).length;
                                 } else if (status == model.VotingStatus.active) {
                                   actionableCount = state.events.where((e) => !e.hasVoted).length;
                                 } else {
-                                  actionableCount = 0; // Completed section has no actionable items
+                                  actionableCount = state.events.length; // Count all completed votings
                                 }
                                 
                                 _updateActionableCount(status, actionableCount);
@@ -413,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             },
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
-                                minHeight: MediaQuery.of(context).size.height * 0.5,
+                                minHeight: MediaQuery.of(context).size.height * 0.2,
                               ),
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 600),
@@ -483,7 +384,7 @@ class _Footer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+      padding: const EdgeInsets.fromLTRB(24.0, 120.0, 24.0, 16.0),
       child: Center(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -578,7 +479,7 @@ class _EventListPage extends StatelessWidget {
           return ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 0),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
               return _VotingEventCard(
@@ -623,9 +524,16 @@ class _VotingEventCard extends StatelessWidget {
 
     switch (event.status) {
       case model.VotingStatus.registration:
-        dateInfo = event.registrationEndDate != null
-            ? l10n.registrationUntil(dateFormat.format(event.registrationEndDate!))
-            : l10n.registrationOpen;
+        if (event.registrationEndDate != null) {
+          if (DateTime.now().isAfter(event.registrationEndDate!)) {
+            dateInfo = l10n.registrationClosed;
+          } else {
+            dateInfo = l10n.registrationUntil(
+                dateFormat.format(event.registrationEndDate!));
+          }
+        } else {
+          dateInfo = l10n.registrationOpen;
+        }
         break;
       case model.VotingStatus.active:
         dateInfo = event.votingEndDate != null

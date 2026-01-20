@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
+import 'package:seasons/core/websocket_service.dart';
+import 'package:seasons/data/models/voting_event.dart' as model;
 
 class VotingBloc extends Bloc<VotingEvent, VotingState> {
   final VotingRepository _votingRepository;
+  StreamSubscription? _wsSubscription;
 
   VotingBloc({required VotingRepository votingRepository})
       : _votingRepository = votingRepository,
@@ -15,6 +19,128 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     on<RegisterForEvent>(_onRegisterForEvent);
     on<SubmitVote>(_onSubmitVote);
     on<FetchResults>(_onFetchResults);
+    on<VotingUpdated>(_onVotingUpdated);
+    on<VotingListUpdated>(_onVotingListUpdated);
+
+    _wsSubscription = WebsocketService().events.listen((message) {
+      if (state is VotingEventsLoadSuccess) {
+        if (message is String) {
+          // Skip known non-JSON control messages
+          if (message.startsWith('Connection') || message.startsWith('Ping') || message.startsWith('Pong')) {
+            print("VotingBloc: Ignoring control message: $message");
+            return;
+          }
+          
+          try {
+             final json = jsonDecode(message);
+             
+             // Check if this is a notification-style message (action-based)
+             if (json is Map<String, dynamic> && json.containsKey('action')) {
+                final action = json['action'] as String?;
+                print("VotingBloc: Received notification action: $action");
+                // Refresh ALL statuses to update all button colors
+                add(RefreshEventsSilent(status: model.VotingStatus.registration));
+                add(RefreshEventsSilent(status: model.VotingStatus.active));
+                add(RefreshEventsSilent(status: model.VotingStatus.completed));
+                return;
+             }
+             
+             // Handle if wrapped in "voting" or "data" (only if data is a Map)
+             var data = json;
+             if (json is Map<String, dynamic>) {
+                if (json['data'] is Map<String, dynamic>) {
+                   data = json['data'];
+                } else if (json['voting'] is Map<String, dynamic>) {
+                   data = json['voting'];
+                }
+             }
+             
+             // Case 1: Full List Update (votings array at root or in data)
+             dynamic votingsList;
+             if (data is Map<String, dynamic>) {
+                votingsList = data['votings'];
+             }
+             if (json is Map<String, dynamic>) {
+                votingsList ??= json['votings'];
+             }
+             
+             if (votingsList != null && votingsList is List) {
+                final allParsed = (votingsList as List).map((e) => model.VotingEvent.fromJson(e)).toList();
+                add(VotingListUpdated(events: allParsed));
+                print("VotingBloc: Dispatched VotingListUpdated with ${allParsed.length} items");
+                return;
+             }
+             
+             // Case 2: Single Event Update
+             if (data is Map<String, dynamic> && data.containsKey('id')) {
+                final votingEvent = model.VotingEvent.fromJson(data);
+                add(VotingUpdated(event: votingEvent));
+                print("VotingBloc: Dispatched VotingUpdated for ${votingEvent.id}");
+                return;
+             }
+             
+             // Unknown JSON format, trigger refresh
+             print("VotingBloc: Unknown JSON format, triggering refresh");
+             final currentStatus = (state as VotingEventsLoadSuccess).status;
+             add(RefreshEventsSilent(status: currentStatus));
+             
+          } catch (e) {
+             print("VotingBloc: Failed to parse WS message: $e");
+             // On parse error, still try to refresh
+             final currentStatus = (state as VotingEventsLoadSuccess).status;
+             add(RefreshEventsSilent(status: currentStatus));
+          }
+        }
+      }
+    });
+  }
+
+  void _onVotingListUpdated(VotingListUpdated event, Emitter<VotingState> emit) {
+    if (state is VotingEventsLoadSuccess) {
+      final currentState = state as VotingEventsLoadSuccess;
+      // Filter for current tab status
+      final filtered = event.events.where((e) => e.status == currentState.status).toList();
+      
+      print("VotingBloc: _onVotingListUpdated emitting ${filtered.length} filtered events");
+      
+      emit(VotingEventsLoadSuccess(
+        events: filtered,
+        status: currentState.status,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      ));
+    }
+  }
+
+  void _onVotingUpdated(VotingUpdated event, Emitter<VotingState> emit) {
+    if (state is VotingEventsLoadSuccess) {
+      final currentState = state as VotingEventsLoadSuccess;
+      // Update the modified event in the list
+      final updatedEvents = currentState.events.map((e) {
+        if (e.id == event.event.id) {
+          // Preserve status logic if backend doesn't send it?
+          // But backend sends status usually.
+          return event.event;
+        }
+        return e;
+      }).toList();
+      
+      // If the event is NOT in the list, should we add it?
+      // Only if it matches the current status filter.
+      // But checking status logic here is complex.
+      // For now, let's just update existing ones.
+      
+      emit(VotingEventsLoadSuccess(
+        events: updatedEvents,
+        status: currentState.status,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      ));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _wsSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onFetchEventsByStatus(
