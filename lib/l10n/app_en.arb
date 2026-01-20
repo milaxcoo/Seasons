@@ -8,6 +8,7 @@
   "noActiveVotings": "No active votings yet",
   "registrationUntil": "Registration until: {date}",
   "registrationOpen": "Registration is open",
+  "registrationClosed": "Registration closed",
   "votingUntil": "Voting until: {date}",
   "votingActive": "Voting in progress",
   "completedOn": "Completed: {date}",

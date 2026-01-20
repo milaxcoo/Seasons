@@ -32,6 +32,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registrationOpen => 'Registration is open';
 
   @override
+  String get registrationClosed => 'Registration closed';
+
+  @override
   String votingUntil(String date) {
     return 'Voting until: $date';
   }

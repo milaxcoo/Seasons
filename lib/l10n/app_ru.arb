@@ -41,6 +41,11 @@
     "description": "Registration is open"
   },
   
+  "registrationClosed": "Регистрация закрыта",
+  "@registrationClosed": {
+    "description": "Registration is closed for user"
+  },
+  
   "votingUntil": "Голосование до: {date}",
   "@votingUntil": {
     "description": "Voting deadline text",

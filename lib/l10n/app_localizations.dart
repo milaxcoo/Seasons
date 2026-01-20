@@ -140,6 +140,12 @@ abstract class AppLocalizations {
   /// **'Регистрация открыта'**
   String get registrationOpen;
 
+  /// Registration is closed for user
+  ///
+  /// In ru, this message translates to:
+  /// **'Регистрация закрыта'**
+  String get registrationClosed;
+
   /// Voting deadline text
   ///
   /// In ru, this message translates to:

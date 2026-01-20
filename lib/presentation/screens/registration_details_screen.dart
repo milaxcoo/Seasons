@@ -171,14 +171,17 @@ class _RegistrationDetailsView extends StatelessWidget {
                         );
                       }
 
+                      final isRegistrationClosed = event.registrationEndDate != null &&
+                          DateTime.now().isAfter(event.registrationEndDate!);
+
                       return ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           side: BorderSide(
-                              color: event.isRegistered
+                              color: (event.isRegistered || isRegistrationClosed)
                                   ? Colors.grey
                                   : const Color(0xFF6A9457),
                               width: 2),
-                          backgroundColor: event.isRegistered
+                          backgroundColor: (event.isRegistered || isRegistrationClosed)
                               ? Colors.grey.shade300
                               : Colors.transparent,
                           elevation: 0,
@@ -186,7 +189,7 @@ class _RegistrationDetailsView extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        onPressed: event.isRegistered
+                        onPressed: (event.isRegistered || isRegistrationClosed)
                             ? null
                             : () {
                                 context
@@ -196,11 +199,13 @@ class _RegistrationDetailsView extends StatelessWidget {
                         child: Text(
                           event.isRegistered
                               ? l10n.alreadyRegistered
-                              : l10n.registerButton,
+                              : (isRegistrationClosed
+                                  ? l10n.registrationClosed
+                                  : l10n.registerButton),
                           // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
                           style:
                               Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: event.isRegistered
+                                    color: (event.isRegistered || isRegistrationClosed)
                                         ? Colors.black54
                                         : const Color(0xFF6A9457),
                                   ),

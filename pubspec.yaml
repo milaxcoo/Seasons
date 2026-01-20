@@ -28,9 +28,8 @@ dependencies:
   # Secure Storage
   flutter_secure_storage: ^9.2.2
 
-  # Firebase for Push Notifications
-  firebase_core: ^4.2.1
-  firebase_messaging: ^16.0.4
+  web_socket_channel: ^3.0.0
+  rxdart: ^0.28.0
   flutter_svg: ^2.2.2
   http: ^1.5.0
   html: ^0.15.6
