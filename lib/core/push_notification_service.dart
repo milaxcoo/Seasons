@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:seasons/data/repositories/api_voting_repository.dart';
 
 // A dedicated service class to manage all Firebase Cloud Messaging (FCM) logic.
 class PushNotificationService {
@@ -38,6 +39,16 @@ class PushNotificationService {
       // Android doesn't need an APNS token.
       final fcmToken = await _fcm.getToken();
       debugPrint('Firebase Cloud Messaging Token: $fcmToken');
+      
+      // Send token to backend for push notifications
+      if (fcmToken != null) {
+        try {
+          await ApiVotingRepository().registerDeviceToken(fcmToken);
+          debugPrint('FCM token registered with backend');
+        } catch (e) {
+          debugPrint('Failed to register FCM token with backend: $e');
+        }
+      }
     }
 
 

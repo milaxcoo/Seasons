@@ -336,4 +336,32 @@ class ApiVotingRepository implements VotingRepository {
     // Just return as is if specific format logic doesn't apply
     return fullName;
   }
+
+  // --- Push Notifications ---
+  @override
+  Future<void> registerDeviceToken(String fcmToken) async {
+    final url = Uri.parse('$_baseUrl/api/v1/voter/register_device');
+    final baseHeaders = await _headers;
+    final headers = {
+      ...baseHeaders,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    final body = {
+      'fcm_token': fcmToken,
+      'platform': 'android',
+    };
+    
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+      if (kDebugMode) {
+        print('Device token registration response: ${response.statusCode}');
+      }
+      // Silently accept any response - backend may not have endpoint yet
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to register device token: $e');
+      }
+      // Silently fail - push notifications are optional
+    }
+  }
 }

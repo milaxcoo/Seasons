@@ -271,7 +271,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedPanelIndex = 0;
   int _previousPanelIndex = 0;
-  final Map<model.VotingStatus, int> _eventsCount = {
+  // Track number of actionable items (unregistered for registration, unvoted for active, total for completed)
+  // Button is green only when there are actionable items
+  final Map<model.VotingStatus, int> _actionableCount = {
     model.VotingStatus.registration: 0,
     model.VotingStatus.active: 0,
     model.VotingStatus.completed: 0,
@@ -303,14 +305,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   // Helper for background refresh without loading spinner
+  // Fetches both registration and active sections to update all navigation button colors
   void _fetchSilent() {
-    final currentStatus = [
-      model.VotingStatus.registration,
-      model.VotingStatus.active,
-      model.VotingStatus.completed,
-    ][_selectedPanelIndex];
-
-    context.read<VotingBloc>().add(RefreshEventsSilent(status: currentStatus));
+    // Fetch registration section
+    context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.registration));
+    
+    // Fetch active section after a short delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.active));
+      }
+    });
   }
 
   @override
@@ -332,9 +337,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  void _updateEventsCount(model.VotingStatus status, int count) {
+  void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
-      _eventsCount[status] = count;
+      _actionableCount[status] = count;
     });
   }
 
@@ -483,19 +488,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           BlocListener<VotingBloc, VotingState>(
                             listener: (context, state) {
                               if (state is VotingEventsLoadSuccess) {
-                                _updateEventsCount(
-                                    [
-                                      model.VotingStatus.registration,
-                                      model.VotingStatus.active,
-                                      model.VotingStatus.completed,
-                                    ][_selectedPanelIndex],
-                                    state.events.length);
+                                // Use status from state (now correctly tracks which section was fetched)
+                                final status = state.status;
+                                
+                                // Calculate actionable items count:
+                                // - Registration: count events where user is NOT registered
+                                // - Active: count events where user has NOT voted
+                                // - Completed: always 0 (no action needed)
+                                int actionableCount;
+                                if (status == model.VotingStatus.registration) {
+                                  actionableCount = state.events.where((e) => !e.isRegistered).length;
+                                } else if (status == model.VotingStatus.active) {
+                                  actionableCount = state.events.where((e) => !e.hasVoted).length;
+                                } else {
+                                  actionableCount = 0; // Completed section has no actionable items
+                                }
+                                
+                                _updateActionableCount(status, actionableCount);
                               }
                             },
                             child: AnimatedPanelSelector(
                               selectedIndex: _selectedPanelIndex,
                               onPanelSelected: _fetchEventsForPanel,
-                              hasEvents: _eventsCount,
+                              hasEvents: _actionableCount,
                             ),
                           ),
                           GestureDetector(
@@ -781,6 +796,15 @@ class _EventListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<VotingBloc, VotingState>(
+      // Only rebuild if the state is for this section's status
+      // This prevents the list from showing wrong data during background refresh of other sections
+      buildWhen: (previous, current) {
+        if (current is VotingEventsLoadSuccess) {
+          return current.status == status;
+        }
+        // Allow rebuild for loading and error states
+        return current is VotingLoadInProgress || current is VotingFailure;
+      },
       builder: (context, state) {
         if (state is VotingLoadInProgress) {
           return const Center(

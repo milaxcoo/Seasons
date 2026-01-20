@@ -33,6 +33,21 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             setState(() {
               _isLoading = false;
             });
+            
+            // Auto-click the login button when homepage loads
+            if (url == 'https://seasons.rudn.ru/' || url == 'https://seasons.rudn.ru') {
+              // Wait for page scripts to fully initialize
+              await Future.delayed(const Duration(milliseconds: 1500));
+              await _controller.runJavaScript('''
+                (function() {
+                  var loginBtn = document.getElementById('bt-entry');
+                  if (loginBtn) {
+                    loginBtn.click();
+                  }
+                })();
+              ''');
+            }
+            
             await _checkCookies();
           },
           onWebResourceError: (WebResourceError error) {
