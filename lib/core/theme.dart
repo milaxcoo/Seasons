@@ -28,34 +28,31 @@ class AppTheme {
 
     // --- TYPOGRAPHY ---
 
-    // 1. --- ИСПРАВЛЕНИЕ ---
-    // Используем 'Exo 2' как ОСНОВНОЙ шрифт для ВСЕГО.
-    // Он поддерживает и латиницу, и кириллицу, и НЕ курсивный.
-    // Нам больше не нужен 'Russo One' или 'fontFamilyFallback'.
-    final baseTextTheme = GoogleFonts.exo2TextTheme(baseTheme.textTheme)
+    // Use 'Gentium Book Plus' as the body font to match seasons.rudn.ru website
+    // This font supports both Latin and Cyrillic characters
+    final baseTextTheme = GoogleFonts.gentiumBookPlusTextTheme(baseTheme.textTheme)
         .copyWith(
-          // --- ИЗМЕНЕНИЕ: Делаем Exo 2 жирнее (w700), чтобы он был похож на Russo One ---
-          bodyLarge: GoogleFonts.exo2(
+          bodyLarge: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.bodyLarge,
             fontWeight: FontWeight.w700,
           ),
-          bodyMedium: GoogleFonts.exo2(
+          bodyMedium: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.bodyMedium,
             fontWeight: FontWeight.w700,
           ),
-          bodySmall: GoogleFonts.exo2(
+          bodySmall: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.bodySmall,
             fontWeight: FontWeight.w700,
           ),
-          labelLarge: GoogleFonts.exo2(
+          labelLarge: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.labelLarge,
             fontWeight: FontWeight.w700,
           ),
-          labelMedium: GoogleFonts.exo2(
+          labelMedium: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.labelMedium,
             fontWeight: FontWeight.w700,
           ),
-          labelSmall: GoogleFonts.exo2(
+          labelSmall: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.labelSmall,
             fontWeight: FontWeight.w700,
           ),
@@ -68,9 +65,6 @@ class AppTheme {
     // 2. --- ИСПРАВЛЕНИЕ ---
     // Теперь переопределяем ЗАГОЛОВКИ,
     // чтобы они использовали 'HemiHead'
-    // и принудительно ставим курсив.
-    // 'Exo 2' (из baseTextTheme) автоматически станет запасным шрифтом
-    // для кириллицы в заголовках и тоже будет курсивным.
     final finalTheme = baseTextTheme.copyWith(
       displayLarge: baseTextTheme.displayLarge?.copyWith(
         fontFamily: 'HemiHead',
