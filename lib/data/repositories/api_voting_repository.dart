@@ -285,15 +285,20 @@ class ApiVotingRepository implements VotingRepository {
           email = emailMatch.group(1)?.trim() ?? "";
         }
 
-        // 3. Extract Job Title (Position / Должность)
+        // 3. Extract Job Title (Position / Должность / Job Title)
         final RegExp jobRegExp = RegExp(
-            r'<th[^>]*>\s*(?:Position|Должность)\s*</th>[\s\S]*?<td>([^<]+)</td>',
+            r'<th[^>]*>\s*(?:Position|Должность|Job\s*Title)\s*</th>[\s\S]*?<td>([\s\S]*?)</td>',
             caseSensitive: false);
         final jobMatch = jobRegExp.firstMatch(response.body);
         if (jobMatch != null) {
-          // Value might be empty or &nbsp;
-          final rawJob = jobMatch.group(1)?.trim() ?? "";
-          if (rawJob != "&nbsp;") {
+          // Value might be empty or &nbsp;, or contain tags
+          String rawJob = jobMatch.group(1)?.trim() ?? "";
+          
+          // Remove HTML tags if present (e.g. <span>...</span>)
+          rawJob = rawJob.replaceAll(RegExp(r'<[^>]*>'), '');
+          rawJob = rawJob.trim();
+
+          if (rawJob != "&nbsp;" && rawJob.isNotEmpty) {
             jobTitle = rawJob;
           }
         }

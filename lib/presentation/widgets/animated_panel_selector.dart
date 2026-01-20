@@ -17,8 +17,8 @@ class AnimatedPanelSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double totalHeight = 90.0;
-    const double barHeight = 70.0;
+    const double totalHeight = 110.0;
+    const double barHeight = 90.0;
     const double buttonRadius = 25.0;
     const double horizontalMargin = 10.0;
     const Duration animDuration = Duration(milliseconds: 600);
@@ -32,8 +32,11 @@ class AnimatedPanelSelector extends StatelessWidget {
           height: totalHeight,
           child: LayoutBuilder(
             builder: (context, constraints) {
+              final double internalPadding = 40.0;
               final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
-              final double buttonSlotWidth = barWidth / 3;
+              // Effective width for buttons is barWidth minus internal padding
+              final double effectiveButtonAreaWidth = barWidth - (internalPadding * 2);
+              final double buttonSlotWidth = effectiveButtonAreaWidth / 3;
 
               return TweenAnimationBuilder<double>(
                 tween: Tween<double>(
@@ -54,6 +57,7 @@ class AnimatedPanelSelector extends StatelessWidget {
                           barHeight: barHeight,
                           totalHeight: totalHeight,
                           horizontalMargin: horizontalMargin,
+                          internalPadding: internalPadding,
                           totalWidth: constraints.maxWidth,
                         ),
                         child: BackdropFilter(
@@ -82,7 +86,9 @@ class AnimatedPanelSelector extends StatelessWidget {
                         left: horizontalMargin,
                         right: horizontalMargin,
                         height: barHeight,
-                        child: Row(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: internalPadding),
+                          child: Row(
                           children: [
                             // Button 1 - Registration
                             SizedBox(
@@ -127,6 +133,7 @@ class AnimatedPanelSelector extends StatelessWidget {
                               ),
                             ),
                           ],
+                          ),
                         ),
                       ),
                     ],
@@ -200,6 +207,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
   final double barHeight;
   final double totalHeight;
   final double horizontalMargin;
+  final double internalPadding;
   final double totalWidth;
 
   _UnifiedShapeClipper({
@@ -208,6 +216,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     required this.barHeight,
     required this.totalHeight,
     required this.horizontalMargin,
+    required this.internalPadding,
     required this.totalWidth,
   });
 
@@ -215,7 +224,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     // Use barHeight/2 for perfect pill shape
     final double cornerRadius = barHeight / 2; // 35px for 70px bar
-    const double blobWidth = 80.0;
+    const double blobWidth = 95.0;
 
     // Calculate bar dimensions
     final double barTop = totalHeight - barHeight;
@@ -269,17 +278,23 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     // ===== STEP 2: Create Blob/Curve Shape (Exact SVG) =====
     const double svgWidth = 203.0;
     const double svgHeight = 45.5;
+    // Extend blob height to exact visible height (overlap handled by path skirt)
     final double blobHeight = totalHeight - barHeight;
     final double scaleX = blobWidth / svgWidth;
     final double scaleY = blobHeight / svgHeight;
 
-    // Calculate blob center position based on animation
-    final double blobCenterX = barLeft + (animationValue * buttonSlotWidth) + (buttonSlotWidth / 2);
+    // Calculate blob center position based on animation with internal padding
+    final double blobCenterX = barLeft + internalPadding + (animationValue * buttonSlotWidth) + (buttonSlotWidth / 2);
     final double blobStartX = blobCenterX - (blobWidth / 2);
 
     final blobPath = Path();
-    blobPath.moveTo(6.7, 45.5);
-    blobPath.relativeCubicTo(5.7, 0.1, 14.1, -0.4, 23.3, -4.0);
+    // Start deep at the CENTER (V-shape skirt) to absolutely prevent corner poking
+    blobPath.moveTo(101.5, 45.5 + 100.0);
+    // Come up to the surface start point
+    blobPath.lineTo(6.7, 45.5);
+    
+    // Curves (unchanged)
+    blobPath.relativeCubicTo(15.0, 0.0, 20.0, -1.0, 23.3, -4.0);
     blobPath.relativeCubicTo(5.7, -2.3, 9.9, -5.0, 18.1, -10.5);
     blobPath.relativeCubicTo(10.7, -7.1, 11.8, -9.2, 20.6, -14.3);
     blobPath.relativeCubicTo(5.0, -2.9, 9.2, -5.2, 15.2, -7.0);
@@ -288,10 +303,13 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     blobPath.relativeCubicTo(6.1, 1.8, 10.2, 4.1, 15.2, 7.0);
     blobPath.relativeCubicTo(8.8, 5.0, 9.9, 7.1, 20.6, 14.3);
     blobPath.relativeCubicTo(8.3, 5.5, 12.4, 8.2, 18.1, 10.5);
-    blobPath.relativeCubicTo(9.2, 3.6, 17.6, 4.2, 23.3, 4.0);
+    blobPath.relativeCubicTo(3.0, 3.0, 8.3, 4.0, 23.3, 4.0);
+    
+    // Go back to absolute deep center to close the V
+    blobPath.lineTo(101.5, 45.5 + 100.0);
     blobPath.close();
 
-    // Scale and position the blob
+    // Scale and position the blob (no negative Y shift needed now)
     final Matrix4 matrix = Matrix4.identity();
     matrix.translate(blobStartX, 0.0);
     matrix.scale(scaleX, scaleY);
@@ -309,6 +327,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(covariant _UnifiedShapeClipper oldClipper) {
-    return oldClipper.animationValue != animationValue;
+    return oldClipper.animationValue != animationValue ||
+           oldClipper.internalPadding != internalPadding;
   }
 }

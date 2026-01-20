@@ -141,126 +141,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _PanelSelector extends StatelessWidget {
-  final int selectedIndex;
-  final Function(int) onPanelSelected;
-  final Map<model.VotingStatus, int> hasEvents;
 
-  const _PanelSelector({
-    required this.selectedIndex,
-    required this.onPanelSelected,
-    required this.hasEvents,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // --- НАСТРОЙКИ ---
-    const double barHeight = 60.0;
-    const double buttonRadius = 25.0; // <-- ⭐ ГЛАВНЫЙ РАДИУС
-    const double moundHeight = 20.0;
-    const double moundWidth = (buttonRadius * 2) + 30.0; // (25*2)+30 = 80.0
-    const double horizontalMargin = 10.0;
-
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        Colors.black.withValues(alpha: 0.5),
-        Colors.black.withValues(alpha: 0.3),
-        Colors.black.withValues(alpha: 0.5),
-      ],
-    );
-
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      height: barHeight + moundHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
-          final double buttonSlotWidth = barWidth / 3;
-
-          return Stack(
-            clipBehavior: Clip.none, // Оставляем
-            alignment: Alignment.topCenter,
-            children: [
-              // --- Слой 1: ЕДИНЫЙ РАЗМЫТЫЙ БАР-БУГОРОК ---
-              Positioned(
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: ClipPath(
-                  clipper: _UnifiedBarClipper(
-                    moundIndex: selectedIndex,
-                    buttonSlotWidth: buttonSlotWidth,
-                    barHeight: barHeight,
-                    moundHeight: moundHeight,
-                    moundWidth: moundWidth,
-                    horizontalMargin: horizontalMargin,
-                  ),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Container(
-                      decoration: BoxDecoration(gradient: gradient),
-                    ),
-                  ),
-                ),
-              ),
-
-              // --- Слой 2: Ряд с Кнопками ---
-              Positioned(
-                top: moundHeight,
-                left: horizontalMargin,
-                right: horizontalMargin,
-                height: barHeight,
-                child: Row(
-                  children: [
-                    // Слот 1
-                    SizedBox(
-                      width: buttonSlotWidth,
-                      child: _PanelButton(
-                        icon: RegistrationIcon(isSelected: false),
-                        isSelected: selectedIndex == 0,
-                        onTap: () => onPanelSelected(0),
-                        hasActiveEvents:
-                            hasEvents[model.VotingStatus.registration]! > 0,
-                        buttonRadius: buttonRadius,
-                      ),
-                    ),
-                    // Слот 2
-                    SizedBox(
-                      width: buttonSlotWidth,
-                      child: _PanelButton(
-                        icon: ActiveVotingIcon(isSelected: false),
-                        isSelected: selectedIndex == 1,
-                        onTap: () => onPanelSelected(1),
-                        hasActiveEvents:
-                            hasEvents[model.VotingStatus.active]! > 0,
-                        buttonRadius: buttonRadius,
-                      ),
-                    ),
-                    // Слот 3
-                    SizedBox(
-                      width: buttonSlotWidth,
-                      child: _PanelButton(
-                        icon: ResultsIcon(isSelected: false),
-                        isSelected: selectedIndex == 2,
-                        onTap: () => onPanelSelected(2),
-                        hasActiveEvents:
-                            hasEvents[model.VotingStatus.completed]! > 0,
-                        buttonRadius: buttonRadius,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -533,7 +414,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
                                 minHeight: MediaQuery.of(context).size.height * 0.5,
-                                maxHeight: MediaQuery.of(context).size.height * 0.7,
                               ),
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 600),
@@ -592,66 +472,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 }
 
-class _PanelButton extends StatelessWidget {
-  final Widget icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final bool hasActiveEvents;
-  final double buttonRadius;
 
-  const _PanelButton({
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-    required this.hasActiveEvents,
-    required this.buttonRadius,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const Duration animDuration = Duration(milliseconds: 600);
-    const double buttonPopUpHeight = 15.0;
-
-    Color backgroundColor;
-    if (hasActiveEvents) {
-      backgroundColor = const Color(0xFF00A94F);
-    } else {
-      backgroundColor = const Color(0xFF6d9fc5);
-    }
-
-    final double buttonYTranslation = isSelected ? -buttonPopUpHeight : 0.0;
-    final double scale = isSelected ? 1.0 : 0.8;
-
-    // Иконка (1.2 * 25.0 = 30.0)
-    final double iconSize = buttonRadius * 1.2;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.translucent,
-      child: AnimatedContainer(
-        duration: animDuration,
-        curve: Curves.fastOutSlowIn,
-        transform: Matrix4.translationValues(0, buttonYTranslation, 0),
-        transformAlignment: Alignment.center,
-        child: AnimatedScale(
-          duration: animDuration,
-          curve: Curves.fastOutSlowIn,
-          scale: scale,
-          child: CircleAvatar(
-            radius: buttonRadius,
-            backgroundColor: backgroundColor,
-            child: IconTheme(
-              data: IconTheme.of(context).copyWith(
-                size: iconSize,
-              ),
-              child: icon,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _Footer extends StatelessWidget {
   final String poem;
@@ -691,94 +512,7 @@ class _Footer extends StatelessWidget {
   }
 }
 
-class _EventList extends StatelessWidget {
-  final model.VotingStatus status;
-  final String imagePath;
-  final VoidCallback onRefresh;
 
-  const _EventList(
-      {super.key,
-      required this.status,
-      required this.imagePath,
-      required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<VotingBloc, VotingState>(
-      builder: (context, state) {
-        if (state is VotingLoadInProgress) {
-          return const SliverFillRemaining(
-            child: Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          );
-        }
-        if (state is VotingEventsLoadSuccess) {
-          if (state.events.isEmpty) {
-            return SliverFillRemaining(
-              hasScrollBody: false,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 24.0),
-                margin: const EdgeInsets.symmetric(
-                    horizontal: 24.0, vertical: 72.0),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.7),
-                      Colors.black.withValues(alpha: 0.5),
-                      Colors.black.withValues(alpha: 0.7),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.noActiveVotings,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white,
-                      fontSize: 20.0,
-                      shadows: [
-                        const Shadow(blurRadius: 6, color: Colors.black87)
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            );
-          }
-          return SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return _VotingEventCard(
-                  event: state.events[index],
-                  imagePath: imagePath,
-                  onActionComplete: onRefresh,
-                );
-              },
-              childCount: state.events.length,
-            ),
-          );
-        }
-        if (state is VotingFailure) {
-          return SliverToBoxAdapter(
-            child: Center(
-              child: Text('Error: ${state.error}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: Colors.white)),
-            ),
-          );
-        }
-        return const SliverToBoxAdapter(child: SizedBox.shrink());
-      },
-    );
-  }
-}
 
 // Widget for each page in the PageView
 class _EventListPage extends StatelessWidget {
@@ -842,6 +576,8 @@ class _EventListPage extends StatelessWidget {
             );
           }
           return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
@@ -998,107 +734,4 @@ class _VotingEventCard extends StatelessWidget {
   }
 }
 
-class _UnifiedBarClipper extends CustomClipper<Path> {
-  final int moundIndex;
-  final double buttonSlotWidth;
-  final double barHeight;
-  final double moundHeight;
-  final double moundWidth;
-  final double horizontalMargin;
 
-  _UnifiedBarClipper({
-    required this.moundIndex,
-    required this.buttonSlotWidth,
-    required this.barHeight,
-    required this.moundHeight,
-    required this.moundWidth,
-    required this.horizontalMargin,
-  });
-
-  @override
-  Path getClip(Size size) {
-    // size.width - это ПОЛНАЯ ширина экрана
-    final path = Path();
-    final double cornerRadius = 30.0;
-
-    // Y-координаты
-    final double barTopY = moundHeight;
-    final double barBottomY = moundHeight + barHeight;
-
-    // X-координаты "виртуального" бара
-    final double barLeftX = horizontalMargin;
-    final double barRightX = size.width - horizontalMargin;
-
-    // X-координаты "бугорка"
-    final double moundCenterX =
-        barLeftX + (moundIndex * buttonSlotWidth) + (buttonSlotWidth / 2);
-    final double moundStart = moundCenterX - (moundWidth / 2);
-    final double moundEnd = moundCenterX + (moundWidth / 2);
-
-    // X-координаты углов (для проверки)
-    final double topLeftCornerX = barLeftX + cornerRadius;
-    final double topRightCornerX = barRightX - cornerRadius;
-
-    // --- Рисуем путь (Новая, правильная логика v16) ---
-
-    // 1. Начинаем с верхнего-левого угла
-    path.moveTo(barLeftX, barTopY + cornerRadius);
-    path.arcToPoint(
-      Offset(topLeftCornerX, barTopY),
-      radius: Radius.circular(cornerRadius),
-      clockwise: true,
-    );
-
-    // 2. Рисуем верхнюю грань + "бугорок"
-    if (moundIndex == 0) {
-      path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
-      path.lineTo(topRightCornerX, barTopY);
-    } else if (moundIndex == 1) {
-      path.lineTo(moundStart, barTopY);
-      path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
-      path.lineTo(topRightCornerX, barTopY);
-    } else {
-      path.lineTo(moundStart, barTopY);
-      path.quadraticBezierTo(moundCenterX, 0.0, moundEnd, barTopY);
-    }
-
-    // 3. Рисуем верхний-правый угол
-    path.arcToPoint(
-      Offset(barRightX, barTopY + cornerRadius),
-      radius: Radius.circular(cornerRadius),
-      clockwise: true,
-    );
-
-    // 4. Рисуем правую грань
-    path.lineTo(barRightX, barBottomY - cornerRadius);
-
-    // 5. Рисуем нижний-правый угол
-    path.arcToPoint(
-      Offset(barRightX - cornerRadius, barBottomY),
-      radius: Radius.circular(cornerRadius),
-      clockwise: true,
-    );
-
-    // 6. Рисуем нижнюю грань
-    path.lineTo(topLeftCornerX, barBottomY); // (barLeftX + cornerRadius)
-
-    // 7. Рисуем нижний-левый угол
-    path.arcToPoint(
-      Offset(barLeftX, barBottomY - cornerRadius),
-      radius: Radius.circular(cornerRadius),
-      clockwise: true,
-    );
-
-    // 8. Замыкаем путь (рисуем левую грань)
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant _UnifiedBarClipper oldClipper) {
-    return oldClipper.moundIndex != moundIndex ||
-        oldClipper.buttonSlotWidth != buttonSlotWidth ||
-        oldClipper.moundHeight != moundHeight ||
-        oldClipper.horizontalMargin != horizontalMargin;
-  }
-}
