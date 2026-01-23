@@ -66,9 +66,9 @@ void main() {
       title: 'Innovator of the Year',
       description: 'Vote for the best innovator',
       status: model.VotingStatus.active,
-      registrationEndDate: DateTime(2025, 11, 30),
-      votingStartDate: DateTime(2025, 12, 1),
-      votingEndDate: DateTime(2025, 12, 31),
+      registrationEndDate: DateTime(2026, 11, 30),
+      votingStartDate: DateTime(2026, 12, 1),
+      votingEndDate: DateTime(2026, 12, 31),
       isRegistered: true,
       questions: const [
         Question(
