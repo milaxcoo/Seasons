@@ -96,7 +96,7 @@ void main() {
       // Assert: Verify that the main UI elements are present
       expect(find.text('Seasons'), findsOneWidget);
       expect(find.text('Войти'), findsOneWidget);
-      expect(find.text('© RUDN University 2025'), findsOneWidget);
+      expect(find.text('© RUDN University 2026'), findsOneWidget);
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
 
@@ -190,7 +190,7 @@ void main() {
       await tester.pump();
 
       // Assert
-      expect(find.text('© RUDN University 2025'), findsOneWidget);
+      expect(find.text('© RUDN University 2026'), findsOneWidget);
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
 

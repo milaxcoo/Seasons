@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -14,16 +15,22 @@ void main() {
     late MockVotingRepository mockRepository;
     late AuthBloc authBloc;
     late VotingBloc votingBloc;
+    late StreamController<Map<String, dynamic>?> mockServiceStreamController;
 
     setUp(() {
       mockRepository = MockVotingRepository();
+      mockServiceStreamController = StreamController<Map<String, dynamic>?>.broadcast();
       authBloc = AuthBloc(votingRepository: mockRepository);
-      votingBloc = VotingBloc(votingRepository: mockRepository);
+      votingBloc = VotingBloc(
+        votingRepository: mockRepository,
+        backgroundServiceStream: mockServiceStreamController.stream,
+      );
     });
 
     tearDown(() {
       authBloc.close();
       votingBloc.close();
+      mockServiceStreamController.close();
     });
 
     setUpAll(() {

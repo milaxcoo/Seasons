@@ -15,7 +15,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get login => 'Войти';
 
   @override
-  String get copyright => '© RUDN University 2025';
+  String get copyright => '© RUDN University 2026';
 
   @override
   String get helpEmail => 'seasons-helpdesk@rudn.ru';
@@ -30,6 +30,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get registrationOpen => 'Регистрация открыта';
+
+  @override
+  String get registrationClosed => 'Регистрация закрыта';
 
   @override
   String votingUntil(String date) {

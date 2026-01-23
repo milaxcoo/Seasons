@@ -11,9 +11,9 @@ void main() {
             'name': 'Best Mobile App',
             'description': 'Vote for the best mobile app',
             'status': 'registration',
-            'end_registration_at': '2025-12-31T23:59:59',
-            'registration_started_at': '2025-01-01T00:00:00',
-            'end_voting_at': '2026-01-31T23:59:59',
+            'end_registration_at': '2026-12-31T23:59:59',
+            'registration_started_at': '2026-01-01T00:00:00',
+            'end_voting_at': '2027-01-31T23:59:59',
             'registered': 0,
             'voted': 0,
             'questions': [],
@@ -40,9 +40,9 @@ void main() {
             'name': 'Best Teacher',
             'description': 'Vote for the best teacher',
             'status': 'active',
-            'end_registration_at': '2025-11-30T23:59:59',
-            'voting_started_at': '2025-12-01T00:00:00',
-            'end_voting_at': '2025-12-31T23:59:59',
+            'end_registration_at': '2026-11-30T23:59:59',
+            'voting_started_at': '2026-12-01T00:00:00',
+            'end_voting_at': '2026-12-31T23:59:59',
             'registered': 1,
             'voted': 0,
             'questions': [],
@@ -65,9 +65,9 @@ void main() {
             'name': 'Best Project',
             'description': 'Vote for the best project',
             'status': 'finished',
-            'end_registration_at': '2025-10-31T23:59:59',
-            'voting_started_at': '2025-11-01T00:00:00',
-            'end_voting_at': '2025-11-30T23:59:59',
+            'end_registration_at': '2026-10-31T23:59:59',
+            'voting_started_at': '2026-11-01T00:00:00',
+            'end_voting_at': '2026-11-30T23:59:59',
             'registered': 1,
             'voted': 1,
             'questions': [],
@@ -178,9 +178,9 @@ void main() {
             'id': 'date-test',
             'name': 'Date Test',
             'description': 'Testing date parsing',
-            'end_registration_at': '2025-12-31T23:59:59',
-            'voting_started_at': '2025-01-01T00:00:00',
-            'end_voting_at': '2025-01-31T23:59:59',
+            'end_registration_at': '2026-12-31T23:59:59',
+            'voting_started_at': '2026-01-01T00:00:00',
+            'end_voting_at': '2026-01-31T23:59:59',
             'registered': 0,
             'voted': 0,
             'questions': [],
@@ -190,11 +190,11 @@ void main() {
         final event = VotingEvent.fromJson(json);
 
         // Dates are converted from UTC to local time in the model
-        final expectedRegEnd = DateTime.parse('2025-12-31T23:59:59Z').toLocal();
+        final expectedRegEnd = DateTime.parse('2026-12-31T23:59:59Z').toLocal();
         final expectedVotingStart =
-            DateTime.parse('2025-01-01T00:00:00Z').toLocal();
+            DateTime.parse('2026-01-01T00:00:00Z').toLocal();
         final expectedVotingEnd =
-            DateTime.parse('2025-01-31T23:59:59Z').toLocal();
+            DateTime.parse('2026-01-31T23:59:59Z').toLocal();
 
         expect(event.registrationEndDate, isNotNull);
         expect(event.votingStartDate, isNotNull);

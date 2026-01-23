@@ -1,858 +1,0 @@
-00:00 +0: loading /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart                                                                                                 00:01 +0: loading /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart                                                                                                 00:01 +0: loading /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/models_test.dart                                                                                                      00:01 +0: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/models_test.dart: Nominee fromJson parses a valid nominee correctly                                                           00:01 +1: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/vote_result_test.dart: SubjectResult creates a SubjectResult with vote counts                                                 00:01 +2: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +3: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +4: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +6: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +9: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication           00:01 +10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication          00:01 +11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication          00:01 +12: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login returns token on successful authentication          00:01 +13: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/models_test.dart: Subject fromJson handles missing answers with empty list                                                   00:01 +14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/vote_result_test.dart: SubjectResult Equality two SubjectResults with different vote counts are not equal                    00:01 +15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +17: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +18: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +19: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +20: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +21: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +22: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +23: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +24: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +25: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication login throws exception on failed authentication           00:01 +26: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/models_test.dart: Question fromJson handles missing question data with defaults                                              00:01 +27: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/vote_result_test.dart: QuestionResult Equality two QuestionResults with same properties are equal                            00:01 +28: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication logout completes successfully                             00:01 +29: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication logout completes successfully                             00:01 +30: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication logout completes successfully                             00:01 +31: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication logout completes successfully                             00:01 +31: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/models_test.dart: Question Equality two questions with same properties are equal                                             00:01 +32: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication getAuthToken returns token when authenticated             00:01 +33: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/vote_result_test.dart: QuestionResult Equality two QuestionResults with different types are not equal                        00:01 +34: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/vote_result_test.dart: QuestionResult Equality two QuestionResults with different types are not equal                        00:01 +34: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication getAuthToken returns null when not authenticated          00:01 +35: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/models_test.dart: Question Equality two questions with different ids are not equal                                           00:01 +36: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/models_test.dart: Question Equality two questions with different ids are not equal                                           00:01 +36: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication getUserLogin returns user login                           00:01 +37: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Authentication getUserLogin returns user login                           00:01 +37: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns list of registration events             00:01 +38: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns list of registration events             00:01 +38: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns list of active events                   00:01 +39: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns list of active events                   00:01 +39: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns list of completed events                00:01 +40: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns list of completed events                00:01 +40: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns empty list when no events               00:02 +40 -1: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns empty list when no events            00:02 +40 -1: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus returns empty list when no events [E]        
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingStatus`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingStatus`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingStatus` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingStatus` will only be passed around, but never be interacted with.
-  Therefore, if `VotingStatus` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingStatus`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingStatus` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5           _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25         _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10         any
-  test/data/repositories/voting_repository_test.dart 171:53  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9                   when.<fn>
-  test/data/repositories/voting_repository_test.dart 171:13  main.<fn>.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart -p vm --plain-name 'VotingRepository Events getEventsByStatus returns empty list when no events'
-00:02 +40 -1: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus throws exception on error                    00:02 +40 -2: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Events getEventsByStatus throws exception on error [E]                
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingStatus`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingStatus`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingStatus` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingStatus` will only be passed around, but never be interacted with.
-  Therefore, if `VotingStatus` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingStatus`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingStatus` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5           _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25         _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10         any
-  test/data/repositories/voting_repository_test.dart 184:53  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9                   when.<fn>
-  test/data/repositories/voting_repository_test.dart 184:13  main.<fn>.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart -p vm --plain-name 'VotingRepository Events getEventsByStatus throws exception on error'
-00:02 +41 -2: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow (setUpAll)                                                00:02 +42 -2: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow (setUpAll)                                                00:02 +42 -2: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Registration registerForEvent throws exception when already registered00:02 +43 -2: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Complete user flow: login -> fetch events -> logout       00:02 +44 -2: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Complete user flow: login -> fetch events -> logout       00:02 +44 -3: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Voting submitVote returns true on successful submission [E]           
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingEvent`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingEvent`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingEvent` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingEvent` will only be passed around, but never be interacted with.
-  Therefore, if `VotingEvent` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingEvent`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingEvent` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5           _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25         _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10         any
-  test/data/repositories/voting_repository_test.dart 271:46  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9                   when.<fn>
-  test/data/repositories/voting_repository_test.dart 271:13  main.<fn>.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart -p vm --plain-name 'VotingRepository Voting submitVote returns true on successful submission'
-00:02 +44 -4: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Voting submitVote throws exception when user already voted [E]        
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingEvent`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingEvent`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingEvent` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingEvent` will only be passed around, but never be interacted with.
-  Therefore, if `VotingEvent` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingEvent`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingEvent` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5           _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25         _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10         any
-  test/data/repositories/voting_repository_test.dart 294:46  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9                   when.<fn>
-  test/data/repositories/voting_repository_test.dart 294:13  main.<fn>.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart -p vm --plain-name 'VotingRepository Voting submitVote throws exception when user already voted'
-00:02 +44 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart: VotingRepository Voting submitVote throws exception on network error [E]               
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingEvent`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingEvent`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingEvent` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingEvent` will only be passed around, but never be interacted with.
-  Therefore, if `VotingEvent` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingEvent`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingEvent` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5           _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25         _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10         any
-  test/data/repositories/voting_repository_test.dart 316:46  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9                   when.<fn>
-  test/data/repositories/voting_repository_test.dart 316:13  main.<fn>.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/repositories/voting_repository_test.dart -p vm --plain-name 'VotingRepository Voting submitVote throws exception on network error'
-00:02 +45 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Complete user flow: login -> fetch events -> logout       00:02 +46 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Complete user flow: login -> fetch events -> logout       00:02 +47 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Complete user flow: login -> fetch events -> logout       00:02 +48 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Complete user flow: login -> fetch events -> logout       00:02 +48 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: ... Tests - Auth and Voting Flow Complete voting flow: register -> fetch event -> submit vote      00:02 +49 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: ... Tests - Auth and Voting Flow Complete voting flow: register -> fetch event -> submit vote      00:02 +49 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Error handling: failed login prevents further actions     00:02 +50 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Error handling: failed login prevents further actions     00:02 +50 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Error handling: failed registration allows retry          00:02 +51 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Error handling: failed registration allows retry          00:02 +51 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Error handling: failed vote submission shows error        00:02 +52 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Error handling: failed vote submission shows error        00:02 +52 -5: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Concurrent operations: multiple event fetches             00:02 +52 -6: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow Concurrent operations: multiple event fetches [E]         
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingStatus`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingStatus`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingStatus` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingStatus` will only be passed around, but never be interacted with.
-  Therefore, if `VotingStatus` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingStatus`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingStatus` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5    _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25  _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10  any
-  test/integration/integration_test.dart 228:51       main.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9            when.<fn>
-  test/integration/integration_test.dart 228:11       main.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart -p vm --plain-name 'Integration Tests - Auth and Voting Flow Concurrent operations: multiple event fetches'
-00:02 +52 -6: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow State persistence: logout does not affect voting bloc     00:02 +52 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow State persistence: logout does not affect voting bloc [E] 
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingStatus`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingStatus`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingStatus` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingStatus` will only be passed around, but never be interacted with.
-  Therefore, if `VotingStatus` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingStatus`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingStatus` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5    _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25  _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10  any
-  test/integration/integration_test.dart 256:51       main.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9            when.<fn>
-  test/integration/integration_test.dart 256:11       main.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart -p vm --plain-name 'Integration Tests - Auth and Voting Flow State persistence: logout does not affect voting bloc'
-00:02 +52 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/integration/integration_test.dart: Integration Tests - Auth and Voting Flow (tearDownAll)                                             00:02 +52 -7: loading /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart                                                                                            00:02 +52 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses a basic registration event correctly                                  00:02 +53 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses a basic registration event correctly                                  00:02 +53 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses an active event correctly                                             00:02 +54 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses an active event correctly                                             00:02 +54 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses a completed event correctly                                           00:02 +55 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses a completed event correctly                                           00:02 +55 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles missing optional fields gracefully                                   00:02 +56 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles missing optional fields gracefully                                   00:02 +56 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses questions correctly                                                   00:02 +57 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses questions correctly                                                   00:02 +57 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses results correctly                                                     00:02 +58 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson parses results correctly                                                     00:02 +58 -7: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles date parsing correctly                                               00:02 +58 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles date parsing correctly [E]                                           
-  Expected: <2025>
-    Actual: <2026>
-  
-  package:matcher                                     expect
-  package:flutter_test/src/widget_tester.dart 473:18  expect
-  test/data/models/voting_event_test.dart 195:9       main.<fn>.<fn>.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart -p vm --plain-name 'VotingEvent fromJson handles date parsing correctly'
-00:02 +58 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles invalid date strings gracefully                                      00:02 +59 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles invalid date strings gracefully                                      00:02 +59 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles empty questions array                                                00:02 +60 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles empty questions array                                                00:02 +60 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles empty results                                                        00:02 +61 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent fromJson handles empty results                                                        00:02 +61 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent Equality two events with same properties are equal                                    00:02 +62 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent Equality two events with same properties are equal                                    00:02 +62 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent Equality two events with different ids are not equal                                  00:02 +63 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingEvent Equality two events with different ids are not equal                                  00:02 +63 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingStatus has three statuses                                                                   00:02 +64 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/data/models/voting_event_test.dart: VotingStatus has three statuses                                                                   00:02 +64 -8: loading /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart                                                                                    00:02 +64 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: (setUpAll)                                                                                00:02 +64 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +64 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +65 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +66 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +67 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +68 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +69 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +70 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +71 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +72 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +73 -8: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                       00:03 +73 -9: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/auth_bloc_test.dart: AuthBloc LoggedOut emits [AuthUnauthenticated] even when logout throws an error [E]            
-  Exception: Logout error
-  package:mocktail/src/mocktail.dart 249:7                     When.thenThrow.<fn>
-  package:mocktail/src/mocktail.dart 131:37                    Mock.noSuchMethod
-  test/presentation/bloc/auth_bloc_test.dart 8:7               MockVotingRepository.logout
-  package:seasons/presentation/bloc/auth/auth_bloc.dart 58:29  AuthBloc._onLoggedOut
-  package:bloc/src/bloc.dart 226:26                            Bloc.on.<fn>.handleEvent
-  package:bloc/src/bloc.dart 237:9                             Bloc.on.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                                   _CustomZone.registerBinaryCallback
-  package:bloc/src/bloc.dart 226:13                            Bloc.on.<fn>.handleEvent
-  package:bloc/src/bloc.dart 237:9                             Bloc.on.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                                   _ForwardingStream.listen
-  package:bloc/src/bloc.dart 341:40                            _FlatMapStreamTransformer.bind.<fn>
-  dart:async                                                   _StreamImpl.listen
-  package:bloc/src/bloc.dart 240:7                             Bloc.on
-  package:seasons/presentation/bloc/auth/auth_bloc.dart 17:5   new AuthBloc
-  test/presentation/bloc/auth_bloc_test.dart 19:18             main.<fn>.<fn>
-  
-  Expected: [AuthUnauthenticated:AuthUnauthenticated()]
-    Actual: []
-     Which: at location [0] is [] which shorter than expected
-  
-  ==== diff ========================================
-  
-  [90m[[0m[31m[-AuthUnauthenticated()-][0m[90m][0m
-  
-  ==== end diff ====================================
-  
-  package:bloc_test/src/bloc_test.dart 224:11  testBloc.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                   _Completer.completeError
-  package:bloc_test/src/bloc_test.dart 255:43  _runZonedGuarded.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                   _CustomZone.registerBinaryCallback
-  package:bloc_test/src/bloc_test.dart 252:5   _runZonedGuarded.<fn>
-  dart:async                                   runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 251:3   _runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 198:11  testBloc
-  package:bloc_test/src/bloc_test.dart 156:13  blocTest.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/auth_bloc_test.dart -p vm --plain-name 'AuthBloc LoggedOut emits [AuthUnauthenticated] even when logout throws an error'
-00:03 +73 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/auth_bloc_test.dart: AuthBloc State Transitions handles multiple login attempts correctly [E]                      
-  Expected: [AuthLoading:AuthLoading(), AuthAuthenticated:AuthAuthenticated(testuser)]
-    Actual: []
-     Which: at location [0] is [] which shorter than expected
-  
-  ==== diff ========================================
-  
-  [90m[[0m[31m[-AuthLoading(), AuthAuthenticated(testuser)-][0m[90m][0m
-  
-  ==== end diff ====================================
-  
-  package:bloc_test/src/bloc_test.dart 224:11  testBloc.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                   _Completer.completeError
-  package:bloc_test/src/bloc_test.dart 255:43  _runZonedGuarded.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                   _CustomZone.registerBinaryCallback
-  package:bloc_test/src/bloc_test.dart 252:5   _runZonedGuarded.<fn>
-  dart:async                                   runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 251:3   _runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 198:11  testBloc
-  package:bloc_test/src/bloc_test.dart 156:13  blocTest.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/auth_bloc_test.dart -p vm --plain-name 'AuthBloc State Transitions handles multiple login attempts correctly'
-00:03 +74 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                      00:03 +75 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders main layout components correctly                                      00:03 +76 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart: LoginScreen renders main UI components correctly                                        00:03 +77 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart: LoginScreen renders main UI components correctly                                        00:03 +78 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart: LoginScreen renders main UI components correctly                                        00:03 +79 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +80 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +81 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +82 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +83 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +84 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +85 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +86 -10: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +87 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +87 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/voting_bloc_test.dart: VotingBloc FetchEventsByStatus emits [VotingLoadInProgress, VotingFailure] when fetch fails [E]
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingStatus`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingStatus`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingStatus` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingStatus` will only be passed around, but never be interacted with.
-  Therefore, if `VotingStatus` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingStatus`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingStatus` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5     _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25   _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10   any
-  test/presentation/bloc/voting_bloc_test.dart 111:61  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9             when.<fn>
-  test/presentation/bloc/voting_bloc_test.dart 111:15  main.<fn>.<fn>.<fn>
-  package:bloc_test/src/bloc_test.dart 201:25          testBloc.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                           _Completer.completeError
-  package:bloc_test/src/bloc_test.dart 255:43          _runZonedGuarded.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                           _CustomZone.registerBinaryCallback
-  package:bloc_test/src/bloc_test.dart 252:5           _runZonedGuarded.<fn>
-  dart:async                                           runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 251:3           _runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 198:11          testBloc
-  package:bloc_test/src/bloc_test.dart 156:13          blocTest.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/voting_bloc_test.dart -p vm --plain-name 'VotingBloc FetchEventsByStatus emits [VotingLoadInProgress, VotingFailure] when fetch fails'
-00:03 +88 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +89 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +90 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +91 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +92 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +93 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +94 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +95 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +96 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:03 +97 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:04 +97 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:04 +98 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:04 +99 -11: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress          00:04 +100 -12: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +100 -12: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/voting_bloc_test.dart: VotingBloc State Transitions handles multiple fetch requests correctly [E]                 
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingStatus`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingStatus`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingStatus` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingStatus` will only be passed around, but never be interacted with.
-  Therefore, if `VotingStatus` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingStatus`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingStatus` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5     _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25   _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10   any
-  test/presentation/bloc/voting_bloc_test.dart 319:61  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9             when.<fn>
-  test/presentation/bloc/voting_bloc_test.dart 319:15  main.<fn>.<fn>.<fn>
-  package:bloc_test/src/bloc_test.dart 201:25          testBloc.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                           _Completer.completeError
-  package:bloc_test/src/bloc_test.dart 255:43          _runZonedGuarded.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                           _CustomZone.registerBinaryCallback
-  package:bloc_test/src/bloc_test.dart 252:5           _runZonedGuarded.<fn>
-  dart:async                                           runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 251:3           _runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 198:11          testBloc
-  package:bloc_test/src/bloc_test.dart 156:13          blocTest.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/voting_bloc_test.dart -p vm --plain-name 'VotingBloc State Transitions handles multiple fetch requests correctly'
-00:04 +100 -13: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/voting_bloc_test.dart: VotingBloc State Transitions handles register followed by fetch [E]                        
-  Bad state: A test tried to use `any` or `captureAny` on a parameter of type `VotingStatus`, but
-  registerFallbackValue was not previously called to register a fallback value for `VotingStatus`.
-  
-  To fix, do:
-  
-  ```
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(/* create a dummy instance of `VotingStatus` */);
-    });
-  }
-  ```
-  
-  This instance of `VotingStatus` will only be passed around, but never be interacted with.
-  Therefore, if `VotingStatus` is a function, it does not have to return a valid object and
-  could throw unconditionally.
-  If you cannot easily create an instance of `VotingStatus`, consider defining a `Fake`:
-  
-  ```
-  class MyTypeFake extends Fake implements MyType {}
-  
-  void main() {
-    setUpAll(() {
-      registerFallbackValue(MyTypeFake());
-    });
-  }
-  ```
-  
-  Fallbacks are required because mocktail has to know of a valid `VotingStatus` to prevent
-  TypeErrors from being thrown in Dart's sound null safe mode, while still
-  providing a convenient syntax.
-  
-  package:mocktail/src/_register_matcher.dart 49:5     _getFallbackValue
-  package:mocktail/src/_register_matcher.dart 160:25   _registerMatcher
-  package:mocktail/src/_register_matcher.dart 104:10   any
-  test/presentation/bloc/voting_bloc_test.dart 339:61  main.<fn>.<fn>.<fn>.<fn>
-  package:mocktail/src/mocktail.dart 211:9             when.<fn>
-  test/presentation/bloc/voting_bloc_test.dart 339:15  main.<fn>.<fn>.<fn>
-  package:bloc_test/src/bloc_test.dart 201:25          testBloc.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                           _Completer.completeError
-  package:bloc_test/src/bloc_test.dart 255:43          _runZonedGuarded.<fn>
-  ===== asynchronous gap ===========================
-  dart:async                                           _CustomZone.registerBinaryCallback
-  package:bloc_test/src/bloc_test.dart 252:5           _runZonedGuarded.<fn>
-  dart:async                                           runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 251:3           _runZonedGuarded
-  package:bloc_test/src/bloc_test.dart 198:11          testBloc
-  package:bloc_test/src/bloc_test.dart 156:13          blocTest.<fn>
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/bloc/voting_bloc_test.dart -p vm --plain-name 'VotingBloc State Transitions handles register followed by fetch'
-00:04 +100 -13: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +101 -13: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +101 -13: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart: LoginScreen navigates to HomeScreen when AuthAuthenticated                             
-══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
-The following StateError was thrown building KeyedSubtree-[GlobalKey#29747]:
-Bad state: Stream has already been listened to.
-
-The relevant error-causing widget was:
-  Scaffold
-  Scaffold:file:///Users/mikhaillebedev/votepfurapp/votepfurapp/lib/presentation/screens/login_screen.dart:71:14
-
-When the exception was thrown, this was the stack:
-#3      _BlocListenerBaseState._subscribe (package:flutter_bloc/src/bloc_listener.dart:213:34)
-#4      _BlocListenerBaseState.initState (package:flutter_bloc/src/bloc_listener.dart:160:5)
-#5      StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5953:55)
-#6      ComponentElement.mount (package:flutter/src/widgets/framework.dart:5796:5)
-#7      SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
-...     Normal element mounting (25 frames)
-#32     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4590:20)
-#33     MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7269:36)
-#34     MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7285:32)
-...     Normal element mounting (390 frames)
-#424    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4590:20)
-#425    MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7269:36)
-#426    MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7285:32)
-...     Normal element mounting (471 frames)
-#897    _InheritedProviderScopeElement.mount (package:provider/src/inherited_provider.dart:424:11)
-...     Normal element mounting (7 frames)
-#904    SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
-...     Normal element mounting (7 frames)
-#911    SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
-#912    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4590:20)
-#913    Element.updateChild (package:flutter/src/widgets/framework.dart:4053:20)
-#914    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#915    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#916    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#917    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
-#918    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#919    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#920    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#921    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#922    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#923    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#924    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#925    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#926    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#927    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
-#928    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#929    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#930    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#931    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#932    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#933    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#934    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#935    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#936    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#937    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#938    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#939    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#940    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#941    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#942    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#943    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#944    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#945    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#946    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#947    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#948    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#949    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#950    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#951    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#952    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#953    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#954    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#955    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#956    _RawViewElement._updateChild (package:flutter/src/widgets/view.dart:481:16)
-#957    _RawViewElement.update (package:flutter/src/widgets/view.dart:568:5)
-#958    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#959    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#960    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#961    StatelessElement.update (package:flutter/src/widgets/framework.dart:5898:5)
-#962    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#963    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#964    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#965    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#966    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#967    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#968    RootElement._rebuild (package:flutter/src/widgets/binding.dart:1782:16)
-#969    RootElement.update (package:flutter/src/widgets/binding.dart:1760:5)
-#970    RootElement.performRebuild (package:flutter/src/widgets/binding.dart:1774:7)
-#971    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#972    BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2750:15)
-#973    BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2807:11)
-#974    BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3111:18)
-#975    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:1506:19)
-#976    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)
-#977    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)
-#978    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)
-#979    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:1335:9)
-#982    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
-#983    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:1324:27)
-#984    WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
-#987    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
-#988    WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
-#989    main.<anonymous closure>.<anonymous closure> (file:///Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart:123:20)
-#990    testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
-<asynchronous suspension>
-#991    TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
-<asynchronous suspension>
-<asynchronous suspension>
-(elided 8 frames from dart:async and package:stack_trace)
-
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following TestFailure was thrown running a test:
-Expected: at least one matching candidate
-  Actual: _TextWidgetFinder:<Found 0 widgets with text "Seasons": []>
-   Which: means none were found but some were expected
-
-When the exception was thrown, this was the stack:
-#4      main.<anonymous closure>.<anonymous closure> (file:///Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart:131:7)
-<asynchronous suspension>
-#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
-<asynchronous suspension>
-#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
-<asynchronous suspension>
-<asynchronous suspension>
-(elided one frame from package:stack_trace)
-
-This was caught by the test expectation on the following line:
-  file:///Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart line 131
-The test description was:
-  navigates to HomeScreen when AuthAuthenticated
-════════════════════════════════════════════════════════════════════════════════════════════════════
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following message was thrown:
-Multiple exceptions (2) were detected during the running of the current test, and at least one was
-unexpected.
-════════════════════════════════════════════════════════════════════════════════════════════════════
-00:04 +101 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart: LoginScreen navigates to HomeScreen when AuthAuthenticated [E]                         
-  Test failed. See exception logs above.
-  The test description was: navigates to HomeScreen when AuthAuthenticated
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/login_screen_test.dart -p vm --plain-name 'LoginScreen navigates to HomeScreen when AuthAuthenticated'
-00:04 +102 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +103 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +104 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +105 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +106 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +107 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:04 +108 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:05 +108 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         00:05 +108 -14: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress         
-══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
-The following assertion was thrown running a test:
-pumpAndSettle timed out
-
-When the exception was thrown, this was the stack:
-#0      WidgetTester.pumpAndSettle.<anonymous closure> (package:flutter_test/src/widget_tester.dart:717:11)
-<asynchronous suspension>
-#1      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
-<asynchronous suspension>
-#2      main.<anonymous closure>.<anonymous closure> (file:///Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart:74:7)
-<asynchronous suspension>
-#3      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
-<asynchronous suspension>
-#4      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
-<asynchronous suspension>
-<asynchronous suspension>
-(elided one frame from package:stack_trace)
-
-The test description was:
-  renders CircularProgressIndicator when state is VotingLoadInProgress
-════════════════════════════════════════════════════════════════════════════════════════════════════
-00:05 +108 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress [E]     
-  Test failed. See exception logs above.
-  The test description was: renders CircularProgressIndicator when state is VotingLoadInProgress
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart -p vm --plain-name 'HomeScreen renders CircularProgressIndicator when state is VotingLoadInProgress'
-00:05 +108 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders list of events when state is VotingEventsLoadSuccess                 00:05 +109 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders list of events when state is VotingEventsLoadSuccess                 00:05 +109 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders empty state when no events                                           00:05 +110 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders empty state when no events                                           00:05 +110 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders error message when state is VotingFailure                            00:05 +111 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders error message when state is VotingFailure                            00:05 +111 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen shows logout button and triggers logout                                      00:06 +111 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen shows logout button and triggers logout                                      00:06 +111 -15: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen shows logout button and triggers logout                                      
-══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
-The following ProviderNotFoundException was thrown building KeyedSubtree-[GlobalKey#b9bce]:
-Error: Could not find the correct Provider<AuthBloc> above this BlocListener<AuthBloc, AuthState>
-Widget
-
-This happens because you used a `BuildContext` that does not include the provider
-of your choice. There are a few common scenarios:
-
-- You added a new provider in your `main.dart` and performed a hot-reload.
-  To fix, perform a hot-restart.
-
-- The provider you are trying to read is in a different route.
-
-  Providers are "scoped". So if you insert of provider inside a route, then
-  other routes will not be able to access that provider.
-
-- You used a `BuildContext` that is an ancestor of the provider you are trying to read.
-
-  Make sure that BlocListener<AuthBloc, AuthState> is under your MultiProvider/Provider<AuthBloc>.
-  This usually happens when you are creating a provider and trying to read it immediately.
-
-  For example, instead of:
-
-  ```
-  Widget build(BuildContext context) {
-    return Provider<Example>(
-      create: (_) => Example(),
-      // Will throw a ProviderNotFoundError, because `context` is associated
-      // to the widget that is the parent of `Provider<Example>`
-      child: Text(context.watch<Example>().toString()),
-    );
-  }
-  ```
-
-  consider using `builder` like so:
-
-  ```
-  Widget build(BuildContext context) {
-    return Provider<Example>(
-      create: (_) => Example(),
-      // we use `builder` to obtain a new `BuildContext` that has access to the provider
-      builder: (context, child) {
-        // No longer throws
-        return Text(context.watch<Example>().toString());
-      }
-    );
-  }
-  ```
-
-If none of these solutions work, consider asking for help on StackOverflow:
-https://stackoverflow.com/questions/tagged/flutter
-
-The relevant error-causing widget was:
-  Scaffold
-  Scaffold:file:///Users/mikhaillebedev/votepfurapp/votepfurapp/lib/presentation/screens/login_screen.dart:71:14
-
-When the exception was thrown, this was the stack:
-#0      Provider._inheritedElementOf (package:provider/src/provider.dart:377:7)
-#1      Provider.of (package:provider/src/provider.dart:327:30)
-#2      ReadContext.read (package:provider/src/provider.dart:683:21)
-#3      _BlocListenerBaseState.initState (package:flutter_bloc/src/bloc_listener.dart:158:36)
-#4      StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5953:55)
-#5      ComponentElement.mount (package:flutter/src/widgets/framework.dart:5796:5)
-#6      SingleChildWidgetElementMixin.mount (package:nested/nested.dart:222:11)
-...     Normal element mounting (25 frames)
-#31     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4590:20)
-#32     MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7269:36)
-#33     MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7285:32)
-...     Normal element mounting (390 frames)
-#423    Element.inflateWidget (package:flutter/src/widgets/framework.dart:4590:20)
-#424    MultiChildRenderObjectElement.inflateWidget (package:flutter/src/widgets/framework.dart:7269:36)
-#425    Element.updateChild (package:flutter/src/widgets/framework.dart:4059:18)
-#426    Element.updateChildren (package:flutter/src/widgets/framework.dart:4258:32)
-#427    MultiChildRenderObjectElement.update (package:flutter/src/widgets/framework.dart:7302:17)
-#428    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#429    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#430    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#431    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#432    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#433    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#434    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#435    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#436    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#437    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#438    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#439    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#440    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#441    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
-#442    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#443    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#444    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#445    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#446    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#447    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#448    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#449    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#450    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#451    _InheritedNotifierElement.update (package:flutter/src/widgets/inherited_notifier.dart:108:11)
-#452    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#453    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#454    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#455    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#456    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#457    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#458    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#459    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#460    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#461    StatefulElement.update (package:flutter/src/widgets/framework.dart:6010:5)
-#462    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#463    SingleChildRenderObjectElement.update (package:flutter/src/widgets/framework.dart:7125:14)
-#464    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#465    SingleChildRenderObjectElement.update (package:flutter/src/widgets/framework.dart:7125:14)
-#466    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#467    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#468    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#469    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#470    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#471    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#472    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#473    ProxyElement.update (package:flutter/src/widgets/framework.dart:6152:5)
-#474    Element.updateChild (package:flutter/src/widgets/framework.dart:4037:15)
-#475    ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5844:16)
-#476    StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5985:11)
-#477    Element.rebuild (package:flutter/src/widgets/framework.dart:5532:7)
-#478    BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2750:15)
-#479    BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2807:11)
-#480    BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3111:18)
-#481    AutomatedTestWidgetsFlutterBinding.drawFrame (package:flutter_test/src/binding.dart:1506:19)
-#482    RendererBinding._handlePersistentFrameCallback (package:flutter/src/rendering/binding.dart:495:5)
-#483    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1434:15)
-#484    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1347:9)
-#485    AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:1335:9)
-#488    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
-#489    AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:1324:27)
-#490    WidgetTester.pumpAndSettle.<anonymous closure> (package:flutter_test/src/widget_tester.dart:719:23)
-#493    TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
-#494    WidgetTester.pumpAndSettle (package:flutter_test/src/widget_tester.dart:712:27)
-#495    main.<anonymous closure>.<anonymous closure> (file:///Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart:157:20)
-<asynchronous suspension>
-#496    testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
-<asynchronous suspension>
-#497    TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
-<asynchronous suspension>
-<asynchronous suspension>
-(elided 5 frames from dart:async and package:stack_trace)
-
-════════════════════════════════════════════════════════════════════════════════════════════════════
-00:06 +111 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen shows logout button and triggers logout [E]                                  
-  Test failed. See exception logs above.
-  The test description was: shows logout button and triggers logout
-  
-
-To run this test again: /opt/homebrew/Caskroom/flutter/3.32.7/flutter/bin/cache/dart-sdk/bin/dart test /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart -p vm --plain-name 'HomeScreen shows logout button and triggers logout'
-00:06 +111 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen displays registered status correctly                                         00:06 +112 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen displays registered status correctly                                         00:06 +112 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen displays voted status correctly                                              00:06 +113 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen displays voted status correctly                                              00:06 +113 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen panel selector switches between statuses                                     00:06 +114 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen panel selector switches between statuses                                     00:06 +114 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen displays date information correctly                                          00:06 +115 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen displays date information correctly                                          00:06 +115 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders footer with poem                                                     00:06 +116 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: HomeScreen renders footer with poem                                                     00:06 +116 -16: /Users/mikhaillebedev/votepfurapp/votepfurapp/test/presentation/screens/home_screen_test.dart: (tearDownAll)                                                                           00:06 +116 -16: Some tests failed.                                                                                                                                                                     
