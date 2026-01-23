@@ -156,7 +156,7 @@ void onStart(ServiceInstance service) async {
       final cookie = await RudnAuthService().getCookie();
       if (cookie == null || cookie.isEmpty) {
         if (kDebugMode) print("BackgroundService: No auth cookie, scheduling reconnect");
-        _scheduleReconnect(reconnectTimer, () => connect());
+        reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
         return;
       }
 
@@ -204,18 +204,18 @@ void onStart(ServiceInstance service) async {
           if (kDebugMode) print("BackgroundService: WS Connection closed");
           isConnected = false;
           channel = null;
-          _scheduleReconnect(reconnectTimer, () => connect());
+          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
         },
         onError: (error) {
           if (kDebugMode) print("BackgroundService: WS Error: $error");
           isConnected = false;
           channel = null;
-          _scheduleReconnect(reconnectTimer, () => connect());
+          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
         },
       );
     } catch (e) {
       if (kDebugMode) print("BackgroundService: Connection failed: $e");
-      _scheduleReconnect(reconnectTimer, () => connect());
+      reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
     }
   }
   
@@ -321,8 +321,8 @@ Future<void> _showAlertNotification(
 }
 
 /// Schedule reconnection
-void _scheduleReconnect(Timer? timer, Function() connect) {
+Timer _scheduleReconnect(Timer? timer, Function() connect) {
   timer?.cancel();
   if (kDebugMode) print("BackgroundService: Scheduling reconnect in 5s...");
-  Timer(const Duration(seconds: 5), connect);
+  return Timer(const Duration(seconds: 5), connect);
 }
