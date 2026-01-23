@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:seasons/core/websocket_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:seasons/core/services/background_service.dart';
+import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:seasons/core/theme.dart';
@@ -16,15 +18,79 @@ import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/bloc/locale/locale_state.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 
+/// Global notification plugin for handling taps
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
     await initializeDateFormatting('ru_RU', null);
     await initializeDateFormatting('en_US', null);
+    
+    // Initialize local notifications with tap handler
+    await _initializeNotifications();
+    
+    // Initialize background service for WebSocket
+    await BackgroundService().initialize();
+    
     runApp(const SeasonsApp());
   } catch (e) {
     debugPrint('Не удалось инициализировать приложение: $e');
+  }
+}
+
+/// Initialize local notifications with tap response handler
+Future<void> _initializeNotifications() async {
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const iosSettings = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+  
+  const initSettings = InitializationSettings(
+    android: androidSettings,
+    iOS: iosSettings,
+  );
+  
+  await flutterLocalNotificationsPlugin.initialize(
+    initSettings,
+    onDidReceiveNotificationResponse: _onNotificationTapped,
+  );
+  
+  // Check if app was launched from notification
+  final launchDetails = await flutterLocalNotificationsPlugin
+      .getNotificationAppLaunchDetails();
+  if (launchDetails?.didNotificationLaunchApp ?? false) {
+    final payload = launchDetails?.notificationResponse?.payload;
+    if (payload != null) {
+      _handleNotificationPayload(payload);
+    }
+  }
+}
+
+/// Called when user taps a notification
+void _onNotificationTapped(NotificationResponse response) {
+  final payload = response.payload;
+  if (payload != null) {
+    _handleNotificationPayload(payload);
+  }
+}
+
+/// Parse notification payload and navigate accordingly
+void _handleNotificationPayload(String payload) {
+  debugPrint('Notification tapped with payload: $payload');
+  
+  // Payload format: "Navigate:VotingList:tabIndex"
+  if (payload.startsWith('Navigate:VotingList:')) {
+    final parts = payload.split(':');
+    if (parts.length >= 3) {
+      final tabIndex = int.tryParse(parts[2]) ?? 0;
+      // Signal HomeScreen to navigate to this tab and refresh
+      NotificationNavigationService().navigateToTab(tabIndex, shouldRefresh: true);
+    }
   }
 }
 
@@ -75,10 +141,13 @@ class SeasonsApp extends StatelessWidget {
                         body: Center(child: CircularProgressIndicator()));
                   }
                   if (state is AuthAuthenticated) {
-                    WebsocketService().connect();
+                    // Start background service for WebSocket connection
+                    BackgroundService().startService();
                     return const HomeScreen();
                   }
                   if (state is AuthUnauthenticated) {
+                    // Stop background service on logout
+                    BackgroundService().stopService();
                     return const LoginScreen();
                   }
                   return const LoginScreen();

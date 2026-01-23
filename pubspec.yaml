@@ -35,6 +35,9 @@ dependencies:
   html: ^0.15.6
   shared_preferences: ^2.5.3
   webview_flutter: ^4.13.1
+  flutter_local_notifications: ^19.5.0
+  flutter_background_service: ^5.1.0
+  flutter_background_service_android: ^6.3.1
 
 # ----------------- DEV DEPENDENCIES -----------------
 dev_dependencies:

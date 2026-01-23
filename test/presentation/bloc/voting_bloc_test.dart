@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,14 +16,20 @@ void main() {
   group('VotingBloc', () {
     late VotingRepository mockVotingRepository;
     late VotingBloc votingBloc;
+    late StreamController<Map<String, dynamic>?> mockServiceStreamController;
 
     setUp(() {
       mockVotingRepository = MockVotingRepository();
-      votingBloc = VotingBloc(votingRepository: mockVotingRepository);
+      mockServiceStreamController = StreamController<Map<String, dynamic>?>.broadcast();
+      votingBloc = VotingBloc(
+        votingRepository: mockVotingRepository,
+        backgroundServiceStream: mockServiceStreamController.stream,
+      );
     });
 
     tearDown(() {
       votingBloc.close();
+      mockServiceStreamController.close();
     });
 
     // Register fallback values for custom types
@@ -87,7 +94,9 @@ void main() {
             const FetchEventsByStatus(status: model.VotingStatus.registration)),
         expect: () => [
           VotingLoadInProgress(),
-          VotingEventsLoadSuccess(events: testEvents),
+          isA<VotingEventsLoadSuccess>()
+              .having((s) => s.events, 'events', testEvents)
+              .having((s) => s.status, 'status', model.VotingStatus.registration),
         ],
         verify: (_) {
           verify(() => mockVotingRepository
@@ -106,7 +115,9 @@ void main() {
             .add(const FetchEventsByStatus(status: model.VotingStatus.active)),
         expect: () => [
           VotingLoadInProgress(),
-          const VotingEventsLoadSuccess(events: []),
+          isA<VotingEventsLoadSuccess>()
+              .having((s) => s.events, 'events', isEmpty)
+              .having((s) => s.status, 'status', model.VotingStatus.active),
         ],
       );
 
@@ -346,7 +357,9 @@ void main() {
         skip: 2, // Skip first fetch
         expect: () => [
           VotingLoadInProgress(),
-          const VotingEventsLoadSuccess(events: []),
+          isA<VotingEventsLoadSuccess>()
+              .having((s) => s.events, 'events', isEmpty)
+              .having((s) => s.status, 'status', model.VotingStatus.active),
         ],
       );
 
@@ -370,7 +383,9 @@ void main() {
           RegistrationInProgress(),
           RegistrationSuccess(),
           VotingLoadInProgress(),
-          const VotingEventsLoadSuccess(events: []),
+          isA<VotingEventsLoadSuccess>()
+              .having((s) => s.events, 'events', isEmpty)
+              .having((s) => s.status, 'status', model.VotingStatus.registration),
         ],
       );
     });
