@@ -45,10 +45,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase configuration files (IMPORTANT: Keep these ignored to protect sensitive API keys)
-# lib/firebase_options.dart
-# android/app/google-services.json
-# ios/Runner/GoogleService-Info.plist
+
 
 # Environment variables and secrets
 .env
