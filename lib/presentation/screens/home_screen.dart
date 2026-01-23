@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/core/monthly_theme_data.dart';
+import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
@@ -19,7 +19,6 @@ import 'package:seasons/presentation/screens/registration_details_screen.dart';
 import 'package:seasons/presentation/screens/results_screen.dart';
 import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
-import 'package:seasons/presentation/widgets/custom_icons.dart';
 import 'package:seasons/presentation/widgets/animated_panel_selector.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 
@@ -198,12 +197,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
-
   Timer? _ticker;
+  StreamSubscription? _navigationSubscription;
   
   @override
   void initState() {
     super.initState();
+    
+    // Listen for notification navigation events
+    _navigationSubscription = NotificationNavigationService().onNavigate.listen((event) {
+      if (mounted) {
+        if (kDebugMode) print("HomeScreen: Navigating to tab ${event.tabIndex}");
+        
+        // Switch to the requested tab
+        setState(() {
+          _selectedPanelIndex = event.tabIndex;
+        });
+        
+        // Trigger data refresh if requested
+        if (event.shouldRefresh) {
+          final status = [
+            model.VotingStatus.registration,
+            model.VotingStatus.active,
+            model.VotingStatus.completed,
+          ][event.tabIndex];
+          context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+        }
+      }
+    });
     
     // Ticker to update UI every 10 seconds AND fetch fresh data for ALL sections
     // This keeps button colors up-to-date and handles backend updates not pushed via WebSocket
@@ -227,6 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _navigationSubscription?.cancel();
     super.dispose();
   }
 

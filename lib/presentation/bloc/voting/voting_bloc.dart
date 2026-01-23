@@ -1,18 +1,20 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
-import 'package:seasons/core/websocket_service.dart';
+import 'package:seasons/core/services/background_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 
 class VotingBloc extends Bloc<VotingEvent, VotingState> {
   final VotingRepository _votingRepository;
-  StreamSubscription? _wsSubscription;
+  StreamSubscription? _serviceSubscription;
 
-  VotingBloc({required VotingRepository votingRepository})
-      : _votingRepository = votingRepository,
+  VotingBloc({
+    required VotingRepository votingRepository,
+    Stream<Map<String, dynamic>?>? backgroundServiceStream,
+  })  : _votingRepository = votingRepository,
         super(VotingInitial()) {
     on<FetchEventsByStatus>(_onFetchEventsByStatus);
     on<RefreshEventsSilent>(_onRefreshEventsSilent);
@@ -22,75 +24,17 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     on<VotingUpdated>(_onVotingUpdated);
     on<VotingListUpdated>(_onVotingListUpdated);
 
-    _wsSubscription = WebsocketService().events.listen((message) {
+    // Listen to BackgroundService for updates (or provided stream for testing)
+    _serviceSubscription = (backgroundServiceStream ?? BackgroundService().on).listen((data) {
+      if (data == null) return;
       if (state is VotingEventsLoadSuccess) {
-        if (message is String) {
-          // Skip known non-JSON control messages
-          if (message.startsWith('Connection') || message.startsWith('Ping') || message.startsWith('Pong')) {
-            print("VotingBloc: Ignoring control message: $message");
-            return;
-          }
-          
-          try {
-             final json = jsonDecode(message);
-             
-             // Check if this is a notification-style message (action-based)
-             if (json is Map<String, dynamic> && json.containsKey('action')) {
-                final action = json['action'] as String?;
-                print("VotingBloc: Received notification action: $action");
-                // Refresh ALL statuses to update all button colors
-                add(RefreshEventsSilent(status: model.VotingStatus.registration));
-                add(RefreshEventsSilent(status: model.VotingStatus.active));
-                add(RefreshEventsSilent(status: model.VotingStatus.completed));
-                return;
-             }
-             
-             // Handle if wrapped in "voting" or "data" (only if data is a Map)
-             var data = json;
-             if (json is Map<String, dynamic>) {
-                if (json['data'] is Map<String, dynamic>) {
-                   data = json['data'];
-                } else if (json['voting'] is Map<String, dynamic>) {
-                   data = json['voting'];
-                }
-             }
-             
-             // Case 1: Full List Update (votings array at root or in data)
-             dynamic votingsList;
-             if (data is Map<String, dynamic>) {
-                votingsList = data['votings'];
-             }
-             if (json is Map<String, dynamic>) {
-                votingsList ??= json['votings'];
-             }
-             
-             if (votingsList != null && votingsList is List) {
-                final allParsed = (votingsList as List).map((e) => model.VotingEvent.fromJson(e)).toList();
-                add(VotingListUpdated(events: allParsed));
-                print("VotingBloc: Dispatched VotingListUpdated with ${allParsed.length} items");
-                return;
-             }
-             
-             // Case 2: Single Event Update
-             if (data is Map<String, dynamic> && data.containsKey('id')) {
-                final votingEvent = model.VotingEvent.fromJson(data);
-                add(VotingUpdated(event: votingEvent));
-                print("VotingBloc: Dispatched VotingUpdated for ${votingEvent.id}");
-                return;
-             }
-             
-             // Unknown JSON format, trigger refresh
-             print("VotingBloc: Unknown JSON format, triggering refresh");
-             final currentStatus = (state as VotingEventsLoadSuccess).status;
-             add(RefreshEventsSilent(status: currentStatus));
-             
-          } catch (e) {
-             print("VotingBloc: Failed to parse WS message: $e");
-             // On parse error, still try to refresh
-             final currentStatus = (state as VotingEventsLoadSuccess).status;
-             add(RefreshEventsSilent(status: currentStatus));
-          }
-        }
+        final action = data['action'] as String?;
+        if (kDebugMode) print("VotingBloc: Received from BackgroundService: $action");
+        
+        // Refresh ALL statuses to update all button colors
+        add(RefreshEventsSilent(status: model.VotingStatus.registration));
+        add(RefreshEventsSilent(status: model.VotingStatus.active));
+        add(RefreshEventsSilent(status: model.VotingStatus.completed));
       }
     });
   }
@@ -139,7 +83,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
 
   @override
   Future<void> close() {
-    _wsSubscription?.cancel();
+    _serviceSubscription?.cancel();
     return super.close();
   }
 
