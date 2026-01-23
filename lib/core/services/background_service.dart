@@ -143,7 +143,7 @@ void onStart(ServiceInstance service) async {
   final notificationsPlugin = FlutterLocalNotificationsPlugin();
   await notificationsPlugin.initialize(
     const InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('@drawable/ic_notification'),
       iOS: DarwinInitializationSettings(),
     ),
   );
