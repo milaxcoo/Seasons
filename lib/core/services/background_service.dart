@@ -84,6 +84,12 @@ class BackgroundService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(alertChannel);
+        
+    // Explicitly request permission for Android 13+
+    await plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
   }
 
   /// Start the background service (call after user logs in)
