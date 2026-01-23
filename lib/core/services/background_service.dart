@@ -279,9 +279,10 @@ Future<void> _showAlertNotification(
   FlutterLocalNotificationsPlugin plugin,
   String? action,
 ) async {
-  String title = 'Новое обновление';
-  String body = 'Доступны новые данные';
-  String payload = 'Navigate:VotingList:0'; // Default to registration tab
+  // Default to null - we only show notifications for specific events
+  String? title;
+  String? body;
+  String payload = 'Navigate:VotingList:0';
   
   if (action != null) {
     if (action.contains('VotingStarted')) {
@@ -301,6 +302,12 @@ Future<void> _showAlertNotification(
       body = 'Доступны новые голосования!';
       payload = 'Navigate:VotingList:0'; // Registration tab
     }
+  }
+
+  // If the action is unknown or not one of the above, DO NOT show a notification
+  if (title == null || body == null) {
+    if (kDebugMode) print("BackgroundService: Action '$action' ignored for notification");
+    return;
   }
 
   await plugin.show(

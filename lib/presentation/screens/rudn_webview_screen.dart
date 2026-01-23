@@ -36,14 +36,23 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             
             // Auto-click the login button when homepage loads
             if (url == 'https://seasons.rudn.ru/' || url == 'https://seasons.rudn.ru') {
-              // Wait for page scripts to fully initialize
-              await Future.delayed(const Duration(milliseconds: 1500));
+              // Efficiently poll for the login button
               await _controller.runJavaScript('''
                 (function() {
-                  var loginBtn = document.getElementById('bt-entry');
-                  if (loginBtn) {
-                    loginBtn.click();
-                  }
+                  var attempts = 0;
+                  var maxAttempts = 50; // 5 seconds timeout
+                  
+                  var checkExist = setInterval(function() {
+                     var loginBtn = document.getElementById('bt-entry');
+                     if (loginBtn) {
+                        loginBtn.click();
+                        clearInterval(checkExist);
+                     }
+                     attempts++;
+                     if (attempts >= maxAttempts) {
+                       clearInterval(checkExist);
+                     }
+                  }, 100); // Check every 100ms
                 })();
               ''');
             }
@@ -71,7 +80,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
   Future<void> _initWebView() async {
     try {
-      await _controller.clearCache();
+      // Only clear cookies to ensure fresh login, but KEEP CACHE for speed
       await _cookieManager.clearCookies();
     } catch (e) {
       // Error ignored
@@ -86,9 +95,9 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
     _controller.loadRequest(Uri.parse('https://seasons.rudn.ru'));
 
-    // Start periodic check for session cookie
+    // Start periodic check for session cookie (increased frequency for speed)
     _cookieCheckTimer =
-        Timer.periodic(const Duration(seconds: 2), (timer) async {
+        Timer.periodic(const Duration(seconds: 1), (timer) async {
       await _checkCookies();
     });
   }
