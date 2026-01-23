@@ -15,7 +15,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get login => 'Sign In';
 
   @override
-  String get copyright => '© RUDN University 2025';
+  String get copyright => '© RUDN University 2026';
 
   @override
   String get helpEmail => 'seasons-helpdesk@rudn.ru';
