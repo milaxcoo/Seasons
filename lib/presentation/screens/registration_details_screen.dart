@@ -9,6 +9,7 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/l10n/app_localizations.dart';
+import 'package:seasons/core/theme.dart';
 
 class RegistrationDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -81,13 +82,15 @@ class _RegistrationDetailsView extends StatelessWidget {
         ? dateFormat.format(event.registrationEndDate!)
         : l10n.notSet;
 
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
     return BlocListener<VotingBloc, VotingState>(
       listener: (context, state) {
         if (state is RegistrationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(l10n.registrationSuccess),
-                backgroundColor: Colors.green),
+                backgroundColor: AppTheme.rudnGreenColor),
           );
           Navigator.of(context).pop(true);
         }
@@ -95,125 +98,134 @@ class _RegistrationDetailsView extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(l10n.registrationError(state.error)),
-                backgroundColor: Colors.red),
+                backgroundColor: AppTheme.rudnRedColor),
           );
         }
       },
-      // FIXED: Поменяли местами Center и SingleChildScrollView и добавили SafeArea
+      // FIXED: Standarized scrollable area style (Window with internal scroll)
       child: SafeArea(
-        // Добавили SafeArea, чтобы контент не залезал под "челку"
         child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0), // Перенесли отступ сюда
+          child: Padding(
+            // Responsive padding: Smaller margins in landscape to maximize card size
+            padding: isLandscape 
+                ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
+                : const EdgeInsets.all(24.0),
             child: Container(
-              // margin убран, так как padding теперь снаружи
-              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: const Color(0xFFE4DCC5),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    event.title,
-                    textAlign: TextAlign.center,
-                    // --- ИЗМЕНЕНИЕ: убираем курсив (headlineSmall -> bodyLarge) ---
-                    // Также делаем его жирнее (w900), чтобы он выделялся как заголовок
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 20,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    event.description,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  _InfoRow(label: l10n.registrationStart, value: startDate),
-                  const Divider(),
-                  _InfoRow(label: l10n.registrationEnd, value: endDate),
-                  const Divider(),
-                  _InfoRow(
-                    label: l10n.status,
-                    value: event.isRegistered
-                        ? l10n.registered
-                        : l10n.notRegistered,
-                    valueColor: event.isRegistered
-                        ? const Color(0xFF00A94F)
-                        : Colors.red,
-                  ),
-                  const SizedBox(height: 32),
-                  BlocBuilder<VotingBloc, VotingState>(
-                    builder: (context, state) {
-                      if (state is RegistrationInProgress) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              l10n.registering,
-                              // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(color: Colors.white),
-                            ),
-                          ),
-                        );
-                      }
-
-                      final isRegistrationClosed = event.registrationEndDate != null &&
-                          DateTime.now().isAfter(event.registrationEndDate!);
-
-                      return ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          side: BorderSide(
-                              color: (event.isRegistered || isRegistrationClosed)
-                                  ? Colors.grey
-                                  : const Color(0xFF6A9457),
-                              width: 2),
-                          backgroundColor: (event.isRegistered || isRegistrationClosed)
-                              ? Colors.grey.shade300
-                              : Colors.transparent,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        onPressed: (event.isRegistered || isRegistrationClosed)
-                            ? null
-                            : () {
-                                context
-                                    .read<VotingBloc>()
-                                    .add(RegisterForEvent(eventId: event.id));
-                              },
-                        child: Text(
-                          event.isRegistered
-                              ? l10n.alreadyRegistered
-                              : (isRegistrationClosed
-                                  ? l10n.registrationClosed
-                                  : l10n.registerButton),
-                          // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: (event.isRegistered || isRegistrationClosed)
-                                        ? Colors.black54
-                                        : const Color(0xFF6A9457),
-                                  ),
-                        ),
-                      );
-                    },
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2), // Subtle shadow
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24), // Inner padding for content
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        event.title,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      Text(
+                        event.description,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      _InfoRow(label: l10n.registrationStart, value: startDate),
+                      const Divider(),
+                      _InfoRow(label: l10n.registrationEnd, value: endDate),
+                      const Divider(),
+                      _InfoRow(
+                        label: l10n.status,
+                        value: event.isRegistered
+                            ? l10n.registered
+                            : l10n.notRegistered,
+                        valueColor: event.isRegistered
+                            ? AppTheme.rudnGreenColor
+                            : AppTheme.rudnRedColor,
+                      ),
+                      const SizedBox(height: 32),
+                      BlocBuilder<VotingBloc, VotingState>(
+                        builder: (context, state) {
+                          if (state is RegistrationInProgress) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(26),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  l10n.registering,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(color: Colors.white),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final isRegistrationClosed = event.registrationEndDate != null &&
+                              DateTime.now().isAfter(event.registrationEndDate!);
+
+                          return ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              side: BorderSide(
+                                  color: (event.isRegistered || isRegistrationClosed)
+                                      ? Colors.grey
+                                      : const Color(0xFF6A9457),
+                                  width: 2),
+                              backgroundColor: (event.isRegistered || isRegistrationClosed)
+                                  ? Colors.grey.shade300
+                                  : Colors.transparent,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(26)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onPressed: (event.isRegistered || isRegistrationClosed)
+                                ? null
+                                : () {
+                                    context
+                                        .read<VotingBloc>()
+                                        .add(RegisterForEvent(eventId: event.id));
+                                  },
+                            child: Text(
+                              event.isRegistered
+                                  ? l10n.alreadyRegistered
+                                  : (isRegistrationClosed
+                                      ? l10n.registrationClosed
+                                      : l10n.registerButton),
+                              style:
+                                  Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        color: (event.isRegistered || isRegistrationClosed)
+                                            ? Colors.black54
+                                            : const Color(0xFF6A9457),
+                                      ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

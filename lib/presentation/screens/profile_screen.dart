@@ -69,43 +69,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ));
                 }
 
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 16.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _UserInfoRow(
-                          label: AppLocalizations.of(context)!.surname,
-                          value: profile.surname,
+                // FIXED: Standardized scrollable area style (Window with internal scroll)
+                // FIXED: Standardized scrollable area style (Window with internal scroll)
+                final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+                return SafeArea(
+                  child: Center(
+                    child: Padding(
+                      // Responsive padding: Smaller margins in landscape to maximize card size
+                      padding: isLandscape 
+                          ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
+                          : const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2), // Subtle shadow
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        const Divider(height: 24),
-                        _UserInfoRow(
-                          label: AppLocalizations.of(context)!.name,
-                          value: profile.name,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(26),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _UserInfoRow(
+                                  label: AppLocalizations.of(context)!.surname,
+                                  value: profile.surname,
+                                ),
+                                const Divider(height: 24),
+                                _UserInfoRow(
+                                  label: AppLocalizations.of(context)!.name,
+                                  value: profile.name,
+                                ),
+                                const Divider(height: 24),
+                                _UserInfoRow(
+                                  label: AppLocalizations.of(context)!.patronymic,
+                                  value: profile.patronymic,
+                                ),
+                                const Divider(height: 24),
+                                _UserInfoRow(
+                                  label: AppLocalizations.of(context)!.email,
+                                  value: profile.email,
+                                ),
+                                const Divider(height: 24),
+                                _UserInfoRow(
+                                  label: AppLocalizations.of(context)!.jobTitle,
+                                  value: profile.jobTitle,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        const Divider(height: 24),
-                        _UserInfoRow(
-                          label: AppLocalizations.of(context)!.patronymic,
-                          value: profile.patronymic,
-                        ),
-                        const Divider(height: 24),
-                        _UserInfoRow(
-                          label: AppLocalizations.of(context)!.email,
-                          value: profile.email,
-                        ),
-                        const Divider(height: 24),
-                        _UserInfoRow(
-                          label: AppLocalizations.of(context)!.jobTitle,
-                          value: profile.jobTitle,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 );
