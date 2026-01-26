@@ -21,6 +21,7 @@ import 'package:seasons/presentation/screens/voting_details_screen.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/animated_panel_selector.dart';
 import 'package:seasons/l10n/app_localizations.dart';
+import 'package:seasons/core/theme.dart';
 
 class _TopBar extends StatelessWidget {
   @override
@@ -171,6 +172,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedPanelIndex = 0;
   int _previousPanelIndex = 0;
+  // Use ValueNotifier for efficient updates without rebuilding the entire tree
+  final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(0);
+  
   // Track number of actionable items (unregistered for registration, unvoted for active, total for completed)
   // Button is green only when there are actionable items
   final Map<model.VotingStatus, int> _actionableCount = {
@@ -218,7 +222,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
-  Timer? _ticker;
+  Timer? _uiTicker;
+  Timer? _dataTicker;
   StreamSubscription? _navigationSubscription;
   
   @override
@@ -228,8 +233,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // Listen for notification navigation events
     _navigationSubscription = NotificationNavigationService().onNavigate.listen((event) {
       if (mounted) {
-        if (kDebugMode) print("HomeScreen: Navigating to tab ${event.tabIndex}");
-        
         // Switch to the requested tab
         setState(() {
           _selectedPanelIndex = event.tabIndex;
@@ -247,12 +250,17 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
     
-    // Ticker to update UI every 10 seconds AND fetch fresh data for ALL sections
+    // UI Ticker: Updates every 1 second to handle time-based UI changes instantly
+    // e.g. "Registration closes in..." or switching from Open to Closed based on local time
+    _uiTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      // Notify listeners (VotingCards) without rebuilding the whole HomeScreen
+      _timeNotifier.value++;
+    });
+
+    // Data Ticker: Background sync every 3 seconds (as requested, WS insufficient)
     // This keeps button colors up-to-date and handles backend updates not pushed via WebSocket
-    _ticker = Timer.periodic(const Duration(seconds: 10), (_) {
+    _dataTicker = Timer.periodic(const Duration(seconds: 3), (_) {
       if (mounted) {
-        // Rebuild UI for time-based checks
-        setState(() {});
         // Fetch fresh data for ALL statuses to keep button colors updated
         context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.registration));
         context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.active));
@@ -268,7 +276,8 @@ class _HomeScreenState extends State<HomeScreen> {
   
   @override
   void dispose() {
-    _ticker?.cancel();
+    _uiTicker?.cancel();
+    _dataTicker?.cancel();
     _navigationSubscription?.cancel();
     super.dispose();
   }
@@ -377,9 +386,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               // - Completed: count ALL completed votings (results available)
                               int actionableCount;
                               if (status == model.VotingStatus.registration) {
-                                actionableCount = state.events.where((e) => !e.isRegistered).length;
+                                // Only count events where user is NOT registered AND registration is still open
+                                actionableCount = state.events.where((e) => 
+                                  !e.isRegistered && 
+                                  (e.registrationEndDate == null || !DateTime.now().isAfter(e.registrationEndDate!))
+                                ).length;
                               } else if (status == model.VotingStatus.active) {
-                                actionableCount = state.events.where((e) => !e.hasVoted).length;
+                                // Only count events where user has NOT voted AND voting is still open
+                                actionableCount = state.events.where((e) => 
+                                  !e.hasVoted && 
+                                  (e.votingEndDate == null || !DateTime.now().isAfter(e.votingEndDate!))
+                                ).length;
                               } else {
                                 actionableCount = state.events.length; // Count all completed votings
                               }
@@ -394,69 +411,95 @@ class _HomeScreenState extends State<HomeScreen> {
                             // Compact dimensions for landscape
                             totalHeight: isLandscape ? 80.0 : 110.0,
                             barHeight: isLandscape ? 60.0 : 90.0,
-                            buttonRadius: isLandscape ? 22.0 : 25.0,
+                            buttonRadius: 26.0, // Standardized to 26.0
                             verticalMargin: isLandscape ? 4.0 : 16.0,
                           ),
                         ),
                         // Scrollable voting cards area
                         Expanded(
-                          child: GestureDetector(
-                            onHorizontalDragEnd: (details) {
-                              // Detect swipe direction based on velocity
-                              final velocity = details.primaryVelocity ?? 0;
-                              
-                              if (velocity < -500) {
-                                // Swipe Left -> Move to Next tab
-                                if (_selectedPanelIndex < 2) {
-                                  _fetchEventsForPanel(_selectedPanelIndex + 1);
-                                }
-                              } else if (velocity > 500) {
-                                // Swipe Right -> Move to Previous tab
-                                if (_selectedPanelIndex > 0) {
-                                  _fetchEventsForPanel(_selectedPanelIndex - 1);
-                                }
-                              }
-                            },
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 600),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              layoutBuilder: (currentChild, previousChildren) {
-                                // Stack layout prevents width shifts during transition
-                                return Stack(
-                                  alignment: Alignment.topCenter,
-                                  children: <Widget>[
-                                    ...previousChildren,
-                                    if (currentChild != null) currentChild,
-                                  ],
-                                );
-                              },
-                              transitionBuilder: (Widget child, Animation<double> animation) {
-                                // Determine slide direction based on index change
-                                final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
-                                final offsetBegin = isMovingForward 
-                                    ? const Offset(1.0, 0.0)  // Slide in from right
-                                    : const Offset(-1.0, 0.0); // Slide in from left
-                                
-                                return SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: offsetBegin,
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: child,
-                                );
-                              },
-                              child: _EventListPage(
-                                key: ValueKey(_selectedPanelIndex),
-                                status: [
-                                  model.VotingStatus.registration,
-                                  model.VotingStatus.active,
-                                  model.VotingStatus.completed,
-                                ][_selectedPanelIndex],
-                                imagePath: theme.imagePath,
-                                onRefresh: () => _onPageChanged(_selectedPanelIndex),
+                          child: Padding(
+                            // Add side padding so the clip doesn't touch screen edges if desired, 
+                            // or keep 0 if full width is needed. Using small horizontal padding for better look.
+                            // Added bottom padding (20.0) to create space above the poem/footer
+                            padding: const EdgeInsets.fromLTRB(32.0, 0, 32.0, 0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(26.0), // Standardized to 26.0
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2), // Thin visible border
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.2), // Subtle white outer glow
+                                    blurRadius: 8.0, 
+                                    spreadRadius: 1.0, 
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(26.0), // Standardized to 26.0
+                                child: GestureDetector(
+                                onHorizontalDragEnd: (details) {
+                                  // Detect swipe direction based on velocity
+                                  final velocity = details.primaryVelocity ?? 0;
+                                  
+                                  if (velocity < -500) {
+                                    // Swipe Left -> Move to Next tab
+                                    if (_selectedPanelIndex < 2) {
+                                      _fetchEventsForPanel(_selectedPanelIndex + 1);
+                                    }
+                                  } else if (velocity > 500) {
+                                    // Swipe Right -> Move to Previous tab
+                                    if (_selectedPanelIndex > 0) {
+                                      _fetchEventsForPanel(_selectedPanelIndex - 1);
+                                    }
+                                  }
+                                },
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 600),
+                                  switchInCurve: Curves.easeOutCubic,
+                                  switchOutCurve: Curves.easeInCubic,
+                                  layoutBuilder: (currentChild, previousChildren) {
+                                    // Stack layout prevents width shifts during transition
+                                    return Stack(
+                                      alignment: Alignment.topCenter,
+                                      children: <Widget>[
+                                        ...previousChildren,
+                                        if (currentChild != null) currentChild,
+                                      ],
+                                    );
+                                  },
+                                  transitionBuilder: (Widget child, Animation<double> animation) {
+                                    // Determine slide direction based on index change
+                                    final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
+                                    final offsetBegin = isMovingForward 
+                                        ? const Offset(1.0, 0.0)  // Slide in from right
+                                        : const Offset(-1.0, 0.0); // Slide in from left
+                                    
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: offsetBegin,
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: child,
+                                    );
+                                  },
+                                  child: _EventListPage(
+                                    key: ValueKey(_selectedPanelIndex),
+                                    status: [
+                                      model.VotingStatus.registration,
+                                      model.VotingStatus.active,
+                                      model.VotingStatus.completed,
+                                    ][_selectedPanelIndex],
+                                    imagePath: theme.imagePath,
+                                    onRefresh: () => _onPageChanged(_selectedPanelIndex),
+                                    timeNotifier: _timeNotifier, // Pass notifier
+                                  ),
+                                ),
                               ),
                             ),
+                          ),
                           ),
                         ),
                         // Footer at bottom - pinned
@@ -487,7 +530,7 @@ class _Footer extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         16.0,
-        isLandscape ? 4.0 : 24.0,  
+        isLandscape ? 4.0 : 4.0,  // Reduced top padding (was 24.0) to give more space to scrollable area
         16.0,
         isLandscape ? 20.0 : 16.0,  // Lifted footer higher in landscape (20.0)
       ),
@@ -528,12 +571,14 @@ class _EventListPage extends StatelessWidget {
   final model.VotingStatus status;
   final String imagePath;
   final VoidCallback onRefresh;
+  final ValueNotifier<int> timeNotifier; // Use ValueNotifier
 
   const _EventListPage({
     super.key,
     required this.status,
     required this.imagePath,
     required this.onRefresh,
+    required this.timeNotifier,
   });
 
   @override
@@ -564,12 +609,11 @@ class _EventListPage extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.black.withValues(alpha: 0.7),
-                    Colors.black.withValues(alpha: 0.5),
-                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.5),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(26.0),
               ),
               child: Center(
                 child: Text(
@@ -585,13 +629,15 @@ class _EventListPage extends StatelessWidget {
             );
           }
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
+            // Removed horizontal padding so cards touch the edges (0 left/right)
+            padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
               return _VotingEventCard(
                 event: state.events[index],
                 imagePath: imagePath,
                 onActionComplete: onRefresh,
+                timeNotifier: timeNotifier, // Pass notifier
               );
             },
           );
@@ -614,11 +660,13 @@ class _VotingEventCard extends StatelessWidget {
   final model.VotingEvent event;
   final String imagePath;
   final VoidCallback onActionComplete;
+  final ValueNotifier<int> timeNotifier;
 
   const _VotingEventCard({
     required this.event,
     required this.imagePath,
     required this.onActionComplete,
+    required this.timeNotifier,
   });
 
   @override
@@ -654,8 +702,9 @@ class _VotingEventCard extends StatelessWidget {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      // Removed horizontal margin (0) to fit full width. Kept vertical for spacing.
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.0)),
       elevation: 4,
       color: const Color(0xFFE4DCC5),
       child: ListTile(
@@ -682,57 +731,49 @@ class _VotingEventCard extends StatelessWidget {
             if (event.status == model.VotingStatus.registration ||
                 event.status == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
-              Text(
-                event.status == model.VotingStatus.registration
-                    ? (event.isRegistered
-                        ? AppLocalizations.of(context)!.registered
-                        : AppLocalizations.of(context)!.notRegistered)
-                    : (event.hasVoted
-                        ? AppLocalizations.of(context)!.voted
-                        : AppLocalizations.of(context)!.notVoted),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: (event.status == model.VotingStatus.registration
-                              ? event.isRegistered
-                              : event.hasVoted)
-                          ? const Color(0xFF00A94F)
-                          : Colors.red,
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
+            ValueListenableBuilder<int>(
+              valueListenable: timeNotifier,
+              builder: (context, _, __) {
+                // Determine registration status based on CURRENT time (updates every second)
+                final isRegistrationClosed = event.registrationEndDate != null && 
+                                           DateTime.now().isAfter(event.registrationEndDate!);
+                
+                return Text(
+                  event.status == model.VotingStatus.registration
+                      ? (event.isRegistered
+                          ? AppLocalizations.of(context)!.registered
+                          : (isRegistrationClosed
+                              ? AppLocalizations.of(context)!.registrationClosed
+                              : AppLocalizations.of(context)!.notRegistered))
+                      : (event.hasVoted
+                          ? AppLocalizations.of(context)!.voted
+                          : AppLocalizations.of(context)!.notVoted),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: (event.status == model.VotingStatus.registration
+                                ? event.isRegistered
+                                : event.hasVoted)
+                            ? AppTheme.rudnGreenColor
+                            : AppTheme.rudnRedColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                );
+              }
+            ),
             ],
           ],
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.black54),
         onTap: () async {
-          if (kDebugMode) {
-            print(
-                '\n--- DEBUG [HomeScreen]: Нажата карточка "${event.title}" ---');
-            print(
-                '--- DEBUG [HomeScreen]: Статус объекта event: ${event.status} ---');
-          }
-
           final result = await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) {
                 if (event.status == model.VotingStatus.registration) {
-                  if (kDebugMode) {
-                    print(
-                        '--- DEBUG [HomeScreen]: Навигация -> RegistrationDetailsScreen ---');
-                  }
                   return RegistrationDetailsScreen(
                       event: event, imagePath: imagePath);
                 } else if (event.status == model.VotingStatus.active) {
-                  if (kDebugMode) {
-                    print(
-                        '--- DEBUG [HomeScreen]: Навигация -> VotingDetailsScreen ---');
-                  }
                   return VotingDetailsScreen(
                       event: event, imagePath: imagePath);
                 } else {
-                  if (kDebugMode) {
-                    print(
-                        '--- DEBUG [HomeScreen]: Навигация -> ResultsScreen ---');
-                  }
                   return ResultsScreen(event: event, imagePath: imagePath);
                 }
               },
