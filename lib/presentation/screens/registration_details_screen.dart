@@ -102,7 +102,7 @@ class _RegistrationDetailsView extends StatelessWidget {
           );
         }
       },
-      // FIXED: Standarized scrollable area style (Window with internal scroll)
+      // FIXED: Standardized scrollable area style (Window with internal scroll)
       child: SafeArea(
         child: Center(
           child: Padding(
