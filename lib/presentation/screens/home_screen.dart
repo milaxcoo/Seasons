@@ -26,13 +26,16 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    
     String userLogin = 'User';
     if (authState is AuthAuthenticated) {
       userLogin = authState.userLogin;
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      // Reduced padding in landscape to save vertical space
+      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: isLandscape ? 0.0 : 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -103,13 +106,13 @@ class _Header extends StatelessWidget {
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: isLandscape ? 4.0 : 10.0),
+      padding: EdgeInsets.symmetric(vertical: isLandscape ? 2.0 : 10.0),
       child: Column(
         children: [
           Text(
             'Seasons',
             style: (isLandscape 
-                ? Theme.of(context).textTheme.displaySmall 
+                ? Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20) // Very compact in landscape
                 : Theme.of(context).textTheme.displayMedium)?.copyWith(
                   color: Colors.white,
                   shadows: [
@@ -119,20 +122,38 @@ class _Header extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
           ),
-          Text(
-            'времена года',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  shadows: [
-                    const Shadow(blurRadius: 8, color: Colors.black54),
-                    const Shadow(blurRadius: 2, color: Colors.black54)
-                  ],
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w900,
-                  fontSize: isLandscape ? 12 : 16,
-                  letterSpacing: isLandscape ? 5 : 7,
-                ),
-          ),
+          if (!isLandscape) 
+            Transform.translate(
+              offset: const Offset(0, -5), // Move slightly closer to Seasons title
+              child: Text(
+                'времена года',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      shadows: [
+                        const Shadow(blurRadius: 8, color: Colors.black54),
+                        const Shadow(blurRadius: 2, color: Colors.black54)
+                      ],
+                      fontStyle: FontStyle.normal,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      letterSpacing: 5,
+                    ),
+              ),
+            )
+          else 
+            Text(
+              'времена года',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shadows: [
+                      const Shadow(blurRadius: 4, color: Colors.black87),
+                    ],
+                    fontStyle: FontStyle.normal,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                  ),
+            ),
         ],
       ),
     );
@@ -256,6 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final currentMonth = DateTime.now().month;
     final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     return AppBackground(
       imagePath: theme.imagePath,
       child: Stack(
@@ -280,44 +302,105 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               body: SafeArea(
+                bottom: false,
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 800),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
+                    child: Column(
+                      children: [
+                        // Top section - pinned at top
+                        if (isLandscape) ...[
+                          // Landscape: Header inline with TopBar
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              _TopBar(),
+                              IgnorePointer(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Seasons',
+                                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                              fontSize: 20,
+                                              height: 1.0, // Reduce line height to pull elements closer
+                                              color: Colors.white,
+                                              shadows: [
+                                                const Shadow(blurRadius: 10, color: Colors.black54),
+                                                const Shadow(blurRadius: 2, color: Colors.black87)
+                                              ],
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                      ),
+                                      Transform.translate(
+                                        offset: const Offset(0, 0), // Move closer to title
+                                        child: Text(
+                                          'времена года',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                fontFamily: 'HemiHead',
+                                                color: Colors.white.withValues(alpha: 0.9),
+                                                shadows: [
+                                                  const Shadow(blurRadius: 4, color: Colors.black87),
+                                                ],
+                                                fontStyle: FontStyle.normal,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 8, // Reduced from 10
+                                                letterSpacing: 2,
+                                                height: 1.0,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          // Portrait: Stacked
                           _TopBar(),
                           _Header(),
-                          BlocListener<VotingBloc, VotingState>(
-                            listener: (context, state) {
-                              if (state is VotingEventsLoadSuccess) {
-                                // Use status from state (now correctly tracks which section was fetched)
-                                final status = state.status;
-                                
-                                // Calculate actionable items count:
-                                // - Registration: count events where user is NOT registered
-                                // - Active: count events where user has NOT voted
-                                // - Completed: count ALL completed votings (results available)
-                                int actionableCount;
-                                if (status == model.VotingStatus.registration) {
-                                  actionableCount = state.events.where((e) => !e.isRegistered).length;
-                                } else if (status == model.VotingStatus.active) {
-                                  actionableCount = state.events.where((e) => !e.hasVoted).length;
-                                } else {
-                                  actionableCount = state.events.length; // Count all completed votings
-                                }
-                                
-                                _updateActionableCount(status, actionableCount);
+                        ],
+                        
+                        BlocListener<VotingBloc, VotingState>(
+                          listener: (context, state) {
+                            if (state is VotingEventsLoadSuccess) {
+                              // Use status from state (now correctly tracks which section was fetched)
+                              final status = state.status;
+                              
+                              // Calculate actionable items count:
+                              // - Registration: count events where user is NOT registered
+                              // - Active: count events where user has NOT voted
+                              // - Completed: count ALL completed votings (results available)
+                              int actionableCount;
+                              if (status == model.VotingStatus.registration) {
+                                actionableCount = state.events.where((e) => !e.isRegistered).length;
+                              } else if (status == model.VotingStatus.active) {
+                                actionableCount = state.events.where((e) => !e.hasVoted).length;
+                              } else {
+                                actionableCount = state.events.length; // Count all completed votings
                               }
-                            },
-                            child: AnimatedPanelSelector(
-                              selectedIndex: _selectedPanelIndex,
-                              onPanelSelected: _fetchEventsForPanel,
-                              hasEvents: _actionableCount,
-                            ),
+                              
+                              _updateActionableCount(status, actionableCount);
+                            }
+                          },
+                          child: AnimatedPanelSelector(
+                            selectedIndex: _selectedPanelIndex,
+                            onPanelSelected: _fetchEventsForPanel,
+                            hasEvents: _actionableCount,
+                            // Compact dimensions for landscape
+                            totalHeight: isLandscape ? 80.0 : 110.0,
+                            barHeight: isLandscape ? 60.0 : 90.0,
+                            buttonRadius: isLandscape ? 22.0 : 25.0,
+                            verticalMargin: isLandscape ? 4.0 : 16.0,
                           ),
-                          GestureDetector(
+                        ),
+                        // Scrollable voting cards area
+                        Expanded(
+                          child: GestureDetector(
                             onHorizontalDragEnd: (details) {
                               // Detect swipe direction based on velocity
                               final velocity = details.primaryVelocity ?? 0;
@@ -334,55 +417,51 @@ class _HomeScreenState extends State<HomeScreen> {
                                 }
                               }
                             },
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: MediaQuery.of(context).size.height * 0.2,
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 600),
-                                switchInCurve: Curves.easeOutCubic,
-                                switchOutCurve: Curves.easeInCubic,
-                                layoutBuilder: (currentChild, previousChildren) {
-                                  // Stack layout prevents width shifts during transition
-                                  return Stack(
-                                    alignment: Alignment.topCenter,
-                                    children: <Widget>[
-                                      ...previousChildren,
-                                      if (currentChild != null) currentChild,
-                                    ],
-                                  );
-                                },
-                                transitionBuilder: (Widget child, Animation<double> animation) {
-                                  // Determine slide direction based on index change
-                                  final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
-                                  final offsetBegin = isMovingForward 
-                                      ? const Offset(1.0, 0.0)  // Slide in from right
-                                      : const Offset(-1.0, 0.0); // Slide in from left
-                                  
-                                  return SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: offsetBegin,
-                                      end: Offset.zero,
-                                    ).animate(animation),
-                                    child: child,
-                                  );
-                                },
-                                child: _EventListPage(
-                                  key: ValueKey(_selectedPanelIndex),
-                                  status: [
-                                    model.VotingStatus.registration,
-                                    model.VotingStatus.active,
-                                    model.VotingStatus.completed,
-                                  ][_selectedPanelIndex],
-                                  imagePath: theme.imagePath,
-                                  onRefresh: () => _onPageChanged(_selectedPanelIndex),
-                                ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 600),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              layoutBuilder: (currentChild, previousChildren) {
+                                // Stack layout prevents width shifts during transition
+                                return Stack(
+                                  alignment: Alignment.topCenter,
+                                  children: <Widget>[
+                                    ...previousChildren,
+                                    if (currentChild != null) currentChild,
+                                  ],
+                                );
+                              },
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                // Determine slide direction based on index change
+                                final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
+                                final offsetBegin = isMovingForward 
+                                    ? const Offset(1.0, 0.0)  // Slide in from right
+                                    : const Offset(-1.0, 0.0); // Slide in from left
+                                
+                                return SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: offsetBegin,
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                );
+                              },
+                              child: _EventListPage(
+                                key: ValueKey(_selectedPanelIndex),
+                                status: [
+                                  model.VotingStatus.registration,
+                                  model.VotingStatus.active,
+                                  model.VotingStatus.completed,
+                                ][_selectedPanelIndex],
+                                imagePath: theme.imagePath,
+                                onRefresh: () => _onPageChanged(_selectedPanelIndex),
                               ),
                             ),
                           ),
-                          _Footer(poem: theme.poem, author: theme.author),
-                        ],
-                      ),
+                        ),
+                        // Footer at bottom - pinned
+                        _Footer(poem: theme.poem, author: theme.author),
+                      ],
                     ),
                   ),
                 ),
@@ -395,8 +474,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-
-
 class _Footer extends StatelessWidget {
   final String poem;
   final String author;
@@ -405,8 +482,15 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 120.0, 24.0, 16.0),
+      padding: EdgeInsets.fromLTRB(
+        16.0,
+        isLandscape ? 4.0 : 24.0,  
+        16.0,
+        isLandscape ? 20.0 : 16.0,  // Lifted footer higher in landscape (20.0)
+      ),
       child: Center(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,6 +500,7 @@ class _Footer extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.white,
                 height: 1.5,
+                fontSize: isLandscape ? 12 : 14,
                 shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
               ),
             ),
@@ -425,6 +510,7 @@ class _Footer extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.white,
                 fontStyle: FontStyle.italic,
+                fontSize: isLandscape ? 12 : 14,
                 shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
               ),
             ),
@@ -499,9 +585,7 @@ class _EventListPage extends StatelessWidget {
             );
           }
           return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(8, 16, 8, 0),
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
             itemCount: state.events.length,
             itemBuilder: (context, index) {
               return _VotingEventCard(
