@@ -27,15 +27,15 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     // Listen to BackgroundService for updates (or provided stream for testing)
     _serviceSubscription = (backgroundServiceStream ?? BackgroundService().on).listen((data) {
       if (data == null) return;
-      if (state is VotingEventsLoadSuccess) {
-        final action = data['action'] as String?;
-        if (kDebugMode) print("VotingBloc: Received from BackgroundService: $action");
-        
-        // Refresh ALL statuses to update all button colors
-        add(RefreshEventsSilent(status: model.VotingStatus.registration));
-        add(RefreshEventsSilent(status: model.VotingStatus.active));
-        add(RefreshEventsSilent(status: model.VotingStatus.completed));
-      }
+      
+      final action = data['action'] as String?;
+      if (kDebugMode) print("VotingBloc: Received from BackgroundService: $action");
+      
+      // Refresh ALL statuses to update all button colors and lists
+      // We do this regardless of current state to ensure data is fresh
+      add(RefreshEventsSilent(status: model.VotingStatus.registration));
+      add(RefreshEventsSilent(status: model.VotingStatus.active));
+      add(RefreshEventsSilent(status: model.VotingStatus.completed));
     });
   }
 

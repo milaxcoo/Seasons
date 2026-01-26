@@ -8,6 +8,10 @@ class AppTheme {
   static const Color tertiaryColor = Color(0xFFA5D4F7);
   static const Color backgroundColor = Color(0xFFF0F8FF);
   static const Color textColor = Color(0xFF333333);
+  
+  // --- RUDN BRAND COLORS ---
+  static const Color rudnGreenColor = Color(0xFF23a74c);
+  static const Color rudnRedColor = Color(0xFFD32F2F); // Standard red for alerts/errors
 
   // --- THEME GETTER ---
   static ThemeData get lightTheme {

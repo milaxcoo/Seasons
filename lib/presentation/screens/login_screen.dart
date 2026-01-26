@@ -20,8 +20,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // Эта функция запускает процесс авторизации через WebView
   void _startRudnAuth(BuildContext context) async {
+    final String languageCode = Localizations.localeOf(context).languageCode;
     final bool? success = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const RudnWebviewScreen()),
+      MaterialPageRoute(
+        builder: (_) => RudnWebviewScreen(languageCode: languageCode),
+      ),
     );
 
     if (success == true && context.mounted) {

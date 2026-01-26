@@ -7,19 +7,26 @@ class AnimatedPanelSelector extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onPanelSelected;
   final Map<model.VotingStatus, int> hasEvents;
+  
+  // Customizable dimensions
+  final double totalHeight;
+  final double barHeight;
+  final double buttonRadius;
+  final double verticalMargin;
 
   const AnimatedPanelSelector({
     super.key,
     required this.selectedIndex,
     required this.onPanelSelected,
     required this.hasEvents,
+    this.totalHeight = 110.0,
+    this.barHeight = 90.0,
+    this.buttonRadius = 25.0,
+    this.verticalMargin = 16.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    const double totalHeight = 110.0;
-    const double barHeight = 90.0;
-    const double buttonRadius = 25.0;
     const double horizontalMargin = 10.0;
     const Duration animDuration = Duration(milliseconds: 600);
     const Curve animCurve = Curves.easeOutCubic;
@@ -28,7 +35,7 @@ class AnimatedPanelSelector extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
+          margin: EdgeInsets.symmetric(vertical: verticalMargin),
           height: totalHeight,
           child: LayoutBuilder(
             builder: (context, constraints) {

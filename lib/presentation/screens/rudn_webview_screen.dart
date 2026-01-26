@@ -5,7 +5,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 
 class RudnWebviewScreen extends StatefulWidget {
-  const RudnWebviewScreen({super.key});
+  final String languageCode;
+
+  const RudnWebviewScreen({super.key, required this.languageCode});
 
   @override
   State<RudnWebviewScreen> createState() => _RudnWebviewScreenState();
@@ -35,7 +37,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             });
             
             // Auto-click the login button when homepage loads
-            if (url == 'https://seasons.rudn.ru/' || url == 'https://seasons.rudn.ru') {
+            if (url.startsWith('https://seasons.rudn.ru')) {
               // Efficiently poll for the login button
               await _controller.runJavaScript('''
                 (function() {
@@ -93,7 +95,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
         "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
     await _controller.setUserAgent(userAgent);
 
-    _controller.loadRequest(Uri.parse('https://seasons.rudn.ru'));
+    _controller.loadRequest(Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
 
     // Start periodic check for session cookie (increased frequency for speed)
     _cookieCheckTimer =

@@ -72,55 +72,78 @@ class _ResultsView extends StatelessWidget {
         ? dateFormat.format(event.votingEndDate!)
         : l10n.notSet;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE4DCC5),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              event.title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+    // FIXED: Standardized scrollable area style (Window with internal scroll)
+    // FIXED: Standardized scrollable area style (Window with internal scroll)
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          // Responsive padding: Smaller margins in landscape to maximize card size
+          padding: isLandscape 
+              ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
+              : const EdgeInsets.all(24.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFE4DCC5),
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2), // Subtle shadow
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Divider(),
-            Text(
-              event.description,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 8),
-            const Divider(),
-            _InfoRow(label: l10n.votingStartLabel, value: startDate),
-            _InfoRow(label: l10n.votingEndLabel, value: endDate),
-            const SizedBox(height: 24),
-            _ResultsTable(results: event.results),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  l10n.sessionCompleted,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: Colors.white),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24), // Inner padding for content
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // Shrink to fit content if small
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      event.title,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    Text(
+                      event.description,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    _InfoRow(label: l10n.votingStartLabel, value: startDate),
+                    _InfoRow(label: l10n.votingEndLabel, value: endDate),
+                    const SizedBox(height: 24),
+                    _ResultsTable(results: event.results),
+                    const SizedBox(height: 32),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(26),
+                      ),
+                      child: Center(
+                        child: Text(
+                          l10n.sessionCompleted,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -143,7 +166,7 @@ class _ResultsTable extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFD9D3BF),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(26),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
