@@ -1,7 +1,7 @@
 name: seasons
 description: "Flutter-based application for voting at PFUR University"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -17,6 +17,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # State Management (BLoC)
+  bloc: ^9.0.0
   flutter_bloc: ^9.1.1
   equatable: ^2.0.5
 

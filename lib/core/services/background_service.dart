@@ -320,7 +320,7 @@ Future<void> _showAlertNotification(
 
   // If the action is unknown or not one of the above, DO NOT show a notification
   if (title == null || body == null) {
-    if (kDebugMode) print("BackgroundService: Action '$action' ignored for notification");
+      if (kDebugMode) debugPrint("BackgroundService: Action '$action' ignored for notification");
     return;
   }
 
@@ -350,6 +350,6 @@ Future<void> _showAlertNotification(
 /// Schedule reconnection
 Timer _scheduleReconnect(Timer? timer, Function() connect) {
   timer?.cancel();
-  if (kDebugMode) print("BackgroundService: Scheduling reconnect in 5s...");
+  if (kDebugMode) debugPrint("BackgroundService: Scheduling reconnect in 5s...");
   return Timer(const Duration(seconds: 5), connect);
 }

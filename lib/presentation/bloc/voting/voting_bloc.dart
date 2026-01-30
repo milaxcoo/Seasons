@@ -29,7 +29,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       if (data == null) return;
       
       final action = data['action'] as String?;
-      if (kDebugMode) print("VotingBloc: Received from BackgroundService: $action");
+      if (kDebugMode) debugPrint("VotingBloc: Received from BackgroundService: $action");
       
       // Refresh ALL statuses to update all button colors and lists
       // We do this regardless of current state to ensure data is fresh
@@ -45,7 +45,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       // Filter for current tab status
       final filtered = event.events.where((e) => e.status == currentState.status).toList();
       
-      print("VotingBloc: _onVotingListUpdated emitting ${filtered.length} filtered events");
+      debugPrint("VotingBloc: _onVotingListUpdated emitting ${filtered.length} filtered events");
       
       emit(VotingEventsLoadSuccess(
         events: filtered,
@@ -115,7 +115,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       ));
     } catch (e) {
       // Silently fail - don't show error to user for background refresh
-      print('Silent refresh failed: $e');
+      debugPrint('Silent refresh failed: $e');
     }
   }
 

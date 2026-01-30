@@ -69,7 +69,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             if (request.url.startsWith('http://seasons.rudn.ru')) {
               final secureUrl = request.url.replaceFirst('http://', 'https://');
               if (kDebugMode) {
-                print('Upgrading insecure redirect to: $secureUrl');
+                if (kDebugMode) debugPrint('Upgrading insecure redirect to: $secureUrl');
               }
               _controller.loadRequest(Uri.parse(secureUrl));
               return NavigationDecision.prevent;
