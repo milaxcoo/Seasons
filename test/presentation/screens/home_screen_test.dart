@@ -15,6 +15,7 @@ import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
 import 'package:seasons/presentation/bloc/locale/locale_state.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:seasons/l10n/app_localizations.dart';
@@ -118,7 +119,7 @@ void main() {
       await tester.pump();
 
       // Assert
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SeasonsLoader), findsOneWidget);
     });
 
     testWidgets('renders list of events when state is VotingEventsLoadSuccess',
