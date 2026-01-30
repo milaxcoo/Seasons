@@ -251,7 +251,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
       final bool isPinnedButton = constraints.maxHeight > 500;
       final double bottomPadding = isPinnedButton ? 120.0 : 24.0;
 
-      // FIXED: Standarized scrollable area style (Window with internal scroll)
+      // FIXED: Standardized scrollable area style (Window with internal scroll)
       final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
       return SafeArea(
         child: Center(
