@@ -26,8 +26,13 @@ class BackgroundService {
   // WebSocket URL for negotiation
   static const String _wsNegotiateUrl = 'https://seasons.rudn.ru/api/v1/voters/ws_connect';
 
+  // Completer to ensure config is done before starting
+  final Completer<void> _initCompleter = Completer<void>();
+
   /// Initialize the background service
   Future<void> initialize() async {
+    if (_initCompleter.isCompleted) return;
+
     // Initialize local notifications first
     await _initNotifications();
     
@@ -49,6 +54,10 @@ class BackgroundService {
         onBackground: onIosBackground,
       ),
     );
+    
+    if (!_initCompleter.isCompleted) {
+      _initCompleter.complete();
+    }
   }
 
   /// Initialize notification channels
@@ -94,6 +103,11 @@ class BackgroundService {
 
   /// Start the background service (call after user logs in)
   Future<void> startService() async {
+    // Wait for initialization if needed
+    if (!_initCompleter.isCompleted) {
+      await _initCompleter.future;
+    }
+
     final isRunning = await _service.isRunning();
     if (!isRunning) {
       await _service.startService();

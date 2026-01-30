@@ -6,6 +6,7 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/data/models/user_profile.dart';
 import 'package:seasons/l10n/app_localizations.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -53,9 +54,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             body: FutureBuilder<UserProfile?>(
               future: _profileFuture,
               builder: (context, snapshot) {
+
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
-                      child: CircularProgressIndicator(color: Colors.white));
+                      child: SeasonsLoader());
                 }
 
                 final profile = snapshot.data;

@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +22,7 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/animated_panel_selector.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/core/theme.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class _TopBar extends StatelessWidget {
   @override
@@ -36,7 +37,7 @@ class _TopBar extends StatelessWidget {
 
     return Padding(
       // Reduced padding in landscape to save vertical space
-      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: isLandscape ? 0.0 : 8.0),
+      padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: isLandscape ? 0.0 : 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -117,8 +118,8 @@ class _Header extends StatelessWidget {
                 : Theme.of(context).textTheme.displayMedium)?.copyWith(
                   color: Colors.white,
                   shadows: [
-                    const Shadow(blurRadius: 10, color: Colors.black54),
-                    const Shadow(blurRadius: 2, color: Colors.black87)
+                    const Shadow(blurRadius: 15, color: Colors.black87), // Stronger outer glow
+                    const Shadow(blurRadius: 4, color: Colors.black),    // Sharper inner shadow
                   ],
                   fontWeight: FontWeight.w900,
                 ),
@@ -131,8 +132,8 @@ class _Header extends StatelessWidget {
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: Colors.white.withValues(alpha: 0.95),
                       shadows: [
-                        const Shadow(blurRadius: 8, color: Colors.black54),
-                        const Shadow(blurRadius: 2, color: Colors.black54)
+                        const Shadow(blurRadius: 10, color: Colors.black87),
+                        const Shadow(blurRadius: 2, color: Colors.black),
                       ],
                       fontStyle: FontStyle.normal,
                       fontWeight: FontWeight.w900,
@@ -147,7 +148,7 @@ class _Header extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.white.withValues(alpha: 0.9),
                     shadows: [
-                      const Shadow(blurRadius: 4, color: Colors.black87),
+                      const Shadow(blurRadius: 6, color: Colors.black87),
                     ],
                     fontStyle: FontStyle.normal,
                     fontWeight: FontWeight.w700,
@@ -171,7 +172,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedPanelIndex = 0;
-  int _previousPanelIndex = 0;
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
   final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(0);
   
@@ -183,13 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
     model.VotingStatus.completed: 0,
   };
 
-
-  // Hybrid Auto-Update Logic
-
-
-
-
-
+  late PageController _pageController;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -198,21 +192,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _fetchEventsForPanel(int index) {
-    setState(() {
-      _previousPanelIndex = _selectedPanelIndex;
-      _selectedPanelIndex = index;
-    });
-    // Fetch data for the new panel
-    final status = [
-      model.VotingStatus.registration,
-      model.VotingStatus.active,
-      model.VotingStatus.completed,
-    ][index];
-    context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+    // Animate to the page. This will trigger onPageChanged which handles fetching.
+    _pageController.animateToPage(
+      index, 
+      duration: const Duration(milliseconds: 500), 
+      curve: Curves.easeOutQuart, // Smoother curve
+    );
   }
 
   void _onPageChanged(int index) {
-    // This method is now used for refresh callbacks
+    setState(() {
+      _selectedPanelIndex = index;
+    });
+    _refreshCurrentPage(index);
+  }
+
+  void _refreshCurrentPage(int index) {
     final status = [
       model.VotingStatus.registration,
       model.VotingStatus.active,
@@ -229,23 +224,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _selectedPanelIndex);
     
     // Listen for notification navigation events
     _navigationSubscription = NotificationNavigationService().onNavigate.listen((event) {
       if (mounted) {
-        // Switch to the requested tab
-        setState(() {
-          _selectedPanelIndex = event.tabIndex;
-        });
+        // Smoothly animate to the requested tab
+        _fetchEventsForPanel(event.tabIndex);
         
-        // Trigger data refresh if requested
+        // Trigger data refresh if requested (onPageChanged will do it, but force if needed)
         if (event.shouldRefresh) {
-          final status = [
-            model.VotingStatus.registration,
-            model.VotingStatus.active,
-            model.VotingStatus.completed,
-          ][event.tabIndex];
-          context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+           // Wait a bit for animation or just trigger
+           // Actually _onPageChanged will trigger fetch. 
+           // If we are ALREADY on that page, onPageChanged won't fire for animateToPage(sameIndex).
+           if (_selectedPanelIndex == event.tabIndex) {
+              _refreshCurrentPage(event.tabIndex);
+           }
         }
       }
     });
@@ -276,6 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   @override
   void dispose() {
+    _pageController.dispose();
     _uiTicker?.cancel();
     _dataTicker?.cancel();
     _navigationSubscription?.cancel();
@@ -312,6 +307,8 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.transparent,
               body: SafeArea(
                 bottom: false,
+                left: false,
+                right: false,
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
@@ -331,37 +328,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(
-                                        'Seasons',
-                                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                              fontSize: 20,
-                                              height: 1.0, // Reduce line height to pull elements closer
-                                              color: Colors.white,
-                                              shadows: [
-                                                const Shadow(blurRadius: 10, color: Colors.black54),
-                                                const Shadow(blurRadius: 2, color: Colors.black87)
-                                              ],
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                      ),
-                                      Transform.translate(
-                                        offset: const Offset(0, 0), // Move closer to title
-                                        child: Text(
-                                          'времена года',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                fontFamily: 'HemiHead',
-                                                color: Colors.white.withValues(alpha: 0.9),
+                                        Text(
+                                          'Seasons',
+                                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                                fontSize: 24, // Increased from 20
+                                                height: 1.0, // Reduce line height to pull elements closer
+                                                color: Colors.white,
                                                 shadows: [
-                                                  const Shadow(blurRadius: 4, color: Colors.black87),
+                                                  const Shadow(blurRadius: 10, color: Colors.black54),
+                                                  const Shadow(blurRadius: 2, color: Colors.black87)
                                                 ],
-                                                fontStyle: FontStyle.normal,
                                                 fontWeight: FontWeight.w900,
-                                                fontSize: 8, // Reduced from 10
-                                                letterSpacing: 2,
-                                                height: 1.0,
                                               ),
                                         ),
-                                      ),
+                                        Transform.translate(
+                                          offset: const Offset(0, 0), // Move closer to title
+                                          child: Text(
+                                            'времена года',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  fontFamily: 'HemiHead',
+                                                  color: Colors.white.withValues(alpha: 0.9),
+                                                  shadows: [
+                                                    const Shadow(blurRadius: 4, color: Colors.black87),
+                                                  ],
+                                                  fontStyle: FontStyle.normal,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 10, // Increased from 8
+                                                  letterSpacing: 2,
+                                                  height: 1.0,
+                                                ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -411,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             // Compact dimensions for landscape
                             totalHeight: isLandscape ? 80.0 : 110.0,
                             barHeight: isLandscape ? 60.0 : 90.0,
-                            buttonRadius: 26.0, // Standardized to 26.0
+                            buttonRadius: isLandscape ? 20.0 : 26.0,
                             verticalMargin: isLandscape ? 4.0 : 16.0,
                           ),
                         ),
@@ -420,88 +417,55 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Padding(
                             // Add side padding so the clip doesn't touch screen edges if desired, 
                             // or keep 0 if full width is needed. Using small horizontal padding for better look.
-                            // Added bottom padding (20.0) to create space above the poem/footer
-                            padding: const EdgeInsets.fromLTRB(32.0, 0, 32.0, 0),
+                            // Using standardized 24.0 padding for perfect alignment
+                            padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 0),
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(26.0), // Standardized to 26.0
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.2), // Thin visible border
+                                  color: Colors.white.withValues(alpha: 0.2), // Thin visible border
                                   width: 1.0,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.white.withOpacity(0.2), // Subtle white outer glow
+                                    color: Colors.white.withValues(alpha: 0.2), // Subtle white outer glow
                                     blurRadius: 8.0, 
                                     spreadRadius: 1.0, 
                                   ),
                                 ],
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(26.0), // Standardized to 26.0
-                                child: GestureDetector(
-                                onHorizontalDragEnd: (details) {
-                                  // Detect swipe direction based on velocity
-                                  final velocity = details.primaryVelocity ?? 0;
-                                  
-                                  if (velocity < -500) {
-                                    // Swipe Left -> Move to Next tab
-                                    if (_selectedPanelIndex < 2) {
-                                      _fetchEventsForPanel(_selectedPanelIndex + 1);
-                                    }
-                                  } else if (velocity > 500) {
-                                    // Swipe Right -> Move to Previous tab
-                                    if (_selectedPanelIndex > 0) {
-                                      _fetchEventsForPanel(_selectedPanelIndex - 1);
-                                    }
-                                  }
+                              clipBehavior: Clip.antiAlias, // Ensure child is clipped to the rounded border
+                              /*
+                               * Replaced AnimatedSwitcher + GestureDetector with PageView
+                               * for authentic "premium" scroll physics and smooth transitions.
+                               */
+                              child: PageView.builder(
+                                controller: _pageController,
+                                physics: const BouncingScrollPhysics(),
+                                onPageChanged: _onPageChanged,
+                                itemCount: 3,
+                                itemBuilder: (context, index) {
+                                  // Keep the "No Votings" box and lists distinct per page
+                                  return _SmokeTransition(
+                                    index: index,
+                                    pageController: _pageController,
+                                    child: _EventListPage(
+                                      status: [
+                                        model.VotingStatus.registration,
+                                        model.VotingStatus.active,
+                                        model.VotingStatus.completed,
+                                      ][index],
+                                      imagePath: theme.imagePath,
+                                      onRefresh: () => _refreshCurrentPage(index),
+                                      timeNotifier: _timeNotifier,
+                                    ),
+                                  );
                                 },
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 600),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  layoutBuilder: (currentChild, previousChildren) {
-                                    // Stack layout prevents width shifts during transition
-                                    return Stack(
-                                      alignment: Alignment.topCenter,
-                                      children: <Widget>[
-                                        ...previousChildren,
-                                        if (currentChild != null) currentChild,
-                                      ],
-                                    );
-                                  },
-                                  transitionBuilder: (Widget child, Animation<double> animation) {
-                                    // Determine slide direction based on index change
-                                    final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
-                                    final offsetBegin = isMovingForward 
-                                        ? const Offset(1.0, 0.0)  // Slide in from right
-                                        : const Offset(-1.0, 0.0); // Slide in from left
-                                    
-                                    return SlideTransition(
-                                      position: Tween<Offset>(
-                                        begin: offsetBegin,
-                                        end: Offset.zero,
-                                      ).animate(animation),
-                                      child: child,
-                                    );
-                                  },
-                                  child: _EventListPage(
-                                    key: ValueKey(_selectedPanelIndex),
-                                    status: [
-                                      model.VotingStatus.registration,
-                                      model.VotingStatus.active,
-                                      model.VotingStatus.completed,
-                                    ][_selectedPanelIndex],
-                                    imagePath: theme.imagePath,
-                                    onRefresh: () => _onPageChanged(_selectedPanelIndex),
-                                    timeNotifier: _timeNotifier, // Pass notifier
-                                  ),
-                                ),
                               ),
                             ),
                           ),
                           ),
-                        ),
+
                         // Footer at bottom - pinned
                         _Footer(poem: theme.poem, author: theme.author),
                       ],
@@ -574,7 +538,6 @@ class _EventListPage extends StatelessWidget {
   final ValueNotifier<int> timeNotifier; // Use ValueNotifier
 
   const _EventListPage({
-    super.key,
     required this.status,
     required this.imagePath,
     required this.onRefresh,
@@ -594,23 +557,25 @@ class _EventListPage extends StatelessWidget {
         return current is VotingLoadInProgress || current is VotingFailure;
       },
       builder: (context, state) {
+        Widget content;
+
         if (state is VotingLoadInProgress) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          content = const Center(
+            key: ValueKey('loader'),
+            child: SeasonsLoader(),
           );
-        }
-        if (state is VotingEventsLoadSuccess) {
+        } else if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
+            content = Container(
+              key: const ValueKey('empty'),
+              padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.5),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.black.withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(26.0),
@@ -627,30 +592,48 @@ class _EventListPage extends StatelessWidget {
                 ),
               ),
             );
+          } else {
+            content = ListView.builder(
+              key: const ValueKey('list'),
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+              itemCount: state.events.length,
+              itemBuilder: (context, index) {
+                return _VotingEventCard(
+                  event: state.events[index],
+                  imagePath: imagePath,
+                  onActionComplete: onRefresh,
+                  timeNotifier: timeNotifier,
+                );
+              },
+            );
           }
-          return ListView.builder(
-            // Removed horizontal padding so cards touch the edges (0 left/right)
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-            itemCount: state.events.length,
-            itemBuilder: (context, index) {
-              return _VotingEventCard(
-                event: state.events[index],
-                imagePath: imagePath,
-                onActionComplete: onRefresh,
-                timeNotifier: timeNotifier, // Pass notifier
-              );
-            },
-          );
-        }
-        if (state is VotingFailure) {
-          return Center(
+        } else if (state is VotingFailure) {
+          content = Center(
+            key: const ValueKey('error'),
             child: Text(
               'Error: ${state.error}',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
             ),
           );
+        } else {
+          content = const SizedBox.shrink(key: ValueKey('shrink'));
         }
-        return const SizedBox.shrink();
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 600),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: content,
+        );
       },
     );
   }
@@ -790,3 +773,66 @@ class _VotingEventCard extends StatelessWidget {
 }
 
 
+// Smoke effect transition wrapper
+class _SmokeTransition extends StatelessWidget {
+  final Widget child;
+  final int index;
+  final PageController pageController;
+
+  const _SmokeTransition({
+    required this.child,
+    required this.index,
+    required this.pageController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        
+        return AnimatedBuilder(
+          animation: pageController,
+          child: child,
+          builder: (context, child) {
+            double value = 0.0;
+            if (pageController.position.haveDimensions) {
+              value = pageController.page ?? 0.0;
+            } else {
+              value = (index).toDouble();
+            }
+
+            final double dist = (value - index);
+            final double absDist = dist.abs();
+
+            if (absDist > 1.0) {
+              return const SizedBox.shrink();
+            }
+
+            // Effects
+            final double opacity = (1.0 - absDist).clamp(0.0, 1.0);
+            final double scale = 1.0 + (absDist * 0.15);
+            final double blur = absDist * 10.0;
+
+            // Counteract the sliding movement
+            final double translation = dist * width;
+
+            return Transform.translate(
+              offset: Offset(translation, 0),
+              child: Opacity(
+                opacity: opacity,
+                child: Transform.scale(
+                  scale: scale,
+                  child: ImageFiltered(
+                    imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

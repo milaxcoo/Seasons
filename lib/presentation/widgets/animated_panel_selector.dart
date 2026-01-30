@@ -184,7 +184,7 @@ class _AnimatedButton extends StatelessWidget {
       backgroundColor = const Color(0xFF6d9fc5);
     }
 
-    final double scale = isSelected ? 1.1 : 0.9;
+    final double scale = isSelected ? 1.25 : 0.9;
     final double iconSize = buttonRadius * 1.2;
 
     return GestureDetector(
@@ -318,8 +318,10 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
 
     // Scale and position the blob (no negative Y shift needed now)
     final Matrix4 matrix = Matrix4.identity();
-    matrix.translate(blobStartX, 0.0);
-    matrix.scale(scaleX, scaleY);
+    matrix.setTranslationRaw(blobStartX, 0.0, 0.0);
+    // Scale X and Y using setEntry (diagonal indices 0 and 5)
+    matrix.setEntry(0, 0, scaleX);
+    matrix.setEntry(1, 1, scaleY);
     final scaledBlobPath = blobPath.transform(matrix.storage);
 
     // ===== STEP 3: MERGE into Single Path =====
