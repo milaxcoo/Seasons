@@ -51,6 +51,7 @@ app.*.map.json
 .env
 .env.local
 .env.*.local
+.secrets
 *.key
 *.keystore
 *.jks

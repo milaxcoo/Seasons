@@ -16,7 +16,7 @@ class ErrorReportingService {
   ErrorReportingService._internal();
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CONFIGURATION - Set your values here
+  // CONFIGURATION
   // ═══════════════════════════════════════════════════════════════════════════
   
   /// Enable sending to RUDN backend (requires backend endpoint)
@@ -25,13 +25,18 @@ class ErrorReportingService {
   /// Enable sending to Telegram bot
   static const bool _enableTelegram = true;
   
-  /// Telegram Bot Token (get from @BotFather)
-  /// Format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-  static const String _telegramBotToken = 'YOUR_BOT_TOKEN_HERE';
+  /// Telegram Bot Token - passed via --dart-define=TELEGRAM_BOT_TOKEN=xxx
+  /// To build: flutter build apk --dart-define=TELEGRAM_BOT_TOKEN=your_token
+  static const String _telegramBotToken = String.fromEnvironment(
+    'TELEGRAM_BOT_TOKEN',
+    defaultValue: '',
+  );
   
-  /// Telegram Chat ID (your personal chat or group chat ID)
-  /// To get your chat ID: send /start to @userinfobot
-  static const String _telegramChatId = 'YOUR_CHAT_ID_HERE';
+  /// Telegram Chat ID - passed via --dart-define=TELEGRAM_CHAT_ID=xxx
+  static const String _telegramChatId = String.fromEnvironment(
+    'TELEGRAM_CHAT_ID',
+    defaultValue: '',
+  );
   
   // ═══════════════════════════════════════════════════════════════════════════
   
@@ -63,6 +68,29 @@ class ErrorReportingService {
   /// Set the current screen name for context in error reports.
   void setCurrentScreen(String screenName) {
     _currentScreen = screenName;
+  }
+
+  /// Send a test message to verify Telegram is configured correctly.
+  /// Call this once to make sure notifications work.
+  Future<bool> sendTestMessage() async {
+    final testReport = ErrorReport(
+      type: 'test',
+      message: '✅ Telegram интеграция работает! Все краши будут приходить сюда.',
+      stackTrace: null,
+      context: 'Test message',
+      timestamp: DateTime.now().toUtc().toIso8601String(),
+      appVersion: _appVersion,
+      platform: Platform.isIOS ? 'ios' : 'android',
+      osVersion: Platform.operatingSystemVersion,
+      screenName: 'TestScreen',
+    );
+    
+    try {
+      await _sendToTelegram(testReport);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Report a caught error.
@@ -158,9 +186,11 @@ class ErrorReportingService {
 
   /// Send error report to Telegram bot
   Future<void> _sendToTelegram(ErrorReport report) async {
-    if (_telegramBotToken == 'YOUR_BOT_TOKEN_HERE' || 
-        _telegramChatId == 'YOUR_CHAT_ID_HERE') {
-      // Not configured yet
+    if (_telegramBotToken.isEmpty || _telegramChatId.isEmpty) {
+      // Not configured - build without --dart-define flags
+      if (kDebugMode) {
+        debugPrint('ErrorReportingService: Telegram not configured (missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID)');
+      }
       return;
     }
 
