@@ -87,10 +87,16 @@ jobs:
             gradle-${{ runner.os }}-
 
       - name: 🏗️ Build Release APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release \
+            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: 🏗️ Build Release AAB
-        run: flutter build appbundle --release
+        run: |
+          flutter build appbundle --release \
+            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: 📦 Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -138,7 +144,10 @@ jobs:
             pods-${{ runner.os }}-
 
       - name: 📱 Build iOS (no codesign)
-        run: flutter build ios --release --no-codesign
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: 📦 Upload iOS artifact
         uses: actions/upload-artifact@v4
