@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
