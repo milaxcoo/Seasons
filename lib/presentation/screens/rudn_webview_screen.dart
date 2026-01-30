@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class RudnWebviewScreen extends StatefulWidget {
   final String languageCode;
@@ -68,7 +69,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             if (request.url.startsWith('http://seasons.rudn.ru')) {
               final secureUrl = request.url.replaceFirst('http://', 'https://');
               if (kDebugMode) {
-                print('Upgrading insecure redirect to: $secureUrl');
+                if (kDebugMode) debugPrint('Upgrading insecure redirect to: $secureUrl');
               }
               _controller.loadRequest(Uri.parse(secureUrl));
               return NavigationDecision.prevent;
@@ -163,7 +164,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
           WebViewWidget(controller: _controller),
           if (_isLoading)
             const Center(
-              child: CircularProgressIndicator(),
+              child: SeasonsLoader(),
             ),
         ],
       ),

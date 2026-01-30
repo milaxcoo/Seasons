@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +22,7 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/presentation/widgets/animated_panel_selector.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/core/theme.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class _TopBar extends StatelessWidget {
   @override
@@ -36,7 +37,7 @@ class _TopBar extends StatelessWidget {
 
     return Padding(
       // Reduced padding in landscape to save vertical space
-      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: isLandscape ? 0.0 : 8.0),
+      padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: isLandscape ? 0.0 : 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -107,7 +108,7 @@ class _Header extends StatelessWidget {
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: isLandscape ? 2.0 : 10.0),
+      padding: EdgeInsets.symmetric(vertical: isLandscape ? 2.0 : 4.0), // Reduced from 10.0
       child: Column(
         children: [
           Text(
@@ -117,8 +118,8 @@ class _Header extends StatelessWidget {
                 : Theme.of(context).textTheme.displayMedium)?.copyWith(
                   color: Colors.white,
                   shadows: [
-                    const Shadow(blurRadius: 10, color: Colors.black54),
-                    const Shadow(blurRadius: 2, color: Colors.black87)
+                    const Shadow(blurRadius: 15, color: Colors.black87), // Stronger outer glow
+                    const Shadow(blurRadius: 4, color: Colors.black),    // Sharper inner shadow
                   ],
                   fontWeight: FontWeight.w900,
                 ),
@@ -131,8 +132,8 @@ class _Header extends StatelessWidget {
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: Colors.white.withValues(alpha: 0.95),
                       shadows: [
-                        const Shadow(blurRadius: 8, color: Colors.black54),
-                        const Shadow(blurRadius: 2, color: Colors.black54)
+                        const Shadow(blurRadius: 10, color: Colors.black87),
+                        const Shadow(blurRadius: 2, color: Colors.black),
                       ],
                       fontStyle: FontStyle.normal,
                       fontWeight: FontWeight.w900,
@@ -147,7 +148,7 @@ class _Header extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.white.withValues(alpha: 0.9),
                     shadows: [
-                      const Shadow(blurRadius: 4, color: Colors.black87),
+                      const Shadow(blurRadius: 6, color: Colors.black87),
                     ],
                     fontStyle: FontStyle.normal,
                     fontWeight: FontWeight.w700,
@@ -171,7 +172,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedPanelIndex = 0;
-  int _previousPanelIndex = 0;
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
   final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(0);
   
@@ -183,13 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
     model.VotingStatus.completed: 0,
   };
 
-
-  // Hybrid Auto-Update Logic
-
-
-
-
-
+  late PageController _pageController;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -198,21 +192,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _fetchEventsForPanel(int index) {
-    setState(() {
-      _previousPanelIndex = _selectedPanelIndex;
-      _selectedPanelIndex = index;
-    });
-    // Fetch data for the new panel
-    final status = [
-      model.VotingStatus.registration,
-      model.VotingStatus.active,
-      model.VotingStatus.completed,
-    ][index];
-    context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+    // Animate to the page. This will trigger onPageChanged which handles fetching.
+    _pageController.animateToPage(
+      index, 
+      duration: const Duration(milliseconds: 500), 
+      curve: Curves.easeOutQuart, // Smoother curve
+    );
   }
 
   void _onPageChanged(int index) {
-    // This method is now used for refresh callbacks
+    setState(() {
+      _selectedPanelIndex = index;
+    });
+    _refreshCurrentPage(index);
+  }
+
+  void _refreshCurrentPage(int index) {
     final status = [
       model.VotingStatus.registration,
       model.VotingStatus.active,
@@ -229,23 +224,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _selectedPanelIndex);
     
     // Listen for notification navigation events
     _navigationSubscription = NotificationNavigationService().onNavigate.listen((event) {
       if (mounted) {
-        // Switch to the requested tab
-        setState(() {
-          _selectedPanelIndex = event.tabIndex;
-        });
+        // Smoothly animate to the requested tab
+        _fetchEventsForPanel(event.tabIndex);
         
-        // Trigger data refresh if requested
+        // Trigger data refresh if requested (onPageChanged will do it, but force if needed)
         if (event.shouldRefresh) {
-          final status = [
-            model.VotingStatus.registration,
-            model.VotingStatus.active,
-            model.VotingStatus.completed,
-          ][event.tabIndex];
-          context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
+           // Wait a bit for animation or just trigger
+           // Actually _onPageChanged will trigger fetch. 
+           // If we are ALREADY on that page, onPageChanged won't fire for animateToPage(sameIndex).
+           if (_selectedPanelIndex == event.tabIndex) {
+              _refreshCurrentPage(event.tabIndex);
+           }
         }
       }
     });
@@ -276,17 +270,182 @@ class _HomeScreenState extends State<HomeScreen> {
   
   @override
   void dispose() {
+    _pageController.dispose();
     _uiTicker?.cancel();
     _dataTicker?.cancel();
     _navigationSubscription?.cancel();
     super.dispose();
   }
 
+  int _debugThemeOffset = 0;
+
   @override
   Widget build(BuildContext context) {
-    final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
+    // Calculate current month with debug offset
+    // (month - 1 + offset) % 12 + 1 ensures 1-12 range
+    final realMonth = DateTime.now().month;
+    final debugMonth = ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
+    final theme = monthlyThemes[debugMonth] ?? monthlyThemes[1]!;
+    
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
+    // --- UI COMPONENTS ---
+
+    // 1. Top Bar (Profile / Lang)
+    final topBar = _TopBar();
+
+    // 2. Header (Seasons Title) with optional tap-to-test
+    Widget header = isLandscape 
+      ? Stack(
+          alignment: Alignment.center,
+          children: [
+            IgnorePointer(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                      Text(
+                        'Seasons',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontSize: 32, // Restored to much larger size for visibility (Original was ~34 in portrait)
+                              height: 1.0,
+                              color: Colors.white,
+                              shadows: [
+                                const Shadow(blurRadius: 10, color: Colors.black54),
+                                const Shadow(blurRadius: 2, color: Colors.black87)
+                              ],
+                              fontWeight: FontWeight.w900,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      Transform.translate(
+                        offset: const Offset(0, 0),
+                        child: Text(
+                          'времена года',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontFamily: 'HemiHead',
+                                color: Colors.white.withValues(alpha: 0.9),
+                                shadows: [
+                                  const Shadow(blurRadius: 4, color: Colors.black87),
+                                ],
+                                fontStyle: FontStyle.normal,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12, // Larger subtext
+                                letterSpacing: 2,
+                                height: 1.0,
+                              ),
+                        textAlign: TextAlign.center,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        )
+      : GestureDetector(
+          onTap: () {
+            setState(() {
+              _debugThemeOffset++;
+            });
+            final nextMonth = ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Testing Month: $nextMonth'),
+                duration: const Duration(milliseconds: 500),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.black87,
+              ),
+            );
+          },
+          child: _Header(),
+        );
+
+    // 3. Navbar (Panel Selector)
+    final navbar = BlocListener<VotingBloc, VotingState>(
+      listener: (context, state) {
+        if (state is VotingEventsLoadSuccess) {
+          final status = state.status;
+          int actionableCount;
+          if (status == model.VotingStatus.registration) {
+            actionableCount = state.events.where((e) => 
+              !e.isRegistered && 
+              (e.registrationEndDate == null || !DateTime.now().isAfter(e.registrationEndDate!))
+            ).length;
+          } else if (status == model.VotingStatus.active) {
+            actionableCount = state.events.where((e) => 
+              !e.hasVoted && 
+              (e.votingEndDate == null || !DateTime.now().isAfter(e.votingEndDate!))
+            ).length;
+          } else {
+            actionableCount = state.events.length;
+          }
+          _updateActionableCount(status, actionableCount);
+        }
+      },
+      child: AnimatedPanelSelector(
+        selectedIndex: _selectedPanelIndex,
+        onPanelSelected: _fetchEventsForPanel,
+        hasEvents: _actionableCount,
+        // Compact landscape navbar as requested to save space for poem
+        totalHeight: isLandscape ? 80.0 : 110.0,
+        barHeight: isLandscape ? 60.0 : 90.0,
+        buttonRadius: isLandscape ? 20.0 : 26.0,
+        verticalMargin: isLandscape ? 4.0 : 16.0, 
+      ),
+    );
+
+    // 4. Voting List (The Main Content) - WITHOUT Expanded wrapper here
+    final votingListContent = Padding(
+      padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 0.0),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26.0),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.2),
+              blurRadius: 8.0, 
+              spreadRadius: 1.0, 
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: PageView.builder(
+          controller: _pageController,
+          physics: const BouncingScrollPhysics(),
+          onPageChanged: _onPageChanged,
+          itemCount: 3,
+          itemBuilder: (context, index) {
+            return _SmokeTransition(
+              index: index,
+              pageController: _pageController,
+              child: _EventListPage(
+                status: [
+                  model.VotingStatus.registration,
+                  model.VotingStatus.active,
+                  model.VotingStatus.completed,
+                ][index],
+                imagePath: theme.imagePath,
+                onRefresh: () => _refreshCurrentPage(index),
+                timeNotifier: _timeNotifier,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    // 5. Footer (Poem)
+    // Pass isLandscape=false to footer when in split-view so it doesn't limit height
+    // Actually, we will just use the footer widget and rely on layout constraints
+    final footer = _Footer(poem: theme.poem, author: theme.author);
+
     return AppBackground(
       imagePath: theme.imagePath,
       child: Stack(
@@ -312,200 +471,60 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.transparent,
               body: SafeArea(
                 bottom: false,
+                left: false,
+                right: false,
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 800),
-                    child: Column(
-                      children: [
-                        // Top section - pinned at top
-                        if (isLandscape) ...[
-                          // Landscape: Header inline with TopBar
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              _TopBar(),
-                              IgnorePointer(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Seasons',
-                                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                              fontSize: 20,
-                                              height: 1.0, // Reduce line height to pull elements closer
-                                              color: Colors.white,
-                                              shadows: [
-                                                const Shadow(blurRadius: 10, color: Colors.black54),
-                                                const Shadow(blurRadius: 2, color: Colors.black87)
-                                              ],
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                      ),
-                                      Transform.translate(
-                                        offset: const Offset(0, 0), // Move closer to title
-                                        child: Text(
-                                          'времена года',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                fontFamily: 'HemiHead',
-                                                color: Colors.white.withValues(alpha: 0.9),
-                                                shadows: [
-                                                  const Shadow(blurRadius: 4, color: Colors.black87),
-                                                ],
-                                                fontStyle: FontStyle.normal,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 8, // Reduced from 10
-                                                letterSpacing: 2,
-                                                height: 1.0,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                    child: isLandscape 
+                      // LANDSCAPE: Split Layout (50/50 Split)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Left: Voting List (The "Detailed" content)
+                            Expanded( 
+                              flex: 1, // 50% width
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 0.0), // Maximized height (removed top padding)
+                                child: votingListContent,
                               ),
-                            ],
-                          ),
-                        ] else ...[
-                          // Portrait: Stacked
-                          _TopBar(),
-                          _Header(),
-                        ],
-                        
-                        BlocListener<VotingBloc, VotingState>(
-                          listener: (context, state) {
-                            if (state is VotingEventsLoadSuccess) {
-                              // Use status from state (now correctly tracks which section was fetched)
-                              final status = state.status;
-                              
-                              // Calculate actionable items count:
-                              // - Registration: count events where user is NOT registered
-                              // - Active: count events where user has NOT voted
-                              // - Completed: count ALL completed votings (results available)
-                              int actionableCount;
-                              if (status == model.VotingStatus.registration) {
-                                // Only count events where user is NOT registered AND registration is still open
-                                actionableCount = state.events.where((e) => 
-                                  !e.isRegistered && 
-                                  (e.registrationEndDate == null || !DateTime.now().isAfter(e.registrationEndDate!))
-                                ).length;
-                              } else if (status == model.VotingStatus.active) {
-                                // Only count events where user has NOT voted AND voting is still open
-                                actionableCount = state.events.where((e) => 
-                                  !e.hasVoted && 
-                                  (e.votingEndDate == null || !DateTime.now().isAfter(e.votingEndDate!))
-                                ).length;
-                              } else {
-                                actionableCount = state.events.length; // Count all completed votings
-                              }
-                              
-                              _updateActionableCount(status, actionableCount);
-                            }
-                          },
-                          child: AnimatedPanelSelector(
-                            selectedIndex: _selectedPanelIndex,
-                            onPanelSelected: _fetchEventsForPanel,
-                            hasEvents: _actionableCount,
-                            // Compact dimensions for landscape
-                            totalHeight: isLandscape ? 80.0 : 110.0,
-                            barHeight: isLandscape ? 60.0 : 90.0,
-                            buttonRadius: 26.0, // Standardized to 26.0
-                            verticalMargin: isLandscape ? 4.0 : 16.0,
-                          ),
-                        ),
-                        // Scrollable voting cards area
-                        Expanded(
-                          child: Padding(
-                            // Add side padding so the clip doesn't touch screen edges if desired, 
-                            // or keep 0 if full width is needed. Using small horizontal padding for better look.
-                            // Added bottom padding (20.0) to create space above the poem/footer
-                            padding: const EdgeInsets.fromLTRB(32.0, 0, 32.0, 0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(26.0), // Standardized to 26.0
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.2), // Thin visible border
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.white.withOpacity(0.2), // Subtle white outer glow
-                                    blurRadius: 8.0, 
-                                    spreadRadius: 1.0, 
+                            ),
+                            
+                            // Right: Sidebar (Header, Controls, Poem)
+                            Expanded(
+                              flex: 1, // 50% width
+                              child: Column(
+                                children: [
+                                  topBar,
+                                  Expanded( // Distribute space
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        header,
+                                        const SizedBox(height: 4), // Ultra compact spacing
+                                        navbar,
+                                        const SizedBox(height: 4), // Ultra compact spacing
+                                        Expanded(child: footer), // Force footer to fit in remaining space
+                                        const SizedBox(height: 12), // Restored bottom breathing room
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(26.0), // Standardized to 26.0
-                                child: GestureDetector(
-                                onHorizontalDragEnd: (details) {
-                                  // Detect swipe direction based on velocity
-                                  final velocity = details.primaryVelocity ?? 0;
-                                  
-                                  if (velocity < -500) {
-                                    // Swipe Left -> Move to Next tab
-                                    if (_selectedPanelIndex < 2) {
-                                      _fetchEventsForPanel(_selectedPanelIndex + 1);
-                                    }
-                                  } else if (velocity > 500) {
-                                    // Swipe Right -> Move to Previous tab
-                                    if (_selectedPanelIndex > 0) {
-                                      _fetchEventsForPanel(_selectedPanelIndex - 1);
-                                    }
-                                  }
-                                },
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 600),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  layoutBuilder: (currentChild, previousChildren) {
-                                    // Stack layout prevents width shifts during transition
-                                    return Stack(
-                                      alignment: Alignment.topCenter,
-                                      children: <Widget>[
-                                        ...previousChildren,
-                                        if (currentChild != null) currentChild,
-                                      ],
-                                    );
-                                  },
-                                  transitionBuilder: (Widget child, Animation<double> animation) {
-                                    // Determine slide direction based on index change
-                                    final isMovingForward = _selectedPanelIndex > _previousPanelIndex;
-                                    final offsetBegin = isMovingForward 
-                                        ? const Offset(1.0, 0.0)  // Slide in from right
-                                        : const Offset(-1.0, 0.0); // Slide in from left
-                                    
-                                    return SlideTransition(
-                                      position: Tween<Offset>(
-                                        begin: offsetBegin,
-                                        end: Offset.zero,
-                                      ).animate(animation),
-                                      child: child,
-                                    );
-                                  },
-                                  child: _EventListPage(
-                                    key: ValueKey(_selectedPanelIndex),
-                                    status: [
-                                      model.VotingStatus.registration,
-                                      model.VotingStatus.active,
-                                      model.VotingStatus.completed,
-                                    ][_selectedPanelIndex],
-                                    imagePath: theme.imagePath,
-                                    onRefresh: () => _onPageChanged(_selectedPanelIndex),
-                                    timeNotifier: _timeNotifier, // Pass notifier
-                                  ),
-                                ),
-                              ),
                             ),
-                          ),
-                          ),
+                          ],
+                        )
+                      // PORTRAIT: Stacked Layout (Original)
+                      : Column(
+                          children: [
+                            topBar,
+                            header,
+                            navbar,
+                            Expanded(child: votingListContent), // Correctly applied Expanded inside Column
+                            footer,
+                          ],
                         ),
-                        // Footer at bottom - pinned
-                        _Footer(poem: theme.poem, author: theme.author),
-                      ],
-                    ),
                   ),
                 ),
               ),
@@ -529,39 +548,77 @@ class _Footer extends StatelessWidget {
     
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        16.0,
-        isLandscape ? 4.0 : 4.0,  // Reduced top padding (was 24.0) to give more space to scrollable area
-        16.0,
-        isLandscape ? 20.0 : 16.0,  // Lifted footer higher in landscape (20.0)
+        isLandscape ? 16.0 : 24.0, // Restored safe margins (was 8.0)
+        isLandscape ? 4.0 : 4.0,
+        isLandscape ? 16.0 : 24.0, // Restored safe margins (was 8.0)
+        isLandscape ? 8.0 : 16.0,  // Restored bottom internal padding
       ),
-      child: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              poem,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white,
-                height: 1.5,
-                fontSize: isLandscape ? 12 : 14,
-                shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              author,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white,
-                fontStyle: FontStyle.italic,
-                fontSize: isLandscape ? 12 : 14,
-                shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
-              ),
+      child: Container(
+        width: double.infinity, // Ensure full width frame
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26.0),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.2),
+              blurRadius: 8.0, 
+              spreadRadius: 1.0, 
             ),
           ],
         ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0), // Internal padding for the frame
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                // In landscape, limit footer to 80% of screen height (plenty of room in sidebar)
+                // In portrait, keep 25% limit
+                maxHeight: isLandscape 
+                    ? MediaQuery.of(context).size.height * 0.80 
+                    : MediaQuery.of(context).size.height * 0.25,
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                mainAxisSize: MainAxisSize.min, // Tightly wrap content
+                crossAxisAlignment: CrossAxisAlignment.start, // Align all text to left edge
+                children: [
+                  Text(
+                    poem,
+                    softWrap: false,
+                    textAlign: TextAlign.left, // Explictly left align
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white,
+                      height: 1.5,
+                      fontSize: isLandscape ? 14 : 14, // Back to 14 base size, FittedBox will scale it
+                      shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    author,
+                    softWrap: false,
+                    textAlign: TextAlign.left, // Explicitly left align
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white,
+                      fontStyle: FontStyle.italic,
+                      fontSize: isLandscape ? 14 : 14, // Back to 14 base size
+                      shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 
@@ -574,7 +631,6 @@ class _EventListPage extends StatelessWidget {
   final ValueNotifier<int> timeNotifier; // Use ValueNotifier
 
   const _EventListPage({
-    super.key,
     required this.status,
     required this.imagePath,
     required this.onRefresh,
@@ -594,23 +650,25 @@ class _EventListPage extends StatelessWidget {
         return current is VotingLoadInProgress || current is VotingFailure;
       },
       builder: (context, state) {
+        Widget content;
+
         if (state is VotingLoadInProgress) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          content = const Center(
+            key: ValueKey('loader'),
+            child: SeasonsLoader(),
           );
-        }
-        if (state is VotingEventsLoadSuccess) {
+        } else if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 72.0),
+            content = Container(
+              key: const ValueKey('empty'),
+              padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.black.withOpacity(0.5),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.black.withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(26.0),
@@ -627,30 +685,48 @@ class _EventListPage extends StatelessWidget {
                 ),
               ),
             );
+          } else {
+            content = ListView.builder(
+              key: const ValueKey('list'),
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+              itemCount: state.events.length,
+              itemBuilder: (context, index) {
+                return _VotingEventCard(
+                  event: state.events[index],
+                  imagePath: imagePath,
+                  onActionComplete: onRefresh,
+                  timeNotifier: timeNotifier,
+                );
+              },
+            );
           }
-          return ListView.builder(
-            // Removed horizontal padding so cards touch the edges (0 left/right)
-            padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-            itemCount: state.events.length,
-            itemBuilder: (context, index) {
-              return _VotingEventCard(
-                event: state.events[index],
-                imagePath: imagePath,
-                onActionComplete: onRefresh,
-                timeNotifier: timeNotifier, // Pass notifier
-              );
-            },
-          );
-        }
-        if (state is VotingFailure) {
-          return Center(
+        } else if (state is VotingFailure) {
+          content = Center(
+            key: const ValueKey('error'),
             child: Text(
               'Error: ${state.error}',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
             ),
           );
+        } else {
+          content = const SizedBox.shrink(key: ValueKey('shrink'));
         }
-        return const SizedBox.shrink();
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 600),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: content,
+        );
       },
     );
   }
@@ -790,3 +866,71 @@ class _VotingEventCard extends StatelessWidget {
 }
 
 
+// Smoke effect transition wrapper
+class _SmokeTransition extends StatelessWidget {
+  final Widget child;
+  final int index;
+  final PageController pageController;
+
+  const _SmokeTransition({
+    required this.child,
+    required this.index,
+    required this.pageController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        
+        return AnimatedBuilder(
+          animation: pageController,
+          child: child,
+          builder: (context, child) {
+            double value = 0.0;
+            try {
+              if (pageController.hasClients && pageController.position.haveDimensions) {
+                value = pageController.page ?? 0.0;
+              } else {
+                 value = (index).toDouble();
+              }
+            } catch (_) {
+              // Fallback if multiple clients are attached during layout transition
+              value = (index).toDouble();
+            }
+
+            final double dist = (value - index);
+            final double absDist = dist.abs();
+
+            if (absDist > 1.0) {
+              return const SizedBox.shrink();
+            }
+
+            // Effects
+            final double opacity = (1.0 - absDist).clamp(0.0, 1.0);
+            final double scale = 1.0 + (absDist * 0.15);
+            final double blur = absDist * 10.0;
+
+            // Counteract the sliding movement
+            final double translation = dist * width;
+
+            return Transform.translate(
+              offset: Offset(translation, 0),
+              child: Opacity(
+                opacity: opacity,
+                child: Transform.scale(
+                  scale: scale,
+                  child: ImageFiltered(
+                    imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

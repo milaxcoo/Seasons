@@ -13,6 +13,7 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 
 import 'package:seasons/core/theme.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 // Removed local rudnGreenColor constant in favor of AppTheme.rudnGreenColor
 
@@ -155,7 +156,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
   Widget build(BuildContext ctxt) {
     if (_isLoadingDraft) {
       return const Center(
-          child: CircularProgressIndicator(color: Colors.white));
+          child: SeasonsLoader());
     }
 
     final locale = Localizations.localeOf(context);
@@ -318,12 +319,12 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                         children: [
                                           if (widget.event.description.isNotEmpty)
                                             const Divider(
-                                                color: Colors.black12, height: 1),
+                                                color: Colors.grey, height: 1),
                                           _InfoRow(
                                               label: l10n.votingStart, value: startDate),
-                                          const Divider(color: Colors.black12),
+                                          const Divider(color: Colors.grey),
                                           _InfoRow(label: l10n.votingEnd, value: endDate),
-                                          const Divider(color: Colors.black12),
+                                          const Divider(color: Colors.grey),
                                           _InfoRow(
                                             label: l10n.status,
                                             value: statusText,
@@ -388,8 +389,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                       ? null
                                       : _submitVote,
                                   child: state is VotingLoadInProgress
-                                      ? const CircularProgressIndicator(
-                                          color: Colors.white)
+                                      ? const SeasonsLoader(size: 24, color: Colors.white)
                                       : Text(
                                           widget.event.hasVoted
                                               ? l10n.alreadyVoted
@@ -444,7 +444,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                               ? null
                               : _submitVote,
                           child: state is VotingLoadInProgress
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const SeasonsLoader(size: 24, color: Colors.white)
                               : Text(
                                   widget.event.hasVoted
                                       ? l10n.alreadyVoted
@@ -510,7 +510,7 @@ class _QuestionCard extends StatelessWidget {
                     fontSize: 20,
                   ),
             ),
-            const Divider(height: 24),
+            const Divider(height: 24, color: Colors.grey),
             if (isSimpleQuestion)
               ...question.answers.map((answer) {
                 return _CustomCheckboxTile(
