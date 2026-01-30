@@ -17,6 +17,7 @@ import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
 import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/bloc/locale/locale_state.dart';
 import 'package:seasons/l10n/app_localizations.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 /// Global notification plugin for handling taps
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -29,13 +30,14 @@ void main() async {
     await initializeDateFormatting('ru_RU', null);
     await initializeDateFormatting('en_US', null);
     
-    // Initialize local notifications with tap handler
-    await _initializeNotifications();
-    
     // Initialize background service for WebSocket
-    await BackgroundService().initialize();
+    // Moved AFTER runApp to prevent black screen on Android (waiting for permissions/init)
     
     runApp(const SeasonsApp());
+    
+    // Post-launch initialization
+    await _initializeNotifications();
+    await BackgroundService().initialize();
   } catch (e) {
     debugPrint('Не удалось инициализировать приложение: $e');
   }
@@ -138,7 +140,7 @@ class SeasonsApp extends StatelessWidget {
                 builder: (context, state) {
                   if (state is AuthInitial) {
                     return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()));
+                        body: Center(child: SeasonsLoader()));
                   }
                   if (state is AuthAuthenticated) {
                     // Start background service for WebSocket connection

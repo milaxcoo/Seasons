@@ -13,6 +13,7 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 
 import 'package:seasons/core/theme.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 // Removed local rudnGreenColor constant in favor of AppTheme.rudnGreenColor
 
@@ -155,7 +156,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
   Widget build(BuildContext ctxt) {
     if (_isLoadingDraft) {
       return const Center(
-          child: CircularProgressIndicator(color: Colors.white));
+          child: SeasonsLoader());
     }
 
     final locale = Localizations.localeOf(context);
@@ -388,8 +389,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                       ? null
                                       : _submitVote,
                                   child: state is VotingLoadInProgress
-                                      ? const CircularProgressIndicator(
-                                          color: Colors.white)
+                                      ? const SeasonsLoader(size: 24, color: Colors.white)
                                       : Text(
                                           widget.event.hasVoted
                                               ? l10n.alreadyVoted
@@ -444,7 +444,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                               ? null
                               : _submitVote,
                           child: state is VotingLoadInProgress
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const SeasonsLoader(size: 24, color: Colors.white)
                               : Text(
                                   widget.event.hasVoted
                                       ? l10n.alreadyVoted

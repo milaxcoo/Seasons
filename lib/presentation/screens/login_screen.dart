@@ -228,7 +228,7 @@ class _SkewedContainer extends StatelessWidget {
             color: color,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.4),
                 blurRadius: 15,
                 offset: const Offset(5, 5),
                 spreadRadius: 2,
