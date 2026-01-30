@@ -86,6 +86,4 @@ lib/
     └── widgets/        # Reusable components
 ```
 
----
 
-*Built with ❤️ for the RUDN community*
