@@ -4,12 +4,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Privacy-first error reporting service.
 /// 
-/// Sends error reports to RUDN backend and/or Telegram without collecting any PII.
-/// Errors are queued locally when offline and sent when connection is restored.
+/// Sends error reports to Telegram without collecting any PII.
 class ErrorReportingService {
   static final ErrorReportingService _instance = ErrorReportingService._internal();
   factory ErrorReportingService() => _instance;
@@ -18,12 +16,6 @@ class ErrorReportingService {
   // ═══════════════════════════════════════════════════════════════════════════
   // CONFIGURATION
   // ═══════════════════════════════════════════════════════════════════════════
-  
-  /// Enable sending to RUDN backend (requires backend endpoint)
-  static const bool _enableBackend = false;  // Set to true when backend is ready
-  
-  /// Enable sending to Telegram bot
-  static const bool _enableTelegram = true;
   
   /// Telegram Bot Token - passed via --dart-define=TELEGRAM_BOT_TOKEN=xxx
   /// To build: flutter build apk --dart-define=TELEGRAM_BOT_TOKEN=your_token
@@ -40,11 +32,6 @@ class ErrorReportingService {
   
   // ═══════════════════════════════════════════════════════════════════════════
   
-  static const String _baseUrl = 'https://seasons.rudn.ru';
-  static const String _endpoint = '/api/v1/errors';
-  static const String _queueKey = 'error_queue';
-  static const int _maxQueueSize = 50;
-  
   String _appVersion = 'unknown';
   String _currentScreen = 'unknown';
   bool _isInitialized = false;
@@ -56,9 +43,6 @@ class ErrorReportingService {
     
     _appVersion = appVersion;
     _isInitialized = true;
-    
-    // Try to send any queued errors
-    await _flushQueue();
     
     if (kDebugMode) {
       debugPrint('ErrorReportingService: Initialized (v$_appVersion)');
@@ -169,19 +153,8 @@ class ErrorReportingService {
     );
 
     // Send to Telegram (fire and forget, don't block)
-    if (_enableTelegram) {
-      _sendToTelegram(report);
-    }
-
-    // Send to backend (with queueing for offline)
-    if (_enableBackend) {
-      try {
-        await _sendToBackend(report);
-      } catch (e) {
-        // Network error - queue for later
-        await _queueReport(report);
-      }
-    }
+    // Send to Telegram (fire and forget, don't block)
+    _sendToTelegram(report);
   }
 
   /// Send error report to Telegram bot
@@ -256,64 +229,6 @@ class ErrorReportingService {
         .replaceAll('*', '\\*')
         .replaceAll('[', '\\[')
         .replaceAll('`', '\\`');
-  }
-
-  /// Send error report to RUDN backend
-  Future<void> _sendToBackend(ErrorReport report) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl$_endpoint'),
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      body: jsonEncode(report.toJson()),
-    ).timeout(const Duration(seconds: 10));
-
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to send error report: ${response.statusCode}');
-    }
-  }
-
-  Future<void> _queueReport(ErrorReport report) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final queue = prefs.getStringList(_queueKey) ?? [];
-      
-      // Limit queue size to prevent memory issues
-      if (queue.length >= _maxQueueSize) {
-        queue.removeAt(0); // Remove oldest
-      }
-      
-      queue.add(jsonEncode(report.toJson()));
-      await prefs.setStringList(_queueKey, queue);
-    } catch (e) {
-      // Silently fail - we tried our best
-    }
-  }
-
-  Future<void> _flushQueue() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final queue = prefs.getStringList(_queueKey) ?? [];
-      
-      if (queue.isEmpty) return;
-
-      final failedReports = <String>[];
-      
-      for (final reportJson in queue) {
-        try {
-          final report = ErrorReport.fromJson(jsonDecode(reportJson));
-          await _sendToBackend(report);
-        } catch (e) {
-          failedReports.add(reportJson);
-        }
-      }
-      
-      // Keep only failed reports
-      await prefs.setStringList(_queueKey, failedReports);
-    } catch (e) {
-      // Silently fail
-    }
   }
 }
 
