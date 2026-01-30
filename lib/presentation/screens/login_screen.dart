@@ -9,6 +9,7 @@ import 'home_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'rudn_webview_screen.dart';
 import 'package:seasons/l10n/app_localizations.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -190,6 +191,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+              ),
+
+              // Loading Overlay
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthLoading) {
+                    return Container(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      child: const Center(
+                        child: SeasonsLoader(),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             ],
           ),

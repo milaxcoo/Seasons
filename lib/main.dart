@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:seasons/core/services/background_service.dart';
+import 'package:seasons/core/services/error_reporting_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'dart:async';
 
 import 'package:seasons/core/theme.dart';
 import 'package:seasons/data/repositories/api_voting_repository.dart';
@@ -23,24 +25,44 @@ import 'package:seasons/presentation/widgets/seasons_loader.dart';
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
-void main() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
+/// App version for error reporting
+const String appVersion = '1.1.0+2';
 
-    await initializeDateFormatting('ru_RU', null);
-    await initializeDateFormatting('en_US', null);
-    
-    // Initialize background service for WebSocket
-    // Moved AFTER runApp to prevent black screen on Android (waiting for permissions/init)
-    
-    runApp(const SeasonsApp());
-    
-    // Post-launch initialization
-    await _initializeNotifications();
-    await BackgroundService().initialize();
-  } catch (e) {
-    debugPrint('Не удалось инициализировать приложение: $e');
-  }
+void main() async {
+  // Run app inside error-catching zone
+  await runZonedGuarded(() async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Initialize error reporting service
+      await ErrorReportingService().initialize(appVersion: appVersion);
+
+      // Set up Flutter framework error handler
+      FlutterError.onError = (FlutterErrorDetails details) {
+        FlutterError.presentError(details);
+        ErrorReportingService().reportFlutterError(details);
+      };
+
+      await initializeDateFormatting('ru_RU', null);
+      await initializeDateFormatting('en_US', null);
+      
+      // Initialize background service for WebSocket
+      // Moved AFTER runApp to prevent black screen on Android (waiting for permissions/init)
+      
+      runApp(const SeasonsApp());
+      
+      // Post-launch initialization
+      await _initializeNotifications();
+      await BackgroundService().initialize();
+    } catch (e, stackTrace) {
+      debugPrint('Не удалось инициализировать приложение: $e');
+      ErrorReportingService().reportCrash(e, stackTrace);
+    }
+  }, (error, stackTrace) {
+    // Catch any unhandled async errors
+    debugPrint('Unhandled error: $error');
+    ErrorReportingService().reportCrash(error, stackTrace);
+  });
 }
 
 /// Initialize local notifications with tap response handler

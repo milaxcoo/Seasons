@@ -12,6 +12,7 @@ import 'package:seasons/presentation/screens/login_screen.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:seasons/l10n/app_localizations.dart';
+import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 import '../../mocks.dart';
 
@@ -148,6 +149,7 @@ void main() {
       // Assert: The screen should still render normally during loading
       expect(find.text('Seasons'), findsOneWidget);
       expect(find.text('Войти'), findsOneWidget);
+      expect(find.byType(SeasonsLoader), findsOneWidget);
     });
 
     testWidgets('renders with AuthUnauthenticated state', (tester) async {

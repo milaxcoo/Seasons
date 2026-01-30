@@ -50,6 +50,14 @@ android {
 
     buildTypes {
         release {
+            // Enable R8 code shrinking and obfuscation
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            
             // Use release signing only if keystore is configured
             // Otherwise fall back to debug signing (for CI builds)
             val keystorePath = System.getenv("KEYSTORE_PATH")
