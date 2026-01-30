@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [ main, devs, dev ]
 
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze_and_test:
-    name: Analyze & Test
+    name: 🔍 Analyze & Test
     runs-on: ubuntu-latest
 
     permissions:
@@ -28,15 +33,13 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
-
-
       - name: 🔍 Analyze code
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: flutter analyze --no-fatal-infos
 
       - name: 🧪 Run tests
         run: flutter test --coverage
 
-      - name: 💾 Upload coverage report
+      - name: 📊 Upload coverage report
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -44,11 +47,70 @@ jobs:
           path: coverage/lcov.info
           retention-days: 7
 
-  build_apk:
-    name: Build Android APK
+  build_android:
+    name: 🤖 Build Android
     runs-on: ubuntu-latest
     needs: analyze_and_test
     if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 📦 Get dependencies
+        run: flutter pub get
+
+      # Cache Gradle for faster builds
+      - name: 🗄️ Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: 🏗️ Build Release APK
+        run: flutter build apk --release
+
+      - name: 🏗️ Build Release AAB
+        run: flutter build appbundle --release
+
+      - name: 📦 Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+      - name: 📦 Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 14
+
+  build_ios:
+    name: 🍎 Build iOS
+    runs-on: macos-latest
+    needs: analyze_and_test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     permissions:
       contents: read
@@ -66,7 +128,21 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
+      # Cache CocoaPods for faster builds
+      - name: 🗄️ Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
 
+      - name: 📱 Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
 
-      - name: 🏗️ Build APK
-        run: flutter build apk --debug
+      - name: 📦 Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 14
