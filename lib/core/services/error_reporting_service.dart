@@ -8,13 +8,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Privacy-first error reporting service.
 /// 
-/// Sends error reports to RUDN backend without collecting any PII.
+/// Sends error reports to RUDN backend and/or Telegram without collecting any PII.
 /// Errors are queued locally when offline and sent when connection is restored.
 class ErrorReportingService {
   static final ErrorReportingService _instance = ErrorReportingService._internal();
   factory ErrorReportingService() => _instance;
   ErrorReportingService._internal();
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONFIGURATION - Set your values here
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  /// Enable sending to RUDN backend (requires backend endpoint)
+  static const bool _enableBackend = false;  // Set to true when backend is ready
+  
+  /// Enable sending to Telegram bot
+  static const bool _enableTelegram = true;
+  
+  /// Telegram Bot Token (get from @BotFather)
+  /// Format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+  static const String _telegramBotToken = 'YOUR_BOT_TOKEN_HERE';
+  
+  /// Telegram Chat ID (your personal chat or group chat ID)
+  /// To get your chat ID: send /start to @userinfobot
+  static const String _telegramChatId = 'YOUR_CHAT_ID_HERE';
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   static const String _baseUrl = 'https://seasons.rudn.ru';
   static const String _endpoint = '/api/v1/errors';
   static const String _queueKey = 'error_queue';
@@ -120,15 +140,96 @@ class ErrorReportingService {
       screenName: _currentScreen,
     );
 
-    try {
-      await _sendReport(report);
-    } catch (e) {
-      // Network error - queue for later
-      await _queueReport(report);
+    // Send to Telegram (fire and forget, don't block)
+    if (_enableTelegram) {
+      _sendToTelegram(report);
+    }
+
+    // Send to backend (with queueing for offline)
+    if (_enableBackend) {
+      try {
+        await _sendToBackend(report);
+      } catch (e) {
+        // Network error - queue for later
+        await _queueReport(report);
+      }
     }
   }
 
-  Future<void> _sendReport(ErrorReport report) async {
+  /// Send error report to Telegram bot
+  Future<void> _sendToTelegram(ErrorReport report) async {
+    if (_telegramBotToken == 'YOUR_BOT_TOKEN_HERE' || 
+        _telegramChatId == 'YOUR_CHAT_ID_HERE') {
+      // Not configured yet
+      return;
+    }
+
+    try {
+      // Format message for Telegram
+      final emoji = switch (report.type) {
+        'crash' => '🔴',
+        'flutter_error' => '🟠',
+        'critical' => '🔴',
+        'error' => '🟡',
+        'warning' => '⚪',
+        _ => '⚪',
+      };
+
+      final buffer = StringBuffer();
+      buffer.writeln('$emoji *${report.type.toUpperCase()}* в Seasons');
+      buffer.writeln();
+      buffer.writeln('📱 ${report.platform} ${report.osVersion}');
+      buffer.writeln('📦 Версия: ${report.appVersion}');
+      buffer.writeln('📍 Экран: ${report.screenName}');
+      buffer.writeln('🕐 ${report.timestamp}');
+      buffer.writeln();
+      buffer.writeln('❌ `${_escapeMarkdown(report.message)}`');
+      
+      if (report.stackTrace != null && report.stackTrace!.isNotEmpty) {
+        // Take first 5 lines of stack trace
+        final shortStack = report.stackTrace!
+            .split('\n')
+            .take(5)
+            .join('\n');
+        buffer.writeln();
+        buffer.writeln('```');
+        buffer.writeln(shortStack);
+        buffer.writeln('```');
+      }
+
+      final telegramUrl = Uri.parse(
+        'https://api.telegram.org/bot$_telegramBotToken/sendMessage'
+      );
+
+      await http.post(
+        telegramUrl,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'chat_id': _telegramChatId,
+          'text': buffer.toString(),
+          'parse_mode': 'Markdown',
+          'disable_notification': report.type == 'warning',
+        }),
+      ).timeout(const Duration(seconds: 5));
+    } catch (e) {
+      // Silently fail - Telegram is best effort
+      if (kDebugMode) {
+        debugPrint('ErrorReportingService: Failed to send to Telegram: $e');
+      }
+    }
+  }
+
+  /// Escape special Markdown characters for Telegram
+  String _escapeMarkdown(String text) {
+    return text
+        .replaceAll('_', '\\_')
+        .replaceAll('*', '\\*')
+        .replaceAll('[', '\\[')
+        .replaceAll('`', '\\`');
+  }
+
+  /// Send error report to RUDN backend
+  Future<void> _sendToBackend(ErrorReport report) async {
     final response = await http.post(
       Uri.parse('$_baseUrl$_endpoint'),
       headers: {
@@ -172,7 +273,7 @@ class ErrorReportingService {
       for (final reportJson in queue) {
         try {
           final report = ErrorReport.fromJson(jsonDecode(reportJson));
-          await _sendReport(report);
+          await _sendToBackend(report);
         } catch (e) {
           failedReports.add(reportJson);
         }
