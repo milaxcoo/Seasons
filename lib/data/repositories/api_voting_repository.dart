@@ -66,7 +66,7 @@ class ApiVotingRepository implements VotingRepository {
         final Map<String, dynamic> decodedBody = json.decode(response.body);
 
         if (kDebugMode) {
-          print("DEBUG: API Response: $decodedBody");
+      if (kDebugMode) debugPrint("DEBUG: API Response: $decodedBody");
         }
 
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
@@ -86,7 +86,7 @@ class ApiVotingRepository implements VotingRepository {
           if (votingJson is Map<String, dynamic>) {
              // DEBUG: Print all keys for the first voting to spot the date field
              if (data.indexOf(votingJson) == 0 && kDebugMode) {
-                print("DEBUG: Voting Dump: $votingJson");
+                if (kDebugMode) debugPrint("DEBUG: Voting Dump: $votingJson");
              }
              if (votingJson['status'] == null) {
                 votingJson['status'] = statusString;

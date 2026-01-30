@@ -18,6 +18,11 @@ class AppTheme {
     final baseTheme = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      dividerTheme: const DividerThemeData(
+        color: Colors.grey,
+        thickness: 1, 
+        space: 1,
+      ),
       scaffoldBackgroundColor: backgroundColor,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,

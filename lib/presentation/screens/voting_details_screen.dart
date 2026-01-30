@@ -319,12 +319,12 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                         children: [
                                           if (widget.event.description.isNotEmpty)
                                             const Divider(
-                                                color: Colors.black12, height: 1),
+                                                color: Colors.grey, height: 1),
                                           _InfoRow(
                                               label: l10n.votingStart, value: startDate),
-                                          const Divider(color: Colors.black12),
+                                          const Divider(color: Colors.grey),
                                           _InfoRow(label: l10n.votingEnd, value: endDate),
-                                          const Divider(color: Colors.black12),
+                                          const Divider(color: Colors.grey),
                                           _InfoRow(
                                             label: l10n.status,
                                             value: statusText,
@@ -510,7 +510,7 @@ class _QuestionCard extends StatelessWidget {
                     fontSize: 20,
                   ),
             ),
-            const Divider(height: 24),
+            const Divider(height: 24, color: Colors.grey),
             if (isSimpleQuestion)
               ...question.answers.map((answer) {
                 return _CustomCheckboxTile(
