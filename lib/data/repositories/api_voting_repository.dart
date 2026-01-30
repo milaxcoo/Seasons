@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:seasons/data/models/nominee.dart';
+
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
@@ -123,17 +123,9 @@ class ApiVotingRepository implements VotingRepository {
     }
   }
 
-  @override
-  Future<VotingEvent> getEventDetails(String eventId) async {
-    // Этот метод пока не используется
-    throw UnimplementedError();
-  }
 
-  @override
-  Future<List<Nominee>> getNomineesForEvent(String eventId) async {
-    // Этот метод больше не используется
-    return [];
-  }
+
+
 
   // FIXED: Полностью переписан метод для отправки голоса
   @override
