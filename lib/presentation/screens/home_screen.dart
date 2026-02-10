@@ -37,7 +37,7 @@ class _TopBar extends StatelessWidget {
 
     return Padding(
       // Reduced padding in landscape to save vertical space
-      padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: isLandscape ? 0.0 : 8.0),
+      padding: EdgeInsets.symmetric(horizontal: isLandscape ? 16.0 : 24.0, vertical: isLandscape ? 0.0 : 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -486,7 +486,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded( 
                               flex: 1, // 50% width
                               child: Padding(
-                                padding: const EdgeInsets.only(top: 0.0), // Maximized height (removed top padding)
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
                                 child: votingListContent,
                               ),
                             ),
@@ -503,10 +503,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       children: [
                                         header,
                                         const SizedBox(height: 4), // Ultra compact spacing
-                                        navbar,
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                                          child: navbar,
+                                        ),
                                         const SizedBox(height: 4), // Ultra compact spacing
                                         Expanded(child: footer), // Force footer to fit in remaining space
-                                        const SizedBox(height: 12), // Restored bottom breathing room
                                       ],
                                     ),
                                   ),
@@ -548,10 +550,10 @@ class _Footer extends StatelessWidget {
     
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        isLandscape ? 16.0 : 24.0, // Restored safe margins (was 8.0)
+        isLandscape ? 16.0 : 24.0,
         isLandscape ? 4.0 : 4.0,
-        isLandscape ? 16.0 : 24.0, // Restored safe margins (was 8.0)
-        isLandscape ? 8.0 : 16.0,  // Restored bottom internal padding
+        isLandscape ? 16.0 : 24.0,
+        isLandscape ? 8.0 : 16.0,
       ),
       child: Container(
         width: double.infinity, // Ensure full width frame
@@ -594,7 +596,7 @@ class _Footer extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                       height: 1.5,
-                      fontSize: isLandscape ? 14 : 14, // Back to 14 base size, FittedBox will scale it
+                      fontSize: isLandscape ? 18 : 14, // Larger in landscape, FittedBox will scale down if needed
                       shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
                     ),
                   ),
@@ -606,7 +608,7 @@ class _Footer extends StatelessWidget {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                       fontStyle: FontStyle.italic,
-                      fontSize: isLandscape ? 14 : 14, // Back to 14 base size
+                      fontSize: isLandscape ? 18 : 14, // Larger in landscape, FittedBox will scale down if needed
                       shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
                     ),
                   ),
