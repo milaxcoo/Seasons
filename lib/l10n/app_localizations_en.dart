@@ -183,4 +183,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageEnglish => 'English';
+
+  @override
+  String get connectionError => 'Could not load votings';
+
+  @override
+  String get tapToRetry => 'Tap to retry';
 }

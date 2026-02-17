@@ -701,11 +701,49 @@ class _EventListPage extends StatelessWidget {
             );
           }
         } else if (state is VotingFailure) {
-          content = Center(
+          content = GestureDetector(
             key: const ValueKey('error'),
-            child: Text(
-              'Error: ${state.error}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+            onTap: onRefresh,
+            child: Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.black.withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(26.0),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_rounded, color: Colors.white70, size: 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      AppLocalizations.of(context)!.connectionError,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white,
+                        fontSize: 18.0,
+                        shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppLocalizations.of(context)!.tapToRetry,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white60,
+                        fontSize: 14.0,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         } else {

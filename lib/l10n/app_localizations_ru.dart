@@ -185,4 +185,10 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get languageEnglish => 'English';
+
+  @override
+  String get connectionError => 'Не удалось загрузить голосования';
+
+  @override
+  String get tapToRetry => 'Нажмите, чтобы обновить';
 }
