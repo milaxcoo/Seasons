@@ -26,7 +26,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 /// App version for error reporting
-const String appVersion = '1.1.0+8';
+const String appVersion = '1.1.0+9';
 
 void main() async {
   // Run app inside error-catching zone
