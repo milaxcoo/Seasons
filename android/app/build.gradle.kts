@@ -31,15 +31,20 @@ android {
         versionName = flutter.versionName
     }
 
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    val keyAliasValue = System.getenv("KEY_ALIAS")
+    val keyPasswordValue = System.getenv("KEY_PASSWORD")
+    val hasReleaseSigningConfig =
+        !keystorePath.isNullOrBlank() &&
+        file(keystorePath).exists() &&
+        !keystorePassword.isNullOrBlank() &&
+        !keyAliasValue.isNullOrBlank() &&
+        !keyPasswordValue.isNullOrBlank()
+
     signingConfigs {
         create("release") {
-            // Only configure release signing if env vars are set
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-            val keyAliasValue = System.getenv("KEY_ALIAS")
-            val keyPasswordValue = System.getenv("KEY_PASSWORD")
-            
-            if (keystorePath != null && keystorePassword != null) {
+            if (hasReleaseSigningConfig) {
                 storeFile = file(keystorePath)
                 storePassword = keystorePassword
                 keyAlias = keyAliasValue
@@ -58,25 +63,33 @@ android {
                 "proguard-rules.pro"
             )
 
-            // Release artifacts must never be debug-signed.
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-            val keyAliasValue = System.getenv("KEY_ALIAS")
-            val keyPasswordValue = System.getenv("KEY_PASSWORD")
-            if (
-                keystorePath != null &&
-                file(keystorePath).exists() &&
-                !keystorePassword.isNullOrBlank() &&
-                !keyAliasValue.isNullOrBlank() &&
-                !keyPasswordValue.isNullOrBlank()
-            ) {
+            // Only use release signing when fully configured.
+            if (hasReleaseSigningConfig) {
                 signingConfig = signingConfigs.getByName("release")
-            } else {
-                throw GradleException(
-                    "Missing release signing configuration. Set KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD."
-                )
             }
         }
+    }
+}
+
+// Fail fast only when a release task is requested.
+val requestedTasks = gradle.startParameter.taskNames.joinToString(" ").lowercase()
+val isReleaseTaskRequested = requestedTasks.contains("release")
+if (isReleaseTaskRequested) {
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    val keyAliasValue = System.getenv("KEY_ALIAS")
+    val keyPasswordValue = System.getenv("KEY_PASSWORD")
+    val hasReleaseSigningConfig =
+        !keystorePath.isNullOrBlank() &&
+        file(keystorePath).exists() &&
+        !keystorePassword.isNullOrBlank() &&
+        !keyAliasValue.isNullOrBlank() &&
+        !keyPasswordValue.isNullOrBlank()
+
+    if (!hasReleaseSigningConfig) {
+        throw GradleException(
+            "Missing release signing configuration. Set KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD.",
+        )
     }
 }
 
