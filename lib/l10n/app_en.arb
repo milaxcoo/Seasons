@@ -55,5 +55,7 @@
   "votingResults": "Voting results",
   "voteCount": "Vote Count",
   "languageRussian": "Русский",
-  "languageEnglish": "English"
+  "languageEnglish": "English",
+  "connectionError": "Could not load votings",
+  "tapToRetry": "Tap to retry"
 }

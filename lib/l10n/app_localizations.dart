@@ -427,6 +427,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'English'**
   String get languageEnglish;
+
+  /// Error message when votings fail to load
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить голосования'**
+  String get connectionError;
+
+  /// Tap to retry hint
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите, чтобы обновить'**
+  String get tapToRetry;
 }
 
 class _AppLocalizationsDelegate
