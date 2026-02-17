@@ -13,7 +13,7 @@ import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
 import 'package:seasons/presentation/bloc/locale/locale_event.dart';
-import 'package:seasons/presentation/screens/login_screen.dart';
+
 import 'package:seasons/presentation/screens/profile_screen.dart';
 import 'package:seasons/presentation/screens/registration_details_screen.dart';
 import 'package:seasons/presentation/screens/results_screen.dart';
@@ -88,10 +88,8 @@ class _TopBar extends StatelessWidget {
                 icon: const Icon(Icons.exit_to_app, color: Colors.white),
                 onPressed: () {
                   context.read<AuthBloc>().add(LoggedOut());
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
+                  // BlocBuilder in main.dart handles switching to LoginScreen
+                  // when AuthUnauthenticated is emitted. No manual navigation needed.
                 },
               ),
             ],
