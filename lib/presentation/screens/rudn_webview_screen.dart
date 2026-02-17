@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
+import 'package:seasons/core/services/error_reporting_service.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class RudnWebviewScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   final WebViewCookieManager _cookieManager = WebViewCookieManager();
   bool _isLoading = true;
   Timer? _cookieCheckTimer;
+  bool _hasPopped = false;
 
   @override
   void initState() {
@@ -112,7 +114,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<void> _checkCookies() async {
-    if (!mounted) return;
+    if (!mounted || _hasPopped) return;
     try {
       // Use JavaScript to get cookies from the current page
       final cookieString = await _controller.runJavaScriptReturningResult(
@@ -138,10 +140,20 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             if (name == 'session' && value.isNotEmpty) {
               // Session cookie found
               await RudnAuthService().saveCookie(value);
+              ErrorReportingService().reportEvent('webview_cookie_found', details: {
+                'cookie_length': '${value.length}',
+              });
 
-              if (mounted) {
+              if (mounted && !_hasPopped) {
+                _hasPopped = true;
                 _cookieCheckTimer?.cancel();
+                ErrorReportingService().reportEvent('webview_popping');
                 Navigator.of(context).pop(true);
+              } else {
+                ErrorReportingService().reportEvent('webview_duplicate_pop_blocked', details: {
+                  'mounted': '$mounted',
+                  'hasPopped': '$_hasPopped',
+                });
               }
               return;
             }

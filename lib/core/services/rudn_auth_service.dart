@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Abstract interface for secure storage operations.
@@ -38,7 +39,13 @@ class RudnAuthService {
 
   // Singleton instance with default storage
   static final RudnAuthService _instance = RudnAuthService._internal(
-    FlutterSecureStorageAdapter(),
+    FlutterSecureStorageAdapter(
+      const FlutterSecureStorage(
+        aOptions: AndroidOptions(
+          encryptedSharedPreferences: true,
+        ),
+      ),
+    ),
   );
 
   /// Default factory returns singleton with real storage
@@ -52,17 +59,38 @@ class RudnAuthService {
 
   /// Saves the session cookie securely.
   Future<void> saveCookie(String cookie) async {
-    await _storage.write(key: _cookieKey, value: cookie);
+    try {
+      await _storage.write(key: _cookieKey, value: cookie);
+    } catch (e) {
+      // If storage fails, we can't do much, but we shouldn't crash
+      debugPrint('Error saving cookie: $e');
+    }
   }
 
-  /// Retrieves the stored session cookie.
+  /// Retrieves the stored session cookie with a timeout.
   Future<String?> getCookie() async {
-    return await _storage.read(key: _cookieKey);
+    try {
+      // Add timeout to prevent hanging if KeyStore is corrupted/slow
+      return await _storage.read(key: _cookieKey).timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          debugPrint('Storage read timed out');
+          return null;
+        },
+      );
+    } catch (e) {
+      debugPrint('Error reading cookie: $e');
+      return null;
+    }
   }
 
   /// Removes the stored session cookie (logout).
   Future<void> logout() async {
-    await _storage.delete(key: _cookieKey);
+    try {
+      await _storage.delete(key: _cookieKey);
+    } catch (e) {
+      debugPrint('Error deleting cookie: $e');
+    }
   }
 
   /// Checks if a valid session likely exists (simple check).
