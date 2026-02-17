@@ -23,18 +23,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
     final bool hasToken = await _votingRepository.getAuthToken() != null;
     if (hasToken) {
-      // Authenticate immediately with fallback name
-      emit(const AuthAuthenticated(userLogin: 'RUDN User'));
-
-      // Then try to fetch real name (non-blocking)
+      // Validate the stored cookie by checking with the server
       try {
         final userLogin = await _votingRepository.getUserLogin();
         if (userLogin != null) {
-          add(_UpdateUserLogin(userLogin));
+          // Session is valid — user is authenticated
+          emit(AuthAuthenticated(userLogin: userLogin));
+          ErrorReportingService().reportEvent('app_start_session_valid', details: {
+            'name': userLogin,
+          });
+        } else {
+          // Server didn't confirm the session — cookie is stale
+          await _votingRepository.logout(); // Clear the stale cookie
+          emit(AuthUnauthenticated());
+          ErrorReportingService().reportEvent('app_start_session_stale');
         }
       } catch (e) {
-        debugPrint('Failed to fetch user login on start: $e');
-        // Keep fallback name — user is still authenticated
+        // Network error — can't validate, clear cookie to be safe
+        await _votingRepository.logout();
+        emit(AuthUnauthenticated());
+        ErrorReportingService().reportEvent('app_start_validation_failed', details: {
+          'error': e.toString(),
+        });
       }
     } else {
       emit(AuthUnauthenticated());
