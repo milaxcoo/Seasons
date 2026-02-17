@@ -212,7 +212,8 @@ class ApiVotingRepository implements VotingRepository {
     try {
       final url = Uri.parse('$_baseUrl/');
       final headers = await _headers;
-      final response = await http.get(url, headers: headers);
+      final response = await http.get(url, headers: headers)
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         // Regex to find <a href="/account">Name</a>

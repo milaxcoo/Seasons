@@ -470,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               body: SafeArea(
-                bottom: false,
+                bottom: true, // Enable bottom safe area for Galaxy Fold / Android Gestures
                 left: false,
                 right: false,
                 child: Align(
@@ -553,7 +553,7 @@ class _Footer extends StatelessWidget {
         isLandscape ? 16.0 : 24.0,
         isLandscape ? 4.0 : 4.0,
         isLandscape ? 16.0 : 24.0,
-        isLandscape ? 8.0 : 16.0,
+        isLandscape ? 8.0 : 24.0, // Increased bottom padding for safety
       ),
       child: Container(
         width: double.infinity, // Ensure full width frame

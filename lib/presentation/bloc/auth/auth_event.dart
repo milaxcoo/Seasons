@@ -27,3 +27,13 @@ class LoggedIn extends AuthEvent {
 
 // This event is dispatched when the user taps the "Logout" button.
 class LoggedOut extends AuthEvent {}
+
+// Internal event to update the user's display name after async fetch.
+class _UpdateUserLogin extends AuthEvent {
+  final String userLogin;
+
+  const _UpdateUserLogin(this.userLogin);
+
+  @override
+  List<Object> get props => [userLogin];
+}

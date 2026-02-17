@@ -101,6 +101,24 @@ class ErrorReportingService {
     );
   }
 
+  /// Report a diagnostic event (non-error telemetry for auth flow debugging).
+  /// Works in both debug and release mode for testing visibility.
+  Future<void> reportEvent(String event, {Map<String, String>? details}) async {
+    final detailStr = details?.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join(', ') ?? '';
+    
+    if (kDebugMode) {
+      debugPrint('ErrorReportingService: EVENT - $event ${detailStr.isNotEmpty ? "($detailStr)" : ""}');
+    }
+
+    await _sendOrQueueReport(
+      type: 'auth_event',
+      message: event,
+      context: detailStr.isNotEmpty ? detailStr : null,
+    );
+  }
+
   /// Report a fatal crash (unhandled exception).
   Future<void> reportCrash(
     dynamic error,
@@ -174,6 +192,7 @@ class ErrorReportingService {
         'flutter_error' => '🟠',
         'critical' => '🔴',
         'error' => '🟡',
+        'auth_event' => '🔵',
         'warning' => '⚪',
         _ => '⚪',
       };

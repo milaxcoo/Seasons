@@ -26,7 +26,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 /// App version for error reporting
-const String appVersion = '1.1.0+2';
+const String appVersion = '1.1.0+8';
 
 void main() async {
   // Run app inside error-catching zone
@@ -166,7 +166,10 @@ class SeasonsApp extends StatelessWidget {
                   }
                   if (state is AuthAuthenticated) {
                     // Start background service for WebSocket connection
-                    BackgroundService().startService();
+                    // Defer to next frame to allow UI to render first (Fixes Black Screen)
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      BackgroundService().startService();
+                    });
                     return const HomeScreen();
                   }
                   if (state is AuthUnauthenticated) {
