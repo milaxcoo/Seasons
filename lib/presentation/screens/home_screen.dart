@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -198,11 +197,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Timer? _sectionDebounce;
+
   void _onPageChanged(int index) {
     setState(() {
       _selectedPanelIndex = index;
     });
-    _refreshCurrentPage(index);
+    // Debounce API calls — if user swipes rapidly, only fetch for the final section
+    _sectionDebounce?.cancel();
+    _sectionDebounce = Timer(const Duration(milliseconds: 300), () {
+      _refreshCurrentPage(index);
+    });
   }
 
   void _refreshCurrentPage(int index) {
@@ -271,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _pageController.dispose();
     _uiTicker?.cancel();
     _dataTicker?.cancel();
+    _sectionDebounce?.cancel();
     _navigationSubscription?.cancel();
     super.dispose();
   }
@@ -934,7 +940,6 @@ class _SmokeTransition extends StatelessWidget {
                  value = (index).toDouble();
               }
             } catch (_) {
-              // Fallback if multiple clients are attached during layout transition
               value = (index).toDouble();
             }
 
@@ -945,10 +950,9 @@ class _SmokeTransition extends StatelessWidget {
               return const SizedBox.shrink();
             }
 
-            // Effects
+            // Lightweight effects — no blur (kills performance on older GPUs)
             final double opacity = (1.0 - absDist).clamp(0.0, 1.0);
-            final double scale = 1.0 + (absDist * 0.15);
-            final double blur = absDist * 10.0;
+            final double scale = 1.0 + (absDist * 0.08);
 
             // Counteract the sliding movement
             final double translation = dist * width;
@@ -959,10 +963,7 @@ class _SmokeTransition extends StatelessWidget {
                 opacity: opacity,
                 child: Transform.scale(
                   scale: scale,
-                  child: ImageFiltered(
-                    imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-                    child: child,
-                  ),
+                  child: child,
                 ),
               ),
             );
