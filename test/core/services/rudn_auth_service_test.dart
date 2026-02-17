@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 
@@ -44,9 +42,9 @@ void main() {
       final slowStorage = MockSlowStorage(delay: const Duration(seconds: 3));
       final service = RudnAuthService.withStorage(slowStorage);
 
-      // Save a cookie first (instantly, bypassing delay for setup if we wanted, 
+      // Save a cookie first (instantly, bypassing delay for setup if we wanted,
       // but here we just want to test read timeout, so we don't strictly need data if it times out)
-      
+
       // Act
       final result = await service.getCookie();
 
@@ -55,12 +53,13 @@ void main() {
     });
 
     test('getCookie returns value when fast', () async {
-      final fastStorage = MockSlowStorage(delay: const Duration(milliseconds: 100));
+      final fastStorage =
+          MockSlowStorage(delay: const Duration(milliseconds: 100));
       final service = RudnAuthService.withStorage(fastStorage);
-      
+
       // Pre-populate directly
       await service.saveCookie('test_cookie');
-      
+
       final result = await service.getCookie();
       expect(result, equals('test_cookie'));
     });

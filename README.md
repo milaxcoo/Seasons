@@ -35,7 +35,8 @@ A privacy-focused mobile app for voting at RUDN / PFUR University.
 - ❌ No Crashlytics
 - ❌ No third-party SDKs that collect data
 - ✅ All data stays on RUDN servers
-- ✅ Custom error reporting (optional Telegram)
+- ✅ Optional Telegram crash reporting (disabled by default)
+- ✅ Diagnostic auth telemetry is opt-in and disabled by default
 
 ## 🚀 Getting Started
 
@@ -65,11 +66,32 @@ flutter run
 echo "TELEGRAM_BOT_TOKEN=your_token" > .secrets
 echo "TELEGRAM_CHAT_ID=your_chat_id" >> .secrets
 
+# Optional telemetry toggles (defaults shown)
+echo "ENABLE_ERROR_REPORTING=false" >> .secrets
+echo "ENABLE_DIAGNOSTIC_EVENTS=false" >> .secrets
+
 # Build with secrets
 ./build.sh apk        # Android APK
 ./build.sh appbundle  # Android AAB
 ./build.sh ios        # iOS
 ```
+
+### Android Release Signing
+
+Release builds require a configured keystore:
+
+- `KEYSTORE_PATH`
+- `KEYSTORE_PASSWORD`
+- `KEY_ALIAS`
+- `KEY_PASSWORD`
+
+Release build now fails fast when signing configuration is missing.
+
+### Store Submission Checklist
+
+Use the tracked checklist before shipping:
+
+- `docs/STORE_RELEASE_CHECKLIST.md`
 
 ## 📁 Project Structure
 
@@ -85,5 +107,3 @@ lib/
     ├── screens/        # App screens
     └── widgets/        # Reusable components
 ```
-
-

@@ -19,7 +19,8 @@ void main() {
 
     setUp(() {
       mockRepository = MockVotingRepository();
-      mockServiceStreamController = StreamController<Map<String, dynamic>?>.broadcast();
+      mockServiceStreamController =
+          StreamController<Map<String, dynamic>?>.broadcast();
       authBloc = AuthBloc(votingRepository: mockRepository);
       votingBloc = VotingBloc(
         votingRepository: mockRepository,
@@ -50,8 +51,6 @@ void main() {
 
     test('Complete user flow: login -> fetch events -> logout', () async {
       // Arrange
-      when(() => mockRepository.login('user', 'pass'))
-          .thenAnswer((_) async => 'token');
       when(() => mockRepository.getUserLogin()).thenAnswer((_) async => 'user');
       when(() =>
               mockRepository.getEventsByStatus(model.VotingStatus.registration))
@@ -71,13 +70,8 @@ void main() {
 
       // Act & Assert - Login
       authBloc.add(const LoggedIn(login: 'user', password: 'pass'));
-      await expectLater(
-        authBloc.stream,
-        emitsInOrder([
-          isA<AuthLoading>(),
-          isA<AuthAuthenticated>(),
-        ]),
-      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(authBloc.state, isA<AuthAuthenticated>());
 
       // Act & Assert - Fetch Events
       votingBloc.add(
@@ -98,12 +92,12 @@ void main() {
       );
 
       // Verify all interactions
-      verify(() => mockRepository.login('user', 'pass')).called(1);
       verify(() => mockRepository.getUserLogin()).called(1);
       verify(() =>
               mockRepository.getEventsByStatus(model.VotingStatus.registration))
           .called(1);
       verify(() => mockRepository.logout()).called(1);
+      verifyNever(() => mockRepository.login(any(), any()));
     });
 
     test('Complete voting flow: register -> fetch event -> submit vote',
@@ -165,25 +159,20 @@ void main() {
       verify(() => mockRepository.submitVote(any(), any())).called(1);
     });
 
-    test('Error handling: failed login prevents further actions', () async {
+    test('Error handling: failed user-name lookup still keeps local auth',
+        () async {
       // Arrange
-      when(() => mockRepository.login(any(), any()))
-          .thenThrow(Exception('Invalid credentials'));
+      when(() => mockRepository.getUserLogin())
+          .thenThrow(Exception('Lookup failed'));
 
-      // Act & Assert - Failed Login
+      // Act
       authBloc.add(const LoggedIn(login: 'wrong', password: 'wrong'));
-      await expectLater(
-        authBloc.stream,
-        emitsInOrder([
-          isA<AuthLoading>(),
-          isA<AuthFailure>(),
-          isA<AuthUnauthenticated>(),
-        ]),
-      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
 
       // Verify
-      verify(() => mockRepository.login('wrong', 'wrong')).called(1);
-      verifyNever(() => mockRepository.getUserLogin());
+      expect(authBloc.state, const AuthAuthenticated(userLogin: 'RUDN User'));
+      verify(() => mockRepository.getUserLogin()).called(1);
+      verifyNever(() => mockRepository.login(any(), any()));
     });
 
     test('Error handling: failed registration allows retry', () async {

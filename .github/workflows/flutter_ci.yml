@@ -5,6 +5,7 @@ on:
     branches: [ main, devs, dev ]
   pull_request:
     branches: [ main, devs, dev ]
+  workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered
 concurrency:
@@ -18,7 +19,6 @@ jobs:
 
     permissions:
       contents: read
-      actions: write
 
     steps:
       - name: ⬇️ Checkout code
@@ -34,10 +34,19 @@ jobs:
         run: flutter pub get
 
       - name: 🔍 Analyze code
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --fatal-infos --fatal-warnings
 
       - name: 🧪 Run tests
         run: flutter test --coverage
+
+      - name: ✅ Enforce minimum coverage
+        run: |
+          COVERAGE=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END{if(lf>0) printf("%.2f", (lh/lf)*100); else print "0.00"}' coverage/lcov.info)
+          echo "Coverage: ${COVERAGE}%"
+          awk "BEGIN {exit !(${COVERAGE} >= 50.0)}" || {
+            echo "::error::Coverage ${COVERAGE}% is below 50% threshold"
+            exit 1
+          }
 
       - name: 📊 Upload coverage report
         if: success()
@@ -75,6 +84,23 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
+      - name: 🔐 Validate Android release signing secrets
+        run: |
+          test -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" || { echo "::error::Missing ANDROID_KEYSTORE_BASE64"; exit 1; }
+          test -n "${{ secrets.KEYSTORE_PASSWORD }}" || { echo "::error::Missing KEYSTORE_PASSWORD"; exit 1; }
+          test -n "${{ secrets.KEY_ALIAS }}" || { echo "::error::Missing KEY_ALIAS"; exit 1; }
+          test -n "${{ secrets.KEY_PASSWORD }}" || { echo "::error::Missing KEY_PASSWORD"; exit 1; }
+
+      - name: 🔐 Decode Android keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${RUNNER_TEMP}/release-keystore.jks"
+          {
+            echo "KEYSTORE_PATH=${RUNNER_TEMP}/release-keystore.jks"
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}"
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}"
+          } >> "$GITHUB_ENV"
+
       # Cache Gradle for faster builds
       - name: 🗄️ Cache Gradle
         uses: actions/cache@v4
@@ -90,13 +116,17 @@ jobs:
         run: |
           flutter build apk --release \
             --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
-            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
+            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 🏗️ Build Release AAB
         run: |
           flutter build appbundle --release \
             --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
-            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
+            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 📦 Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -116,7 +146,7 @@ jobs:
     name: 🍎 Build iOS
     runs-on: macos-latest
     needs: analyze_and_test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devs' || github.ref == 'refs/heads/dev')
 
     permissions:
       contents: read
@@ -147,7 +177,9 @@ jobs:
         run: |
           flutter build ios --release --no-codesign \
             --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
-            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
+            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 📦 Upload iOS artifact
         uses: actions/upload-artifact@v4

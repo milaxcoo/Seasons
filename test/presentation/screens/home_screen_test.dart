@@ -22,8 +22,11 @@ import 'package:seasons/l10n/app_localizations.dart';
 
 import '../../mocks.dart';
 
-class MockNotificationNavigationService extends Mock implements NotificationNavigationService {}
-class MockLocaleBloc extends MockBloc<LocaleEvent, LocaleState> implements LocaleBloc {}
+class MockNotificationNavigationService extends Mock
+    implements NotificationNavigationService {}
+
+class MockLocaleBloc extends MockBloc<LocaleEvent, LocaleState>
+    implements LocaleBloc {}
 
 void main() {
   late MockAuthBloc mockAuthBloc;
@@ -44,19 +47,21 @@ void main() {
     mockVotingBloc = MockVotingBloc();
     mockLocaleBloc = MockLocaleBloc();
     mockNavigationService = MockNotificationNavigationService();
-    
+
     NotificationNavigationService.setMockInstance(mockNavigationService);
-    
+
     when(() => mockAuthBloc.state)
         .thenReturn(const AuthAuthenticated(userLogin: 'testuser'));
     when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
-    
-    when(() => mockLocaleBloc.state).thenReturn(const LocaleState(Locale('ru')));
+
+    when(() => mockLocaleBloc.state)
+        .thenReturn(const LocaleState(Locale('ru')));
     when(() => mockLocaleBloc.stream).thenAnswer((_) => const Stream.empty());
-    
-    when(() => mockNavigationService.onNavigate).thenAnswer((_) => const Stream.empty());
+
+    when(() => mockNavigationService.onNavigate)
+        .thenAnswer((_) => const Stream.empty());
   });
-  
+
   tearDown(() {
     // Reset singleton? No easy way unless we add a clearMockInstance or just rely on setUp overwriting it.
     // Ideally NotificationNavigationService._instance = null; but we can't access private.
@@ -87,8 +92,8 @@ void main() {
   group('HomeScreen', () {
     testWidgets('renders main layout components correctly', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state)
-          .thenReturn(const VotingEventsLoadSuccess(events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -140,7 +145,8 @@ void main() {
           results: const [],
         ),
       ];
-      final state = VotingEventsLoadSuccess(events: events, status: model.VotingStatus.registration);
+      final state = VotingEventsLoadSuccess(
+          events: events, status: model.VotingStatus.registration);
       when(() => mockVotingBloc.state).thenReturn(state);
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
@@ -157,8 +163,8 @@ void main() {
 
     testWidgets('renders empty state when no events', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state)
-          .thenReturn(const VotingEventsLoadSuccess(events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -183,13 +189,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Error: Failed to load'), findsOneWidget);
+      expect(find.text('Не удалось загрузить голосования'), findsOneWidget);
+      expect(find.text('Нажмите, чтобы обновить'), findsOneWidget);
     });
 
     testWidgets('shows logout button and triggers logout', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state)
-          .thenReturn(const VotingEventsLoadSuccess(events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
       when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
@@ -224,8 +231,8 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state)
-          .thenReturn(VotingEventsLoadSuccess(events: events, status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
+          events: events, status: model.VotingStatus.registration));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -252,8 +259,8 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state)
-          .thenReturn(VotingEventsLoadSuccess(events: events, status: model.VotingStatus.active));
+      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
+          events: events, status: model.VotingStatus.active));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -267,8 +274,8 @@ void main() {
 
     testWidgets('panel selector switches between statuses', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state)
-          .thenReturn(const VotingEventsLoadSuccess(events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -304,8 +311,8 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state)
-          .thenReturn(VotingEventsLoadSuccess(events: events, status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
+          events: events, status: model.VotingStatus.registration));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -319,8 +326,8 @@ void main() {
 
     testWidgets('renders footer with poem', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state)
-          .thenReturn(const VotingEventsLoadSuccess(events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 

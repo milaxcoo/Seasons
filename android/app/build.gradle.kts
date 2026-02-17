@@ -57,15 +57,24 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            
-            // Use release signing only if keystore is configured
-            // Otherwise fall back to debug signing (for CI builds)
+
+            // Release artifacts must never be debug-signed.
             val keystorePath = System.getenv("KEYSTORE_PATH")
-            if (keystorePath != null && file(keystorePath).exists()) {
+            val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+            val keyAliasValue = System.getenv("KEY_ALIAS")
+            val keyPasswordValue = System.getenv("KEY_PASSWORD")
+            if (
+                keystorePath != null &&
+                file(keystorePath).exists() &&
+                !keystorePassword.isNullOrBlank() &&
+                !keyAliasValue.isNullOrBlank() &&
+                !keyPasswordValue.isNullOrBlank()
+            ) {
                 signingConfig = signingConfigs.getByName("release")
             } else {
-                // CI/development builds: use debug signing
-                signingConfig = signingConfigs.getByName("debug")
+                throw GradleException(
+                    "Missing release signing configuration. Set KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD."
+                )
             }
         }
     }

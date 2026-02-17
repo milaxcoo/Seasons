@@ -29,21 +29,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (userLogin != null) {
           // Session is valid — user is authenticated
           emit(AuthAuthenticated(userLogin: userLogin));
-          ErrorReportingService().reportEvent('app_start_session_valid', details: {
-            'name': userLogin,
-          });
+          ErrorReportingService().reportEvent('app_start_session_valid');
         } else {
           // Server didn't confirm the session — cookie is stale
-          await _votingRepository.logout(); // Clear the stale cookie
+          try {
+            await _votingRepository.logout(); // Clear the stale cookie
+          } catch (_) {
+            // If backend logout fails, we still clear local auth state.
+          }
           emit(AuthUnauthenticated());
           ErrorReportingService().reportEvent('app_start_session_stale');
         }
       } catch (e) {
         // Network error — can't validate, clear cookie to be safe
-        await _votingRepository.logout();
+        try {
+          await _votingRepository.logout();
+        } catch (_) {
+          // Local state should still move to unauthenticated.
+        }
         emit(AuthUnauthenticated());
-        ErrorReportingService().reportEvent('app_start_validation_failed', details: {
-          'error': e.toString(),
+        ErrorReportingService()
+            .reportEvent('app_start_validation_failed', details: {
+          'exception_type': e.runtimeType.toString(),
         });
       }
     } else {
@@ -59,17 +66,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ErrorReportingService().reportEvent('auth_bloc_authenticated_emitted');
 
     // Fetch real name asynchronously (non-blocking)
-    _votingRepository.getUserLogin().then((name) {
+    Future<String?>.sync(_votingRepository.getUserLogin).then((name) {
       if (name != null) {
         add(_UpdateUserLogin(name));
-        ErrorReportingService().reportEvent('auth_bloc_name_fetched', details: {
-          'name_length': '${name.length}',
-        });
+        ErrorReportingService().reportEvent('auth_bloc_name_fetched');
       }
     }).catchError((e) {
       debugPrint('Failed to fetch user login: $e');
-      ErrorReportingService().reportEvent('auth_bloc_name_fetch_failed', details: {
-        'error': e.toString(),
+      ErrorReportingService()
+          .reportEvent('auth_bloc_name_fetch_failed', details: {
+        'exception_type': e.runtimeType.toString(),
       });
     });
   }

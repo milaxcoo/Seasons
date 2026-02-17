@@ -2,17 +2,17 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "devs", "dev" ]
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
+    branches: [ "main", "devs", "dev" ]
+  workflow_dispatch:
   schedule:
     - cron: '21 10 * * 0'
 
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       actions: read
       contents: read
@@ -21,11 +21,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java-kotlin' ]
-        # CodeQL supports 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift'
-        # Since this is a Flutter app, we scan the native Android code.
-        # Swift scanning requires macOS runners which are often not free/available on all plans, 
-        # so keeping it to java-kotlin (Android) for now.
+        include:
+          - language: java-kotlin
+            os: ubuntu-latest
+          - language: swift
+            os: macos-latest
 
     steps:
     - name: Checkout repository
@@ -39,6 +39,7 @@ jobs:
 
     # Manual build steps to ensure Flutter environment is correct for Android build
     - name: Set up JDK 17
+      if: matrix.language == 'java-kotlin'
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
@@ -56,7 +57,12 @@ jobs:
       run: flutter pub get
 
     - name: Build Android (for CodeQL)
+      if: matrix.language == 'java-kotlin'
       run: flutter build apk --debug
+
+    - name: Build iOS (for CodeQL)
+      if: matrix.language == 'swift'
+      run: flutter build ios --debug --no-codesign
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

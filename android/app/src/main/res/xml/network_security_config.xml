@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext traffic for seasons.rudn.ru domain -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">seasons.rudn.ru</domain>
-    </domain-config>
+    <!-- Enforce HTTPS-only traffic for all app domains. -->
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>
