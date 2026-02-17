@@ -237,7 +237,7 @@ class ApiVotingRepository implements VotingRepository {
         print("Error fetching user login: $e");
       }
     }
-    return "RUDN User"; // Fallback
+    return null; // No valid session
   }
 
   @override
