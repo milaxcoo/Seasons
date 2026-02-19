@@ -62,6 +62,7 @@ secrets.json
 # Coverage reports
 coverage/
 *.lcov
+docs/
 
 # Test results
 test-results/
