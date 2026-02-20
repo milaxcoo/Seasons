@@ -17,7 +17,7 @@ class FetchEventsByStatus extends VotingEvent {
 class RefreshEventsSilent extends VotingEvent {
   final model.VotingStatus status;
   const RefreshEventsSilent({required this.status});
-  
+
   @override
   List<Object> get props => [status];
 }

@@ -62,8 +62,7 @@ void main() {
 
     testWidgets('renders error message when profile is null', (tester) async {
       // Arrange
-      when(() => mockRepository.getUserProfile())
-          .thenAnswer((_) async => null);
+      when(() => mockRepository.getUserProfile()).thenAnswer((_) async => null);
 
       // Act
       await tester.pumpWidget(createTestWidget());

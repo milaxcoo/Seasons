@@ -28,13 +28,15 @@ class Question extends Equatable {
       if (data['subjects'] is Map) {
         final subjectsMap = data['subjects'] as Map<String, dynamic>;
         subjectsMap.forEach((key, value) {
-          parsedSubjects.add(Subject.fromJson(value as Map<String, dynamic>, key));
+          parsedSubjects
+              .add(Subject.fromJson(value as Map<String, dynamic>, key));
         });
-      } 
+      }
       // Если "subjects" нет, ищем "answers" (простая структура)
       else if (data['answers'] is List) {
         parsedAnswers = (data['answers'] as List)
-            .map((answerJson) => Nominee.fromJson(answerJson as Map<String, dynamic>))
+            .map((answerJson) =>
+                Nominee.fromJson(answerJson as Map<String, dynamic>))
             .toList();
       }
     }

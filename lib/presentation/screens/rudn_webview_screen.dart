@@ -38,7 +38,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             setState(() {
               _isLoading = false;
             });
-            
+
             // Auto-click the login button when homepage loads
             if (url.startsWith('https://seasons.rudn.ru')) {
               // Efficiently poll for the login button
@@ -61,7 +61,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                 })();
               ''');
             }
-            
+
             await _checkCookies();
           },
           onWebResourceError: (WebResourceError error) {
@@ -98,7 +98,8 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
         "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
     await _controller.setUserAgent(userAgent);
 
-    _controller.loadRequest(Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
+    _controller.loadRequest(
+        Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
 
     // Start periodic check for session cookie (increased frequency for speed)
     _cookieCheckTimer =
@@ -140,7 +141,8 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             if (name == 'session' && value.isNotEmpty) {
               // Session cookie found
               await RudnAuthService().saveCookie(value);
-              ErrorReportingService().reportEvent('webview_cookie_found', details: {
+              ErrorReportingService()
+                  .reportEvent('webview_cookie_found', details: {
                 'cookie_length': '${value.length}',
               });
 
@@ -150,7 +152,8 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                 ErrorReportingService().reportEvent('webview_popping');
                 Navigator.of(context).pop(true);
               } else {
-                ErrorReportingService().reportEvent('webview_duplicate_pop_blocked', details: {
+                ErrorReportingService()
+                    .reportEvent('webview_duplicate_pop_blocked', details: {
                   'mounted': '$mounted',
                   'hasPopped': '$_hasPopped',
                 });

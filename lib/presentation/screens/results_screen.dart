@@ -73,12 +73,13 @@ class _ResultsView extends StatelessWidget {
         : l10n.notSet;
 
     // FIXED: Standardized scrollable area style (Window with internal scroll)
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     return SafeArea(
       child: Center(
         child: Padding(
           // Responsive padding: Smaller margins in landscape to maximize card size
-          padding: isLandscape 
+          padding: isLandscape
               ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
               : const EdgeInsets.all(24.0),
           child: Container(
@@ -98,7 +99,8 @@ class _ResultsView extends StatelessWidget {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24), // Inner padding for content
                 child: Column(
-                  mainAxisSize: MainAxisSize.min, // Shrink to fit content if small
+                  mainAxisSize:
+                      MainAxisSize.min, // Shrink to fit content if small
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
@@ -206,7 +208,8 @@ class _ResultsTable extends StatelessWidget {
     );
   }
 
-  Widget _buildDataTable(BuildContext context, QuestionResult data, AppLocalizations l10n) {
+  Widget _buildDataTable(
+      BuildContext context, QuestionResult data, AppLocalizations l10n) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double availableWidth = constraints.maxWidth;
@@ -226,7 +229,8 @@ class _ResultsTable extends StatelessWidget {
 
         // --- ЛОГИКА РАСЧЕТА ШИРИНЫ КОЛОНОК ---
         // 1. Первая колонка (Имя субъекта) - 40% от ширины, но не меньше 160 и не больше 320
-        final double firstColWidth = (availableWidth * 0.40).clamp(160.0, 320.0);
+        final double firstColWidth =
+            (availableWidth * 0.40).clamp(160.0, 320.0);
 
         // 2. Остальные колонки (данные)
         final int dataColsCount = max(1, colCount - 1);
@@ -234,10 +238,12 @@ class _ResultsTable extends StatelessWidget {
         final double remainingWidth = availableWidth - firstColWidth;
 
         // Ширина колонки данных: либо доля остатка, либо минимум (если остаток слишком мал)
-        final double dataColWidth = max(minDataColWidth, remainingWidth / dataColsCount);
+        final double dataColWidth =
+            max(minDataColWidth, remainingWidth / dataColsCount);
 
         // 3. Общая ширина таблицы
-        final double totalTableWidth = firstColWidth + (dataColWidth * dataColsCount);
+        final double totalTableWidth =
+            firstColWidth + (dataColWidth * dataColsCount);
 
         // 4. Формируем карту ширины колонок для Table
         final Map<int, TableColumnWidth> tableColumnWidths = {
@@ -251,7 +257,8 @@ class _ResultsTable extends StatelessWidget {
         const cellPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);
 
         // Вспомогательная функция для ячейки
-        Widget buildCell(String text, {bool isHeader = false, bool alignCenter = false}) {
+        Widget buildCell(String text,
+            {bool isHeader = false, bool alignCenter = false}) {
           return Padding(
             padding: cellPadding,
             child: Text(

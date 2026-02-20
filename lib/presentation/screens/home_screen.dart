@@ -27,8 +27,9 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     String userLogin = 'User';
     if (authState is AuthAuthenticated) {
       userLogin = authState.userLogin;
@@ -36,7 +37,9 @@ class _TopBar extends StatelessWidget {
 
     return Padding(
       // Reduced padding in landscape to save vertical space
-      padding: EdgeInsets.symmetric(horizontal: isLandscape ? 16.0 : 24.0, vertical: isLandscape ? 0.0 : 8.0),
+      padding: EdgeInsets.symmetric(
+          horizontal: isLandscape ? 16.0 : 24.0,
+          vertical: isLandscape ? 0.0 : 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -102,28 +105,38 @@ class _TopBar extends StatelessWidget {
 class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: isLandscape ? 2.0 : 4.0), // Reduced from 10.0
+      padding: EdgeInsets.symmetric(
+          vertical: isLandscape ? 2.0 : 4.0), // Reduced from 10.0
       child: Column(
         children: [
           Text(
             'Seasons',
-            style: (isLandscape 
-                ? Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20) // Very compact in landscape
-                : Theme.of(context).textTheme.displayMedium)?.copyWith(
-                  color: Colors.white,
-                  shadows: [
-                    const Shadow(blurRadius: 15, color: Colors.black87), // Stronger outer glow
-                    const Shadow(blurRadius: 4, color: Colors.black),    // Sharper inner shadow
-                  ],
-                  fontWeight: FontWeight.w900,
-                ),
+            style: (isLandscape
+                    ? Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontSize: 20) // Very compact in landscape
+                    : Theme.of(context).textTheme.displayMedium)
+                ?.copyWith(
+              color: Colors.white,
+              shadows: [
+                const Shadow(
+                    blurRadius: 15,
+                    color: Colors.black87), // Stronger outer glow
+                const Shadow(
+                    blurRadius: 4, color: Colors.black), // Sharper inner shadow
+              ],
+              fontWeight: FontWeight.w900,
+            ),
           ),
-          if (!isLandscape) 
+          if (!isLandscape)
             Transform.translate(
-              offset: const Offset(0, -5), // Move slightly closer to Seasons title
+              offset:
+                  const Offset(0, -5), // Move slightly closer to Seasons title
               child: Text(
                 'времена года',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -139,7 +152,7 @@ class _Header extends StatelessWidget {
                     ),
               ),
             )
-          else 
+          else
             Text(
               'времена года',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -159,8 +172,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -171,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedPanelIndex = 0;
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
   final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(0);
-  
+
   // Track number of actionable items (unregistered for registration, unvoted for active, total for completed)
   // Button is green only when there are actionable items
   final Map<model.VotingStatus, int> _actionableCount = {
@@ -191,8 +202,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _fetchEventsForPanel(int index) {
     // Animate to the page. This will trigger onPageChanged which handles fetching.
     _pageController.animateToPage(
-      index, 
-      duration: const Duration(milliseconds: 500), 
+      index,
+      duration: const Duration(milliseconds: 500),
       curve: Curves.easeOutQuart, // Smoother curve
     );
   }
@@ -219,34 +230,34 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
-
   Timer? _uiTicker;
   Timer? _dataTicker;
   StreamSubscription? _navigationSubscription;
-  
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _selectedPanelIndex);
-    
+
     // Listen for notification navigation events
-    _navigationSubscription = NotificationNavigationService().onNavigate.listen((event) {
+    _navigationSubscription =
+        NotificationNavigationService().onNavigate.listen((event) {
       if (mounted) {
         // Smoothly animate to the requested tab
         _fetchEventsForPanel(event.tabIndex);
-        
+
         // Trigger data refresh if requested (onPageChanged will do it, but force if needed)
         if (event.shouldRefresh) {
-           // Wait a bit for animation or just trigger
-           // Actually _onPageChanged will trigger fetch. 
-           // If we are ALREADY on that page, onPageChanged won't fire for animateToPage(sameIndex).
-           if (_selectedPanelIndex == event.tabIndex) {
-              _refreshCurrentPage(event.tabIndex);
-           }
+          // Wait a bit for animation or just trigger
+          // Actually _onPageChanged will trigger fetch.
+          // If we are ALREADY on that page, onPageChanged won't fire for animateToPage(sameIndex).
+          if (_selectedPanelIndex == event.tabIndex) {
+            _refreshCurrentPage(event.tabIndex);
+          }
         }
       }
     });
-    
+
     // UI Ticker: Updates every 1 second to handle time-based UI changes instantly
     // e.g. "Registration closes in..." or switching from Open to Closed based on local time
     _uiTicker = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -259,18 +270,30 @@ class _HomeScreenState extends State<HomeScreen> {
     _dataTicker = Timer.periodic(const Duration(seconds: 3), (_) {
       if (mounted) {
         // Fetch fresh data for ALL statuses to keep button colors updated
-        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.registration));
-        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.active));
-        context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.completed));
+        context
+            .read<VotingBloc>()
+            .add(RefreshEventsSilent(status: model.VotingStatus.registration));
+        context
+            .read<VotingBloc>()
+            .add(RefreshEventsSilent(status: model.VotingStatus.active));
+        context
+            .read<VotingBloc>()
+            .add(RefreshEventsSilent(status: model.VotingStatus.completed));
       }
     });
-    
+
     // Fetch initial data for all sections to populate button colors
-    context.read<VotingBloc>().add(FetchEventsByStatus(status: model.VotingStatus.registration));
-    context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.active));
-    context.read<VotingBloc>().add(RefreshEventsSilent(status: model.VotingStatus.completed));
+    context
+        .read<VotingBloc>()
+        .add(FetchEventsByStatus(status: model.VotingStatus.registration));
+    context
+        .read<VotingBloc>()
+        .add(RefreshEventsSilent(status: model.VotingStatus.active));
+    context
+        .read<VotingBloc>()
+        .add(RefreshEventsSilent(status: model.VotingStatus.completed));
   }
-  
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -290,8 +313,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final realMonth = DateTime.now().month;
     final debugMonth = ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
     final theme = monthlyThemes[debugMonth] ?? monthlyThemes[1]!;
-    
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     // --- UI COMPONENTS ---
 
@@ -299,73 +323,79 @@ class _HomeScreenState extends State<HomeScreen> {
     final topBar = _TopBar();
 
     // 2. Header (Seasons Title) with optional tap-to-test
-    Widget header = isLandscape 
-      ? Stack(
-          alignment: Alignment.center,
-          children: [
-            IgnorePointer(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+    Widget header = isLandscape
+        ? Stack(
+            alignment: Alignment.center,
+            children: [
+              IgnorePointer(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
                         'Seasons',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontSize: 32, // Restored to much larger size for visibility (Original was ~34 in portrait)
-                              height: 1.0,
-                              color: Colors.white,
-                              shadows: [
-                                const Shadow(blurRadius: 10, color: Colors.black54),
-                                const Shadow(blurRadius: 2, color: Colors.black87)
-                              ],
-                              fontWeight: FontWeight.w900,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontSize:
+                                      32, // Restored to much larger size for visibility (Original was ~34 in portrait)
+                                  height: 1.0,
+                                  color: Colors.white,
+                                  shadows: [
+                                    const Shadow(
+                                        blurRadius: 10, color: Colors.black54),
+                                    const Shadow(
+                                        blurRadius: 2, color: Colors.black87)
+                                  ],
+                                  fontWeight: FontWeight.w900,
+                                ),
                         textAlign: TextAlign.center,
                       ),
                       Transform.translate(
                         offset: const Offset(0, 0),
                         child: Text(
                           'времена года',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                fontFamily: 'HemiHead',
-                                color: Colors.white.withValues(alpha: 0.9),
-                                shadows: [
-                                  const Shadow(blurRadius: 4, color: Colors.black87),
-                                ],
-                                fontStyle: FontStyle.normal,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12, // Larger subtext
-                                letterSpacing: 2,
-                                height: 1.0,
-                              ),
-                        textAlign: TextAlign.center,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontFamily: 'HemiHead',
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    shadows: [
+                                      const Shadow(
+                                          blurRadius: 4, color: Colors.black87),
+                                    ],
+                                    fontStyle: FontStyle.normal,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12, // Larger subtext
+                                    letterSpacing: 2,
+                                    height: 1.0,
+                                  ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        )
-      : GestureDetector(
-          onTap: () {
-            setState(() {
-              _debugThemeOffset++;
-            });
-            final nextMonth = ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Testing Month: $nextMonth'),
-                duration: const Duration(milliseconds: 500),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.black87,
-              ),
-            );
-          },
-          child: _Header(),
-        );
+            ],
+          )
+        : GestureDetector(
+            onTap: () {
+              setState(() {
+                _debugThemeOffset++;
+              });
+              final nextMonth = ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Testing Month: $nextMonth'),
+                  duration: const Duration(milliseconds: 500),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Colors.black87,
+                ),
+              );
+            },
+            child: _Header(),
+          );
 
     // 3. Navbar (Panel Selector)
     final navbar = BlocListener<VotingBloc, VotingState>(
@@ -374,15 +404,19 @@ class _HomeScreenState extends State<HomeScreen> {
           final status = state.status;
           int actionableCount;
           if (status == model.VotingStatus.registration) {
-            actionableCount = state.events.where((e) => 
-              !e.isRegistered && 
-              (e.registrationEndDate == null || !DateTime.now().isAfter(e.registrationEndDate!))
-            ).length;
+            actionableCount = state.events
+                .where((e) =>
+                    !e.isRegistered &&
+                    (e.registrationEndDate == null ||
+                        !DateTime.now().isAfter(e.registrationEndDate!)))
+                .length;
           } else if (status == model.VotingStatus.active) {
-            actionableCount = state.events.where((e) => 
-              !e.hasVoted && 
-              (e.votingEndDate == null || !DateTime.now().isAfter(e.votingEndDate!))
-            ).length;
+            actionableCount = state.events
+                .where((e) =>
+                    !e.hasVoted &&
+                    (e.votingEndDate == null ||
+                        !DateTime.now().isAfter(e.votingEndDate!)))
+                .length;
           } else {
             actionableCount = state.events.length;
           }
@@ -397,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
         totalHeight: isLandscape ? 80.0 : 110.0,
         barHeight: isLandscape ? 60.0 : 90.0,
         buttonRadius: isLandscape ? 20.0 : 26.0,
-        verticalMargin: isLandscape ? 4.0 : 16.0, 
+        verticalMargin: isLandscape ? 4.0 : 16.0,
       ),
     );
 
@@ -414,8 +448,8 @@ class _HomeScreenState extends State<HomeScreen> {
           boxShadow: [
             BoxShadow(
               color: Colors.white.withValues(alpha: 0.2),
-              blurRadius: 8.0, 
-              spreadRadius: 1.0, 
+              blurRadius: 8.0,
+              spreadRadius: 1.0,
             ),
           ],
         ),
@@ -474,63 +508,76 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               body: SafeArea(
-                bottom: true, // Enable bottom safe area for Galaxy Fold / Android Gestures
+                bottom:
+                    true, // Enable bottom safe area for Galaxy Fold / Android Gestures
                 left: false,
                 right: false,
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 800),
-                    child: isLandscape 
-                      // LANDSCAPE: Split Layout (50/50 Split)
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Left: Voting List (The "Detailed" content)
-                            Expanded( 
-                              flex: 1, // 50% width
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                child: votingListContent,
+                    child: isLandscape
+                        // LANDSCAPE: Split Layout (50/50 Split)
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Left: Voting List (The "Detailed" content)
+                              Expanded(
+                                flex: 1, // 50% width
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: votingListContent,
+                                ),
                               ),
-                            ),
-                            
-                            // Right: Sidebar (Header, Controls, Poem)
-                            Expanded(
-                              flex: 1, // 50% width
-                              child: Column(
-                                children: [
-                                  topBar,
-                                  Expanded( // Distribute space
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        header,
-                                        const SizedBox(height: 4), // Ultra compact spacing
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                                          child: navbar,
-                                        ),
-                                        const SizedBox(height: 4), // Ultra compact spacing
-                                        Expanded(child: footer), // Force footer to fit in remaining space
-                                      ],
+
+                              // Right: Sidebar (Header, Controls, Poem)
+                              Expanded(
+                                flex: 1, // 50% width
+                                child: Column(
+                                  children: [
+                                    topBar,
+                                    Expanded(
+                                      // Distribute space
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          header,
+                                          const SizedBox(
+                                              height:
+                                                  4), // Ultra compact spacing
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6.0),
+                                            child: navbar,
+                                          ),
+                                          const SizedBox(
+                                              height:
+                                                  4), // Ultra compact spacing
+                                          Expanded(
+                                              child:
+                                                  footer), // Force footer to fit in remaining space
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      // PORTRAIT: Stacked Layout (Original)
-                      : Column(
-                          children: [
-                            topBar,
-                            header,
-                            navbar,
-                            Expanded(child: votingListContent), // Correctly applied Expanded inside Column
-                            footer,
-                          ],
-                        ),
+                            ],
+                          )
+                        // PORTRAIT: Stacked Layout (Original)
+                        : Column(
+                            children: [
+                              topBar,
+                              header,
+                              navbar,
+                              Expanded(
+                                  child:
+                                      votingListContent), // Correctly applied Expanded inside Column
+                              footer,
+                            ],
+                          ),
                   ),
                 ),
               ),
@@ -550,8 +597,9 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         isLandscape ? 16.0 : 24.0,
@@ -570,8 +618,8 @@ class _Footer extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.white.withValues(alpha: 0.2),
-              blurRadius: 8.0, 
-              spreadRadius: 1.0, 
+              blurRadius: 8.0,
+              spreadRadius: 1.0,
             ),
           ],
         ),
@@ -583,51 +631,58 @@ class _Footer extends StatelessWidget {
               constraints: BoxConstraints(
                 // In landscape, limit footer to 80% of screen height (plenty of room in sidebar)
                 // In portrait, keep 25% limit
-                maxHeight: isLandscape 
-                    ? MediaQuery.of(context).size.height * 0.80 
+                maxHeight: isLandscape
+                    ? MediaQuery.of(context).size.height * 0.80
                     : MediaQuery.of(context).size.height * 0.25,
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Column(
-                mainAxisSize: MainAxisSize.min, // Tightly wrap content
-                crossAxisAlignment: CrossAxisAlignment.start, // Align all text to left edge
-                children: [
-                  Text(
-                    poem,
-                    softWrap: false,
-                    textAlign: TextAlign.left, // Explictly left align
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      height: 1.5,
-                      fontSize: isLandscape ? 18 : 14, // Larger in landscape, FittedBox will scale down if needed
-                      shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+                  mainAxisSize: MainAxisSize.min, // Tightly wrap content
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start, // Align all text to left edge
+                  children: [
+                    Text(
+                      poem,
+                      softWrap: false,
+                      textAlign: TextAlign.left, // Explictly left align
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
+                        height: 1.5,
+                        fontSize: isLandscape
+                            ? 18
+                            : 14, // Larger in landscape, FittedBox will scale down if needed
+                        shadows: [
+                          const Shadow(blurRadius: 6, color: Colors.black87)
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    author,
-                    softWrap: false,
-                    textAlign: TextAlign.left, // Explicitly left align
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontStyle: FontStyle.italic,
-                      fontSize: isLandscape ? 18 : 14, // Larger in landscape, FittedBox will scale down if needed
-                      shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+                    const SizedBox(height: 8),
+                    Text(
+                      author,
+                      softWrap: false,
+                      textAlign: TextAlign.left, // Explicitly left align
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
+                        fontStyle: FontStyle.italic,
+                        fontSize: isLandscape
+                            ? 18
+                            : 14, // Larger in landscape, FittedBox will scale down if needed
+                        shadows: [
+                          const Shadow(blurRadius: 6, color: Colors.black87)
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
-}
-
-
 
 // Widget for each page in the PageView
 class _EventListPage extends StatelessWidget {
@@ -685,7 +740,9 @@ class _EventListPage extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Colors.white,
                     fontSize: 20.0,
-                    shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+                    shadows: [
+                      const Shadow(blurRadius: 6, color: Colors.black87)
+                    ],
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -727,14 +784,17 @@ class _EventListPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.cloud_off_rounded, color: Colors.white70, size: 48),
+                    const Icon(Icons.cloud_off_rounded,
+                        color: Colors.white70, size: 48),
                     const SizedBox(height: 12),
                     Text(
                       AppLocalizations.of(context)!.connectionError,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white,
                         fontSize: 18.0,
-                        shadows: [const Shadow(blurRadius: 6, color: Colors.black87)],
+                        shadows: [
+                          const Shadow(blurRadius: 6, color: Colors.black87)
+                        ],
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -742,9 +802,9 @@ class _EventListPage extends StatelessWidget {
                     Text(
                       AppLocalizations.of(context)!.tapToRetry,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white60,
-                        fontSize: 14.0,
-                      ),
+                            color: Colors.white60,
+                            fontSize: 14.0,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -792,7 +852,8 @@ class _VotingEventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
-    final dateFormat = DateFormat.yMMMd(locale.languageCode == 'ru' ? 'ru' : 'en');
+    final dateFormat =
+        DateFormat.yMMMd(locale.languageCode == 'ru' ? 'ru' : 'en');
     final l10n = AppLocalizations.of(context)!;
     String dateInfo;
 
@@ -851,34 +912,37 @@ class _VotingEventCard extends StatelessWidget {
             if (event.status == model.VotingStatus.registration ||
                 event.status == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
-            ValueListenableBuilder<int>(
-              valueListenable: timeNotifier,
-              builder: (context, _, __) {
-                // Determine registration status based on CURRENT time (updates every second)
-                final isRegistrationClosed = event.registrationEndDate != null && 
-                                           DateTime.now().isAfter(event.registrationEndDate!);
-                
-                return Text(
-                  event.status == model.VotingStatus.registration
-                      ? (event.isRegistered
-                          ? AppLocalizations.of(context)!.registered
-                          : (isRegistrationClosed
-                              ? AppLocalizations.of(context)!.registrationClosed
-                              : AppLocalizations.of(context)!.notRegistered))
-                      : (event.hasVoted
-                          ? AppLocalizations.of(context)!.voted
-                          : AppLocalizations.of(context)!.notVoted),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: (event.status == model.VotingStatus.registration
-                                ? event.isRegistered
-                                : event.hasVoted)
-                            ? AppTheme.rudnGreenColor
-                            : AppTheme.rudnRedColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                );
-              }
-            ),
+              ValueListenableBuilder<int>(
+                  valueListenable: timeNotifier,
+                  builder: (context, _, __) {
+                    // Determine registration status based on CURRENT time (updates every second)
+                    final isRegistrationClosed =
+                        event.registrationEndDate != null &&
+                            DateTime.now().isAfter(event.registrationEndDate!);
+
+                    return Text(
+                      event.status == model.VotingStatus.registration
+                          ? (event.isRegistered
+                              ? AppLocalizations.of(context)!.registered
+                              : (isRegistrationClosed
+                                  ? AppLocalizations.of(context)!
+                                      .registrationClosed
+                                  : AppLocalizations.of(context)!
+                                      .notRegistered))
+                          : (event.hasVoted
+                              ? AppLocalizations.of(context)!.voted
+                              : AppLocalizations.of(context)!.notVoted),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color:
+                                (event.status == model.VotingStatus.registration
+                                        ? event.isRegistered
+                                        : event.hasVoted)
+                                    ? AppTheme.rudnGreenColor
+                                    : AppTheme.rudnRedColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    );
+                  }),
             ],
           ],
         ),
@@ -909,7 +973,6 @@ class _VotingEventCard extends StatelessWidget {
   }
 }
 
-
 // Smoke effect transition wrapper
 class _SmokeTransition extends StatelessWidget {
   final Widget child;
@@ -927,17 +990,18 @@ class _SmokeTransition extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        
+
         return AnimatedBuilder(
           animation: pageController,
           child: child,
           builder: (context, child) {
             double value = 0.0;
             try {
-              if (pageController.hasClients && pageController.position.haveDimensions) {
+              if (pageController.hasClients &&
+                  pageController.position.haveDimensions) {
                 value = pageController.page ?? 0.0;
               } else {
-                 value = (index).toDouble();
+                value = (index).toDouble();
               }
             } catch (_) {
               value = (index).toDouble();
