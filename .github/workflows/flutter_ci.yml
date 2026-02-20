@@ -2,9 +2,9 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ main, devs, dev ]
+    branches: [ dev ]
   pull_request:
-    branches: [ main, devs, dev ]
+    branches: [ dev ]
   workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered
@@ -33,28 +33,52 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
+      - name: 🎨 Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
       - name: 🔍 Analyze code
         run: flutter analyze --fatal-infos --fatal-warnings
 
       - name: 🧪 Run tests
         run: flutter test --coverage
 
-      - name: ✅ Enforce minimum coverage
+      - name: 📊 Coverage reporting & gate
         run: |
-          COVERAGE=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END{if(lf>0) printf("%.2f", (lh/lf)*100); else print "0.00"}' coverage/lcov.info)
-          echo "Coverage: ${COVERAGE}%"
-          awk "BEGIN {exit !(${COVERAGE} >= 50.0)}" || {
-            echo "::error::Coverage ${COVERAGE}% is below 50% threshold"
+          # --- Raw coverage ---
+          RAW=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END{if(lf>0) printf("%.1f", (lh/lf)*100); else print "0.0"}' coverage/lcov.info)
+          echo "TOTAL_COVERAGE_RAW=${RAW}%"
+
+          # --- Filtered coverage (exclude only generated code) ---
+          awk '
+            /^SF:/ {
+              skip = 0
+              if ($0 ~ /\/l10n\//) skip = 1
+              if ($0 ~ /\.g\.dart/) skip = 1
+              if ($0 ~ /\.freezed\.dart/) skip = 1
+              if ($0 ~ /\.gr\.dart/) skip = 1
+            }
+            !skip { print }
+          ' coverage/lcov.info > coverage/lcov_filtered.info
+
+          FILTERED=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END{if(lf>0) printf("%.1f", (lh/lf)*100); else print "0.0"}' coverage/lcov_filtered.info)
+          echo "TOTAL_COVERAGE_FILTERED=${FILTERED}%"
+
+          # --- Gate: 50% filtered ---
+          # Ramp plan: 50% now → 55% next sprint → 60% target
+          awk "BEGIN {exit !(${FILTERED} >= 50.0)}" || {
+            echo "::error::Filtered coverage ${FILTERED}% is below 50.0% threshold"
             exit 1
           }
 
-      - name: 📊 Upload coverage report
-        if: success()
+      - name: 📦 Upload coverage artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-lcov
-          path: coverage/lcov.info
-          retention-days: 7
+          name: coverage-reports
+          path: |
+            coverage/lcov.info
+            coverage/lcov_filtered.info
+          retention-days: 14
 
   build_android:
     name: 🤖 Build Android
@@ -146,7 +170,7 @@ jobs:
     name: 🍎 Build iOS
     runs-on: macos-latest
     needs: analyze_and_test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devs' || github.ref == 'refs/heads/dev')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
 
     permissions:
       contents: read
