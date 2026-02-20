@@ -653,7 +653,9 @@ class _FooterState extends State<_Footer> {
     if (!mounted ||
         _isUserScrolling ||
         !_scrollController.hasClients ||
-        _scrollGeneration != generation) return;
+        _scrollGeneration != generation) {
+      return;
+    }
 
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
@@ -675,7 +677,9 @@ class _FooterState extends State<_Footer> {
         if (!mounted ||
             _isUserScrolling ||
             !_scrollController.hasClients ||
-            _scrollGeneration != generation) return;
+            _scrollGeneration != generation) {
+          return;
+        }
         if (_scrollController.offset >=
             _scrollController.position.maxScrollExtent) {
           // Reset to top after a delay if at the bottom

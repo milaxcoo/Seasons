@@ -264,8 +264,8 @@ class ErrorReportingService {
 
         // Retryable statuses: 429 (rate limit) and 5xx (server errors).
         // All other non-2xx codes (4xx client errors) are non-retryable.
-        final isRetryable = response.statusCode == 429 ||
-            response.statusCode >= 500;
+        final isRetryable =
+            response.statusCode == 429 || response.statusCode >= 500;
         if (!isRetryable) {
           if (kDebugMode) {
             debugPrint(
