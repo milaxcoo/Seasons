@@ -230,144 +230,140 @@ class _ResultsTable extends StatelessWidget {
 
   Widget _buildDataTable(
       BuildContext context, QuestionResult data, AppLocalizations l10n) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Определяем колонки
-        List<String> columns;
-        if (data.type == 'qualification_council') {
-          // Для qualification_council структура специфичная, но по сути 2 колонки
-          columns = ['', l10n.voteCount];
-        } else if (data.type == 'multiple_variants') {
-          columns = ['', l10n.voteCount];
-        } else {
-          columns = ['', ...data.allColumns];
-        }
+    // Определяем колонки
+    List<String> columns;
+    if (data.type == 'qualification_council') {
+      // Для qualification_council структура специфичная, но по сути 2 колонки
+      columns = ['', l10n.voteCount];
+    } else if (data.type == 'multiple_variants') {
+      columns = ['', l10n.voteCount];
+    } else {
+      columns = ['', ...data.allColumns];
+    }
 
-        final int colCount = columns.length;
+    final int colCount = columns.length;
 
-        // --- ЛОГИКА РАСЧЕТА ШИРИНЫ КОЛОНОК ---
-        // Use flexible widths so the table always fits without horizontal scroll.
-        // First column (subject name) gets ~50%, data columns share the rest equally.
-        final Map<int, TableColumnWidth> tableColumnWidths = {
-          0: const FlexColumnWidth(3),
-        };
-        for (int i = 1; i < colCount; i++) {
-          tableColumnWidths[i] = const FlexColumnWidth(2);
-        }
+    // --- ЛОГИКА РАСЧЕТА ШИРИНЫ КОЛОНОК ---
+    // Use flexible widths so the table always fits without horizontal scroll.
+    // First column (subject name) gets ~50%, data columns share the rest equally.
+    final Map<int, TableColumnWidth> tableColumnWidths = {
+      0: const FlexColumnWidth(3),
+    };
+    for (int i = 1; i < colCount; i++) {
+      tableColumnWidths[i] = const FlexColumnWidth(2);
+    }
 
-        // --- ВИЗУАЛЬНЫЕ НАСТРОЙКИ ---
-        // Portrait: more spacious cells
-        final cellPadding = isLandscape
-            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
-            : const EdgeInsets.symmetric(horizontal: 16, vertical: 18);
+    // --- ВИЗУАЛЬНЫЕ НАСТРОЙКИ ---
+    // Portrait: more spacious cells
+    final cellPadding = isLandscape
+        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+        : const EdgeInsets.symmetric(horizontal: 16, vertical: 18);
 
-        // Вспомогательная функция для ячейки
-        Widget buildCell(String text,
-            {bool isHeader = false, bool alignCenter = false}) {
-          return Padding(
-            padding: cellPadding,
-            child: Text(
-              text,
-              textAlign: alignCenter ? TextAlign.center : TextAlign.start,
-              style: isHeader
-                  ? Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w900)
-                  : Theme.of(context).textTheme.bodyLarge,
+    // Вспомогательная функция для ячейки
+    Widget buildCell(String text,
+        {bool isHeader = false, bool alignCenter = false}) {
+      return Padding(
+        padding: cellPadding,
+        child: Text(
+          text,
+          textAlign: alignCenter ? TextAlign.center : TextAlign.start,
+          style: isHeader
+              ? Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w900)
+              : Theme.of(context).textTheme.bodyLarge,
+        ),
+      );
+    }
+
+    // --- СБОРКА ТАБЛИЦЫ ---
+    Widget tableContent;
+
+    if (data.type == 'qualification_council') {
+      tableContent = Table(
+        border: TableBorder(
+          verticalInside: BorderSide(
+            color: Colors.black.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        columnWidths: tableColumnWidths,
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: [
+          // Заголовок
+          TableRow(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.1),
             ),
-          );
-        }
-
-        // --- СБОРКА ТАБЛИЦЫ ---
-        Widget tableContent;
-
-        if (data.type == 'qualification_council') {
-          tableContent = Table(
-            border: TableBorder(
-              verticalInside: BorderSide(
-                color: Colors.black.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
-            columnWidths: tableColumnWidths,
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
-              // Заголовок
-              TableRow(
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
-                ),
+              buildCell('', isHeader: true),
+              buildCell(l10n.voteCount, isHeader: true, alignCenter: true),
+            ],
+          ),
+          // Строки
+          ...data.subjectResults.expand((subject) {
+            return subject.voteCounts.entries.map((entry) {
+              return TableRow(
                 children: [
-                  buildCell('', isHeader: true),
-                  buildCell(l10n.voteCount, isHeader: true, alignCenter: true),
+                  buildCell(subject.name),
+                  Padding(
+                    padding: cellPadding,
+                    child: Center(child: Text(entry.value.toString())),
+                  ),
                 ],
-              ),
-              // Строки
-              ...data.subjectResults.expand((subject) {
-                return subject.voteCounts.entries.map((entry) {
-                  return TableRow(
-                    children: [
-                      buildCell(subject.name),
-                      Padding(
-                        padding: cellPadding,
-                        child: Center(child: Text(entry.value.toString())),
-                      ),
-                    ],
-                  );
-                });
-              }),
-            ],
-          );
-        } else {
-          // Стандартная таблица
-          tableContent = Table(
-            border: TableBorder(
-              verticalInside: BorderSide(
-                color: Colors.black.withValues(alpha: 0.2),
-                width: 1,
-              ),
+              );
+            });
+          }),
+        ],
+      );
+    } else {
+      // Стандартная таблица
+      tableContent = Table(
+        border: TableBorder(
+          verticalInside: BorderSide(
+            color: Colors.black.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        columnWidths: tableColumnWidths,
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: [
+          // Заголовок
+          TableRow(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.1),
             ),
-            columnWidths: tableColumnWidths,
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            children: [
-              // Заголовок
-              TableRow(
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
-                ),
-                children: columns.map((colName) {
-                  return buildCell(colName,
-                      isHeader: true, alignCenter: colName.isNotEmpty);
-                }).toList(),
-              ),
-              // Строки
-              ...data.subjectResults.map((row) {
-                return TableRow(
-                  children: [
-                    buildCell(row.name),
-                    ...columns.sublist(1).map((colName) {
-                      String cellValue;
-                      if (data.type == 'multiple_variants') {
-                        cellValue = (row.voteCounts[row.name] ?? 0).toString();
-                      } else {
-                        cellValue = (row.voteCounts[colName] ?? 0).toString();
-                      }
-                      return Padding(
-                        padding: cellPadding,
-                        child: Center(child: Text(cellValue)),
-                      );
-                    }),
-                  ],
-                );
-              }),
-            ],
-          );
-        }
+            children: columns.map((colName) {
+              return buildCell(colName,
+                  isHeader: true, alignCenter: colName.isNotEmpty);
+            }).toList(),
+          ),
+          // Строки
+          ...data.subjectResults.map((row) {
+            return TableRow(
+              children: [
+                buildCell(row.name),
+                ...columns.sublist(1).map((colName) {
+                  String cellValue;
+                  if (data.type == 'multiple_variants') {
+                    cellValue = (row.voteCounts[row.name] ?? 0).toString();
+                  } else {
+                    cellValue = (row.voteCounts[colName] ?? 0).toString();
+                  }
+                  return Padding(
+                    padding: cellPadding,
+                    child: Center(child: Text(cellValue)),
+                  );
+                }),
+              ],
+            );
+          }),
+        ],
+      );
+    }
 
-        return tableContent;
-      },
-    );
+    return tableContent;
   }
 }
 

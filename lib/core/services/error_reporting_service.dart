@@ -213,7 +213,8 @@ class ErrorReportingService {
     return _enableErrorReporting;
   }
 
-  /// Detect platform safely (works on mobile, desktop, and web).
+  /// Detect platform safely (works on mobile and desktop only; web is handled
+  /// via [kIsWeb] before reaching [Platform] APIs, which are unavailable on web).
   static String _detectPlatform() {
     if (kIsWeb) return 'web';
     try {
@@ -261,18 +262,18 @@ class ErrorReportingService {
           return; // Success
         }
 
-        // Non-retryable HTTP errors (auth, parse, bad request)
-        if (response.statusCode == 400 ||
-            response.statusCode == 401 ||
-            response.statusCode == 403) {
+        // Retryable statuses: 429 (rate limit) and 5xx (server errors).
+        // All other non-2xx codes (4xx client errors) are non-retryable.
+        final isRetryable = response.statusCode == 429 ||
+            response.statusCode >= 500;
+        if (!isRetryable) {
           if (kDebugMode) {
             debugPrint(
                 'ErrorReportingService: Telegram API error ${response.statusCode}: ${response.body}');
           }
-          return; // Don't retry client errors
+          return; // Don't retry non-retryable client errors
         }
 
-        // Retryable server errors (429, 5xx)
         if (kDebugMode) {
           debugPrint(
               'ErrorReportingService: Telegram HTTP ${response.statusCode}, attempt ${attempt + 1}');
@@ -337,9 +338,70 @@ class ErrorReportingService {
 
     var message = buffer.toString();
     if (message.length > _kTelegramMaxLength) {
-      message = '${message.substring(0, _kTelegramMaxLength - 4)}...</b>';
+      message = _truncateTelegramHtml(message, _kTelegramMaxLength);
     }
     return message;
+  }
+
+  /// Safely truncate HTML for Telegram parse_mode=HTML.
+  ///
+  /// - Avoids cutting inside an HTML tag.
+  /// - Ensures all opened tags (<b>, <code>, <pre>) are properly closed.
+  /// - Appends "..." to indicate truncation while staying within [maxLength].
+  String _truncateTelegramHtml(String html, int maxLength) {
+    if (html.length <= maxLength) return html;
+
+    const String ellipsis = '...';
+    // Maximum total length of closing tags we may need to add: </b></code></pre>
+    const int maxClosingTagsLength = '</b></code></pre>'.length;
+
+    // Reserve space for ellipsis and worst-case closing tags.
+    final int baseLimit = maxLength - ellipsis.length - maxClosingTagsLength;
+    if (baseLimit <= 0) {
+      return '';
+    }
+
+    var truncated = html.substring(0, baseLimit);
+
+    // Avoid cutting inside a tag: if the last '<' comes after the last '>',
+    // we have a partial tag at the end and should cut it off.
+    final lastLt = truncated.lastIndexOf('<');
+    final lastGt = truncated.lastIndexOf('>');
+    if (lastLt > lastGt) {
+      truncated = truncated.substring(0, lastLt);
+    }
+
+    // Track which tags are still open at the end of `truncated`.
+    final openTags = <String>[];
+    final tagPattern = RegExp(r'<(/?)(b|code|pre)>');
+    for (final match in tagPattern.allMatches(truncated)) {
+      final isClosing = match.group(1) == '/';
+      final tagName = match.group(2)!;
+      if (!isClosing) {
+        openTags.add(tagName);
+      } else {
+        final index = openTags.lastIndexOf(tagName);
+        if (index != -1) {
+          openTags.removeAt(index);
+        }
+      }
+    }
+
+    // Build closing tags in reverse order of opening to preserve nesting.
+    final resultBuffer = StringBuffer(truncated);
+    resultBuffer.write(ellipsis);
+    for (var i = openTags.length - 1; i >= 0; i--) {
+      resultBuffer.write('</${openTags[i]}>');
+    }
+
+    var result = resultBuffer.toString();
+
+    // Safety: hard truncate if we somehow exceeded maxLength.
+    if (result.length > maxLength) {
+      result = result.substring(0, maxLength);
+    }
+
+    return result;
   }
 
   /// Escape HTML special characters for Telegram HTML parse mode.
