@@ -28,8 +28,7 @@ void main() {
     });
 
     test('escapes < and > characters', () {
-      expect(
-          ErrorReportingService.escapeHtml('<tag>'), equals('&lt;tag&gt;'));
+      expect(ErrorReportingService.escapeHtml('<tag>'), equals('&lt;tag&gt;'));
     });
 
     test('leaves plain text unchanged', () {
@@ -112,8 +111,7 @@ void main() {
     });
 
     test('returns empty string when maxLength is too small', () {
-      final result =
-          ErrorReportingService.truncateTelegramHtml('hello', 3);
+      final result = ErrorReportingService.truncateTelegramHtml('hello', 3);
       // baseLimit = 3 - 3 (ellipsis) - 17 (closing tags) = -17, so returns ''
       expect(result, equals(''));
     });
@@ -121,8 +119,7 @@ void main() {
     test('result length never exceeds maxLength', () {
       // Use a string with many open tags to force the safety truncation path
       final html = '<b><code><pre>${'x' * 4096}</pre></code></b>';
-      final result =
-          ErrorReportingService.truncateTelegramHtml(html, 4096);
+      final result = ErrorReportingService.truncateTelegramHtml(html, 4096);
       expect(result.length, lessThanOrEqualTo(4096));
     });
   });
@@ -140,8 +137,16 @@ void main() {
       final platform = ErrorReportingService.detectPlatform();
       expect(
         platform,
-        anyOf(['ios', 'android', 'macos', 'linux', 'windows', 'web',
-            'unknown', Platform.operatingSystem]),
+        anyOf([
+          'ios',
+          'android',
+          'macos',
+          'linux',
+          'windows',
+          'web',
+          'unknown',
+          Platform.operatingSystem
+        ]),
       );
     });
   });
@@ -161,12 +166,12 @@ void main() {
   // sendTestMessage (with mock HTTP client)
   // ─────────────────────────────────────────────────────────────────────────
   group('sendTestMessage', () {
-    test('returns true when Telegram is not configured (no error thrown)', () async {
+    test('returns true when Telegram is not configured (no error thrown)',
+        () async {
       // Default env has empty TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID,
       // so _sendToTelegram returns without calling the HTTP client.
       final mockClient = MockHttpClient();
-      final service =
-          ErrorReportingService.withHttpClient(mockClient);
+      final service = ErrorReportingService.withHttpClient(mockClient);
       await service.initialize(appVersion: '1.0.0');
 
       final result = await service.sendTestMessage();
@@ -175,8 +180,8 @@ void main() {
       // returns true on no-throw, but _sendToTelegram returns early when
       // unconfigured – so no HTTP call is made.
       verifyNever(
-        () => mockClient.post(any(), headers: any(named: 'headers'),
-            body: any(named: 'body')),
+        () => mockClient.post(any(),
+            headers: any(named: 'headers'), body: any(named: 'body')),
       );
       // The service does not throw, so result is true (early return, no error)
       expect(result, isTrue);
@@ -189,8 +194,7 @@ void main() {
   group('initialize', () {
     test('can be called multiple times without re-initialising', () async {
       final mockClient = MockHttpClient();
-      final service =
-          ErrorReportingService.withHttpClient(mockClient);
+      final service = ErrorReportingService.withHttpClient(mockClient);
 
       await service.initialize(appVersion: '1.0.0');
       await service.initialize(appVersion: '2.0.0'); // second call is a no-op
