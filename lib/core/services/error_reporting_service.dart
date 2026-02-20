@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+/// Maximum Telegram message length (API limit).
+const int _kTelegramMaxLength = 4096;
+
 /// Privacy-first error reporting service.
 ///
 /// Sends error reports to Telegram without collecting any PII.
@@ -82,7 +85,7 @@ class ErrorReportingService {
       context: 'Test message',
       timestamp: DateTime.now().toUtc().toIso8601String(),
       appVersion: _appVersion,
-      platform: Platform.isIOS ? 'ios' : 'android',
+      platform: _detectPlatform(),
       osVersion: Platform.operatingSystemVersion,
       screenName: 'TestScreen',
     );
@@ -196,7 +199,7 @@ class ErrorReportingService {
       context: context,
       timestamp: DateTime.now().toUtc().toIso8601String(),
       appVersion: _appVersion,
-      platform: Platform.isIOS ? 'ios' : 'android',
+      platform: _detectPlatform(),
       osVersion: Platform.operatingSystemVersion,
       screenName: _currentScreen,
     );
@@ -210,10 +213,24 @@ class ErrorReportingService {
     return _enableErrorReporting;
   }
 
-  /// Send error report to Telegram bot
+  /// Detect platform safely (works on mobile, desktop, and web).
+  static String _detectPlatform() {
+    if (kIsWeb) return 'web';
+    try {
+      if (Platform.isIOS) return 'ios';
+      if (Platform.isAndroid) return 'android';
+      if (Platform.isMacOS) return 'macos';
+      if (Platform.isLinux) return 'linux';
+      if (Platform.isWindows) return 'windows';
+      return Platform.operatingSystem;
+    } catch (_) {
+      return 'unknown';
+    }
+  }
+
+  /// Send error report to Telegram bot (with single retry on transient errors).
   Future<void> _sendToTelegram(ErrorReport report) async {
     if (_telegramBotToken.isEmpty || _telegramChatId.isEmpty) {
-      // Not configured - build without --dart-define flags
       if (kDebugMode) {
         debugPrint(
             'ErrorReportingService: Telegram not configured (missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID)');
@@ -221,67 +238,116 @@ class ErrorReportingService {
       return;
     }
 
-    try {
-      // Format message for Telegram
-      final emoji = switch (report.type) {
-        'crash' => '🔴',
-        'flutter_error' => '🟠',
-        'critical' => '🔴',
-        'error' => '🟡',
-        'auth_event' => '🔵',
-        'warning' => '⚪',
-        _ => '⚪',
-      };
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final message = _formatMessage(report);
+        final telegramUrl = Uri.parse(
+            'https://api.telegram.org/bot$_telegramBotToken/sendMessage');
 
-      final buffer = StringBuffer();
-      buffer.writeln('$emoji *${report.type.toUpperCase()}* в Seasons');
-      buffer.writeln();
-      buffer.writeln('📱 ${report.platform} ${report.osVersion}');
-      buffer.writeln('📦 Версия: ${report.appVersion}');
-      buffer.writeln('📍 Экран: ${report.screenName}');
-      buffer.writeln('🕐 ${report.timestamp}');
-      buffer.writeln();
-      buffer.writeln('❌ `${_escapeMarkdown(report.message)}`');
+        final response = await http
+            .post(
+              telegramUrl,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'chat_id': _telegramChatId,
+                'text': message,
+                'parse_mode': 'HTML',
+                'disable_notification': report.type == 'warning',
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
 
-      if (report.stackTrace != null && report.stackTrace!.isNotEmpty) {
-        // Take first 5 lines of stack trace
-        final shortStack = report.stackTrace!.split('\n').take(5).join('\n');
-        buffer.writeln();
-        buffer.writeln('```');
-        buffer.writeln(shortStack);
-        buffer.writeln('```');
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return; // Success
+        }
+
+        // Non-retryable HTTP errors (auth, parse, bad request)
+        if (response.statusCode == 400 ||
+            response.statusCode == 401 ||
+            response.statusCode == 403) {
+          if (kDebugMode) {
+            debugPrint(
+                'ErrorReportingService: Telegram API error ${response.statusCode}: ${response.body}');
+          }
+          return; // Don't retry client errors
+        }
+
+        // Retryable server errors (429, 5xx)
+        if (kDebugMode) {
+          debugPrint(
+              'ErrorReportingService: Telegram HTTP ${response.statusCode}, attempt ${attempt + 1}');
+        }
+      } on SocketException catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+              'ErrorReportingService: Network error (attempt ${attempt + 1}): $e');
+        }
+      } on TimeoutException catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+              'ErrorReportingService: Timeout (attempt ${attempt + 1}): $e');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('ErrorReportingService: Failed to send to Telegram: $e');
+        }
+        return; // Unknown errors are not retried
       }
 
-      final telegramUrl = Uri.parse(
-          'https://api.telegram.org/bot$_telegramBotToken/sendMessage');
-
-      await http
-          .post(
-            telegramUrl,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'chat_id': _telegramChatId,
-              'text': buffer.toString(),
-              'parse_mode': 'Markdown',
-              'disable_notification': report.type == 'warning',
-            }),
-          )
-          .timeout(const Duration(seconds: 5));
-    } catch (e) {
-      // Silently fail - Telegram is best effort
-      if (kDebugMode) {
-        debugPrint('ErrorReportingService: Failed to send to Telegram: $e');
+      // Wait before retry
+      if (attempt == 0) {
+        await Future<void>.delayed(const Duration(seconds: 2));
       }
     }
   }
 
-  /// Escape special Markdown characters for Telegram
-  String _escapeMarkdown(String text) {
+  /// Format the error report as an HTML message for Telegram.
+  String _formatMessage(ErrorReport report) {
+    final emoji = switch (report.type) {
+      'crash' => '🔴',
+      'flutter_error' => '🟠',
+      'critical' => '🔴',
+      'error' => '🟡',
+      'auth_event' => '🔵',
+      'warning' => '⚪',
+      _ => '⚪',
+    };
+
+    final buffer = StringBuffer();
+    buffer.writeln(
+        '$emoji <b>${_escapeHtml(report.type.toUpperCase())}</b> в Seasons');
+    buffer.writeln();
+    buffer.writeln(
+        '📱 ${_escapeHtml(report.platform)} ${_escapeHtml(report.osVersion)}');
+    buffer.writeln('📦 Версия: ${_escapeHtml(report.appVersion)}');
+    buffer.writeln('📍 Экран: ${_escapeHtml(report.screenName)}');
+    buffer.writeln('🕐 ${_escapeHtml(report.timestamp)}');
+    buffer.writeln();
+    buffer.writeln('❌ <code>${_escapeHtml(report.message)}</code>');
+
+    if (report.context != null && report.context!.isNotEmpty) {
+      buffer.writeln('📋 ${_escapeHtml(report.context!)}');
+    }
+
+    if (report.stackTrace != null && report.stackTrace!.isNotEmpty) {
+      final shortStack = report.stackTrace!.split('\n').take(5).join('\n');
+      buffer.writeln();
+      buffer.writeln('<pre>${_escapeHtml(shortStack)}</pre>');
+    }
+
+    var message = buffer.toString();
+    if (message.length > _kTelegramMaxLength) {
+      message = '${message.substring(0, _kTelegramMaxLength - 4)}...</b>';
+    }
+    return message;
+  }
+
+  /// Escape HTML special characters for Telegram HTML parse mode.
+  String _escapeHtml(String text) {
     return text
-        .replaceAll('_', '\\_')
-        .replaceAll('*', '\\*')
-        .replaceAll('[', '\\[')
-        .replaceAll('`', '\\`');
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
   }
 }
 
