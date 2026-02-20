@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -63,6 +64,50 @@ void main() {
         expect: () => [AuthUnauthenticated()],
         verify: (_) {
           verify(() => mockVotingRepository.logout()).called(1);
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'emits [AuthAuthenticated] with placeholder when getUserLogin times out and does not call logout',
+        build: () {
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'some_token');
+          // Both the initial and the non-blocking retry throw TimeoutException
+          when(() => mockVotingRepository.getUserLogin())
+              .thenThrow(TimeoutException('timed out'));
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AppStarted()),
+        expect: () => [const AuthAuthenticated(userLogin: 'RUDN User')],
+        verify: (_) {
+          verifyNever(() => mockVotingRepository.logout());
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'emits placeholder then resolved name when getUserLogin times out then succeeds',
+        build: () {
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'some_token');
+          int callCount = 0;
+          when(() => mockVotingRepository.getUserLogin()).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) throw TimeoutException('timed out');
+            return 'actual_user';
+          });
+          return authBloc;
+        },
+        act: (bloc) async {
+          bloc.add(AppStarted());
+          // Wait for the non-blocking name-fetch future to complete
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        },
+        expect: () => [
+          const AuthAuthenticated(userLogin: 'RUDN User'),
+          const AuthAuthenticated(userLogin: 'actual_user'),
+        ],
+        verify: (_) {
+          verifyNever(() => mockVotingRepository.logout());
         },
       );
     });
