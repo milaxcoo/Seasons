@@ -785,9 +785,7 @@ class _FooterState extends State<_Footer> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
                           height: 1.5,
-                          fontSize: isLandscape
-                              ? 18
-                              : 15, // Reduced font size per feedback
+                          fontSize: 15,
                           shadows: [
                             const Shadow(blurRadius: 6, color: Colors.black87)
                           ],
@@ -800,9 +798,7 @@ class _FooterState extends State<_Footer> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
                           fontStyle: FontStyle.italic,
-                          fontSize: isLandscape
-                              ? 16
-                              : 13, // Reduced font size per feedback
+                          fontSize: 13,
                           shadows: [
                             const Shadow(blurRadius: 6, color: Colors.black87)
                           ],
