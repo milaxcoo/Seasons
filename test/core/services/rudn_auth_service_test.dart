@@ -79,5 +79,58 @@ void main() {
       // Should not throw
       await expectLater(service.saveCookie('cookie'), completes);
     });
+
+    test('isAuthenticated returns true when cookie exists', () async {
+      final storage = MockSlowStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      await service.saveCookie('valid_cookie');
+      final result = await service.isAuthenticated();
+
+      expect(result, isTrue);
+    });
+
+    test('isAuthenticated returns false when no cookie', () async {
+      final storage = MockSlowStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      final result = await service.isAuthenticated();
+
+      expect(result, isFalse);
+    });
+
+    test('isAuthenticated returns false on storage error', () async {
+      final errorStorage = MockSlowStorage(throwError: true);
+      final service = RudnAuthService.withStorage(errorStorage);
+
+      final result = await service.isAuthenticated();
+
+      expect(result, isFalse);
+    });
+
+    test('logout removes cookie so isAuthenticated returns false', () async {
+      final storage = MockSlowStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      await service.saveCookie('some_cookie');
+      expect(await service.isAuthenticated(), isTrue);
+
+      await service.logout();
+      expect(await service.isAuthenticated(), isFalse);
+    });
+
+    test('logout does not crash when no cookie exists', () async {
+      final storage = MockSlowStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      await expectLater(service.logout(), completes);
+    });
+
+    test('logout does not crash on storage error', () async {
+      final errorStorage = MockSlowStorage(throwError: true);
+      final service = RudnAuthService.withStorage(errorStorage);
+
+      await expectLater(service.logout(), completes);
+    });
   });
 }
