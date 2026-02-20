@@ -81,10 +81,10 @@ class _ResultsView extends StatelessWidget {
           // Responsive padding: Smaller margins in landscape to maximize card size
           padding: isLandscape
               ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
-              : const EdgeInsets.all(24.0),
+              : const EdgeInsets.symmetric(horizontal: 12.0, vertical: 24.0),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFE4DCC5),
+              color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(26),
               boxShadow: [
                 BoxShadow(
@@ -97,7 +97,9 @@ class _ResultsView extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(26),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24), // Inner padding for content
+                padding: isLandscape
+                    ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
+                    : const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize:
                       MainAxisSize.min, // Shrink to fit content if small
@@ -111,18 +113,29 @@ class _ResultsView extends StatelessWidget {
                           .bodyLarge
                           ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
                     ),
-                    const SizedBox(height: 8),
-                    const Divider(),
-                    Text(
-                      event.description,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(),
+                    const SizedBox(height: 16),
+                    const Divider(color: Colors.grey, height: 1),
+                    const SizedBox(height: 16),
+                    if (event.description.isNotEmpty) ...[
+                      Text(
+                        event.description,
+                        textAlign: TextAlign.left,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(color: Colors.grey, height: 1),
+                      const SizedBox(height: 16),
+                    ],
                     _InfoRow(label: l10n.votingStartLabel, value: startDate),
+                    const SizedBox(height: 16),
+                    const Divider(color: Colors.grey, height: 1),
+                    const SizedBox(height: 16),
                     _InfoRow(label: l10n.votingEndLabel, value: endDate),
-                    const SizedBox(height: 24),
-                    _ResultsTable(results: event.results),
+                    const SizedBox(height: 32),
+                    _ResultsTable(
+                      results: event.results,
+                      isLandscape: isLandscape,
+                    ),
                     const SizedBox(height: 32),
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -154,7 +167,8 @@ class _ResultsView extends StatelessWidget {
 // Виджет для всей секции с результатами
 class _ResultsTable extends StatelessWidget {
   final List<QuestionResult> results;
-  const _ResultsTable({required this.results});
+  final bool isLandscape;
+  const _ResultsTable({required this.results, required this.isLandscape});
 
   @override
   Widget build(BuildContext context) {
@@ -163,8 +177,13 @@ class _ResultsTable extends StatelessWidget {
       return Text(l10n.resultsUnavailable);
     }
 
+    // Portrait: more generous padding for readability
+    final containerPadding = isLandscape
+        ? const EdgeInsets.all(16)
+        : const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: containerPadding,
       decoration: BoxDecoration(
         color: const Color(0xFFD9D3BF),
         borderRadius: BorderRadius.circular(26),
@@ -175,29 +194,30 @@ class _ResultsTable extends StatelessWidget {
           Text(
             l10n.votingResults,
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: isLandscape ? null : 18,
+                ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isLandscape ? 8 : 12),
+          const Divider(),
+          SizedBox(height: isLandscape ? 8 : 12),
           ...results.asMap().entries.map((entry) {
             int index = entry.key;
             QuestionResult questionResult = entry.value;
             return Padding(
-              padding: const EdgeInsets.only(top: 16.0),
+              padding: EdgeInsets.only(top: isLandscape ? 16.0 : 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '${index + 1}. ${questionResult.name}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(fontWeight: FontWeight.w900),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: isLandscape ? null : 16,
+                        ),
                   ),
-                  const SizedBox(height: 8),
-                  // Таблица сама управляет своим скроллом внутри LayoutBuilder
+                  SizedBox(height: isLandscape ? 8 : 18),
                   _buildDataTable(context, questionResult, l10n),
                 ],
               ),
@@ -228,33 +248,21 @@ class _ResultsTable extends StatelessWidget {
         final int colCount = columns.length;
 
         // --- ЛОГИКА РАСЧЕТА ШИРИНЫ КОЛОНОК ---
-        // 1. Первая колонка (Имя субъекта) - 40% от ширины, но не меньше 160 и не больше 320
-        final double firstColWidth =
-            (availableWidth * 0.40).clamp(160.0, 320.0);
-
-        // 2. Остальные колонки (данные)
+        // Use flexible widths so the table always fits without horizontal scroll.
+        // First column (subject name) gets ~50%, data columns share the rest equally.
         final int dataColsCount = max(1, colCount - 1);
-        final double minDataColWidth = 96.0;
-        final double remainingWidth = availableWidth - firstColWidth;
-
-        // Ширина колонки данных: либо доля остатка, либо минимум (если остаток слишком мал)
-        final double dataColWidth =
-            max(minDataColWidth, remainingWidth / dataColsCount);
-
-        // 3. Общая ширина таблицы
-        final double totalTableWidth =
-            firstColWidth + (dataColWidth * dataColsCount);
-
-        // 4. Формируем карту ширины колонок для Table
         final Map<int, TableColumnWidth> tableColumnWidths = {
-          0: FixedColumnWidth(firstColWidth),
+          0: const FlexColumnWidth(3),
         };
         for (int i = 1; i < colCount; i++) {
-          tableColumnWidths[i] = FixedColumnWidth(dataColWidth);
+          tableColumnWidths[i] = const FlexColumnWidth(2);
         }
 
         // --- ВИЗУАЛЬНЫЕ НАСТРОЙКИ ---
-        const cellPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+        // Portrait: more spacious cells
+        final cellPadding = isLandscape
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+            : const EdgeInsets.symmetric(horizontal: 16, vertical: 18);
 
         // Вспомогательная функция для ячейки
         Widget buildCell(String text,
@@ -360,15 +368,7 @@ class _ResultsTable extends StatelessWidget {
           );
         }
 
-        // Возвращаем скроллируемый контейнер с ограниченной минимальной шириной
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints:
-                BoxConstraints(minWidth: max(availableWidth, totalTableWidth)),
-            child: tableContent,
-          ),
-        );
+        return tableContent;
       },
     );
   }
@@ -383,9 +383,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Row(
+    return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
@@ -402,7 +400,6 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }

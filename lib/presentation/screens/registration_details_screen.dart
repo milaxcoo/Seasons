@@ -114,7 +114,7 @@ class _RegistrationDetailsView extends StatelessWidget {
                 : const EdgeInsets.all(24.0),
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFE4DCC5),
+                color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(26),
                 boxShadow: [
                   BoxShadow(
@@ -127,45 +127,66 @@ class _RegistrationDetailsView extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26),
                 child: SingleChildScrollView(
-                  padding:
-                      const EdgeInsets.all(24), // Inner padding for content
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        event.title,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 20,
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              event.title,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 20,
+                                  ),
                             ),
+                            const SizedBox(height: 16),
+                            const Divider(color: Colors.grey, height: 1),
+                            const SizedBox(height: 16),
+                            if (event.description.isNotEmpty) ...[
+                              Text(
+                                event.description,
+                                textAlign: TextAlign.left,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(height: 16),
+                              const Divider(color: Colors.grey, height: 1),
+                              const SizedBox(height: 16),
+                            ],
+                            _InfoRow(
+                                label: l10n.registrationStart,
+                                value: startDate),
+                            const SizedBox(height: 16),
+                            const Divider(color: Colors.grey, height: 1),
+                            const SizedBox(height: 16),
+                            _InfoRow(
+                                label: l10n.registrationEnd, value: endDate),
+                            const SizedBox(height: 16),
+                            const Divider(color: Colors.grey, height: 1),
+                            const SizedBox(height: 16),
+                            _InfoRow(
+                              label: l10n.status,
+                              value: event.isRegistered
+                                  ? l10n.registered
+                                  : l10n.notRegistered,
+                              valueColor: event.isRegistered
+                                  ? AppTheme.rudnGreenColor
+                                  : AppTheme.rudnRedColor,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      Text(
-                        event.description,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      _InfoRow(label: l10n.registrationStart, value: startDate),
-                      const Divider(),
-                      _InfoRow(label: l10n.registrationEnd, value: endDate),
-                      const Divider(),
-                      _InfoRow(
-                        label: l10n.status,
-                        value: event.isRegistered
-                            ? l10n.registered
-                            : l10n.notRegistered,
-                        valueColor: event.isRegistered
-                            ? AppTheme.rudnGreenColor
-                            : AppTheme.rudnRedColor,
-                      ),
-                      const SizedBox(height: 32),
-                      BlocBuilder<VotingBloc, VotingState>(
-                        builder: (context, state) {
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                        child: BlocBuilder<VotingBloc, VotingState>(
+                          builder: (context, state) {
                           if (state is RegistrationInProgress) {
                             return Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -214,24 +235,25 @@ class _RegistrationDetailsView extends StatelessWidget {
                                     context.read<VotingBloc>().add(
                                         RegisterForEvent(eventId: event.id));
                                   },
-                            child: Text(
-                              event.isRegistered
-                                  ? l10n.alreadyRegistered
-                                  : (isRegistrationClosed
-                                      ? l10n.registrationClosed
-                                      : l10n.registerButton),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(
-                                    color: (event.isRegistered ||
-                                            isRegistrationClosed)
-                                        ? Colors.black54
-                                        : const Color(0xFF6A9457),
-                                  ),
-                            ),
-                          );
-                        },
+                              child: Text(
+                                event.isRegistered
+                                    ? l10n.alreadyRegistered
+                                    : (isRegistrationClosed
+                                        ? l10n.registrationClosed
+                                        : l10n.registerButton),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      color: (event.isRegistered ||
+                                              isRegistrationClosed)
+                                          ? Colors.black54
+                                          : const Color(0xFF6A9457),
+                                    ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -254,9 +276,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Row(
+    return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -279,7 +299,6 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }

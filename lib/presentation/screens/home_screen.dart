@@ -589,11 +589,105 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _Footer extends StatelessWidget {
+class _Footer extends StatefulWidget {
   final String poem;
   final String author;
 
   const _Footer({required this.poem, required this.author});
+
+  @override
+  State<_Footer> createState() => _FooterState();
+}
+
+class _FooterState extends State<_Footer> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isUserScrolling = false;
+  Timer? _resumeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start rolling after a short delay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resumeAutoScroll(delay: const Duration(seconds: 3));
+    });
+  }
+
+  @override
+  void dispose() {
+    _resumeTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _Footer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the poem changes (e.g. month changes), reset scroll
+    if (oldWidget.poem != widget.poem) {
+      _resumeTimer?.cancel();
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+      _resumeAutoScroll(delay: const Duration(seconds: 3));
+    }
+  }
+
+  void _resumeAutoScroll({Duration delay = const Duration(seconds: 2)}) {
+    _resumeTimer?.cancel();
+    _resumeTimer = Timer(delay, () {
+      if (mounted && !_isUserScrolling && _scrollController.hasClients) {
+        _scrollLoop();
+      }
+    });
+  }
+
+  void _scrollLoop() {
+    if (!mounted || _isUserScrolling || !_scrollController.hasClients) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    final remainingScroll = maxScroll - currentScroll;
+
+    if (remainingScroll > 0) {
+      // Very slow speed: 10 pixels per second
+      final duration =
+          Duration(milliseconds: (remainingScroll / 10 * 1000).toInt());
+
+      _scrollController
+          .animateTo(
+        maxScroll,
+        duration: duration,
+        curve: Curves.linear,
+      )
+          .then((_) {
+        // When finished (either reached end or interrupted)
+        if (mounted && !_isUserScrolling && _scrollController.hasClients) {
+          if (_scrollController.offset >=
+              _scrollController.position.maxScrollExtent) {
+            // Reset to top after a delay if at the bottom
+            _resumeTimer = Timer(const Duration(seconds: 5), () {
+              if (mounted &&
+                  !_isUserScrolling &&
+                  _scrollController.hasClients) {
+                _scrollController.jumpTo(0);
+                _resumeAutoScroll(delay: const Duration(seconds: 1));
+              }
+            });
+          }
+        }
+      });
+    } else {
+      // We are already at the bottom (e.g., user scrolled here manually).
+      // Wait a bit and reset to top.
+      _resumeTimer = Timer(const Duration(seconds: 5), () {
+        if (mounted && !_isUserScrolling && _scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+          _resumeAutoScroll(delay: const Duration(seconds: 1));
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -630,50 +724,61 @@ class _Footer extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 // In landscape, limit footer to 80% of screen height (plenty of room in sidebar)
-                // In portrait, keep 25% limit
+                // In portrait, set a strict hard limit so it doesn't squish the voting list
                 maxHeight: isLandscape
                     ? MediaQuery.of(context).size.height * 0.80
-                    : MediaQuery.of(context).size.height * 0.25,
+                    : 140.0,
               ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // Tightly wrap content
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start, // Align all text to left edge
-                  children: [
-                    Text(
-                      poem,
-                      softWrap: false,
-                      textAlign: TextAlign.left, // Explictly left align
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        height: 1.5,
-                        fontSize: isLandscape
-                            ? 18
-                            : 14, // Larger in landscape, FittedBox will scale down if needed
-                        shadows: [
-                          const Shadow(blurRadius: 6, color: Colors.black87)
-                        ],
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification notification) {
+                  if (notification is ScrollStartNotification) {
+                    _isUserScrolling = true;
+                    _resumeTimer?.cancel();
+                  } else if (notification is ScrollEndNotification) {
+                    _isUserScrolling = false;
+                    _resumeAutoScroll(delay: const Duration(seconds: 3));
+                  }
+                  return false;
+                },
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Tightly wrap content
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start, // Align all text to left edge
+                    children: [
+                      Text(
+                        widget.poem,
+                        textAlign: TextAlign.left, // Explictly left align
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                          height: 1.5,
+                          fontSize: isLandscape
+                              ? 18
+                              : 15, // Reduced font size per feedback
+                          shadows: [
+                            const Shadow(blurRadius: 6, color: Colors.black87)
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      author,
-                      softWrap: false,
-                      textAlign: TextAlign.left, // Explicitly left align
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        fontStyle: FontStyle.italic,
-                        fontSize: isLandscape
-                            ? 18
-                            : 14, // Larger in landscape, FittedBox will scale down if needed
-                        shadows: [
-                          const Shadow(blurRadius: 6, color: Colors.black87)
-                        ],
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.author,
+                        textAlign: TextAlign.left, // Explicitly left align
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                          fontStyle: FontStyle.italic,
+                          fontSize: isLandscape
+                              ? 16
+                              : 13, // Reduced font size per feedback
+                          shadows: [
+                            const Shadow(blurRadius: 6, color: Colors.black87)
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
