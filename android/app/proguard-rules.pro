@@ -45,13 +45,3 @@
 # Background Service
 -keep class id.flutter.flutter_background_service.** { *; }
 
-# HTTP Library (required for Telegram reporting)
--keep class org.apache.http.** { *; }
--keep class java.net.** { *; }
--keep class javax.net.ssl.** { *; }
-
-# Ensure ErrorReporting models are preserved for JSON serialization
--keep class * implements java.io.Serializable { *; }
--keepclassmembers class * {
-    @com.google.gson.annotations.SerializedName <fields>;
-}
