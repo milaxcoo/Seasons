@@ -93,6 +93,26 @@ Use the tracked checklist before shipping:
 
 - `docs/STORE_RELEASE_CHECKLIST.md`
 
+## 🧪 Testing
+
+```bash
+flutter test                  # Run all tests
+flutter test --coverage       # Run with coverage report
+```
+
+> **Note**: `flutter test` requires a compatible `flutter_tester` binary for your platform.
+
+## ⚙️ CI Quality Gates
+
+Every push/PR to `main`, `devs`, or `dev` triggers the [Flutter CI](.github/workflows/flutter_ci.yml) pipeline:
+
+1. 🎨 **Format** — `dart format --set-exit-if-changed`
+2. 🔍 **Analyze** — `flutter analyze --fatal-infos --fatal-warnings`
+3. 🧪 **Test** — `flutter test --coverage`
+4. ✅ **Coverage** — ≥ 30% (generated files excluded)
+
+CodeQL security scanning ([workflow](.github/workflows/codeql.yml)) also runs for Java/Kotlin and Swift code.
+
 ## 📁 Project Structure
 
 ```
