@@ -2,18 +2,23 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ main, devs ]
+    branches: [ main, devs, dev ]
   pull_request:
-    branches: [ main, devs ]
+    branches: [ main, devs, dev ]
+  workflow_dispatch:
+
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze_and_test:
-    name: Analyze & Test
+    name: 🔍 Analyze & Test
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      actions: write
 
     steps:
       - name: ⬇️ Checkout code
@@ -28,57 +33,22 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
-      - name: 🔥 Create mock Firebase config
-        run: |
-          mkdir -p lib
-          cat > lib/firebase_options.dart << 'EOF'
-          // Mock Firebase configuration for CI/CD
-          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-          import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
-
-          class DefaultFirebaseOptions {
-            static FirebaseOptions get currentPlatform {
-              if (kIsWeb) {
-                throw UnsupportedError('DefaultFirebaseOptions have not been configured for web');
-              }
-              switch (defaultTargetPlatform) {
-                case TargetPlatform.android:
-                  return android;
-                case TargetPlatform.iOS:
-                  return ios;
-                case TargetPlatform.macOS:
-                  throw UnsupportedError('DefaultFirebaseOptions have not been configured for macos');
-                default:
-                  throw UnsupportedError('DefaultFirebaseOptions are not supported for this platform.');
-              }
-            }
-
-            static const FirebaseOptions android = FirebaseOptions(
-              apiKey: 'MOCK_API_KEY',
-              appId: 'MOCK_APP_ID',
-              messagingSenderId: 'MOCK_SENDER_ID',
-              projectId: 'MOCK_PROJECT_ID',
-              storageBucket: 'MOCK_BUCKET',
-            );
-
-            static const FirebaseOptions ios = FirebaseOptions(
-              apiKey: 'MOCK_API_KEY',
-              appId: 'MOCK_APP_ID',
-              messagingSenderId: 'MOCK_SENDER_ID',
-              projectId: 'MOCK_PROJECT_ID',
-              storageBucket: 'MOCK_BUCKET',
-              iosBundleId: 'com.lebedev.seasons',
-            );
-          }
-          EOF
-
       - name: 🔍 Analyze code
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: flutter analyze --fatal-infos --fatal-warnings
 
       - name: 🧪 Run tests
         run: flutter test --coverage
 
-      - name: 💾 Upload coverage report
+      - name: ✅ Enforce minimum coverage
+        run: |
+          COVERAGE=$(awk -F: '/^LF:/{lf+=$2}/^LH:/{lh+=$2} END{if(lf>0) printf("%.2f", (lh/lf)*100); else print "0.00"}' coverage/lcov.info)
+          echo "Coverage: ${COVERAGE}%"
+          awk "BEGIN {exit !(${COVERAGE} >= 50.0)}" || {
+            echo "::error::Coverage ${COVERAGE}% is below 50% threshold"
+            exit 1
+          }
+
+      - name: 📊 Upload coverage report
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -86,8 +56,8 @@ jobs:
           path: coverage/lcov.info
           retention-days: 7
 
-  build_apk:
-    name: Build Android APK
+  build_android:
+    name: 🤖 Build Android
     runs-on: ubuntu-latest
     needs: analyze_and_test
     if: github.event_name == 'push'
@@ -99,6 +69,12 @@ jobs:
       - name: ⬇️ Checkout code
         uses: actions/checkout@v4
 
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -108,81 +84,106 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
-      - name: 🔥 Create mock Firebase config
+      - name: 🔐 Validate Android release signing secrets
         run: |
-          mkdir -p lib android/app ios/Runner
-          cat > lib/firebase_options.dart << 'EOF'
-          // Mock Firebase configuration for CI/CD
-          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-          import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+          test -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" || { echo "::error::Missing ANDROID_KEYSTORE_BASE64"; exit 1; }
+          test -n "${{ secrets.KEYSTORE_PASSWORD }}" || { echo "::error::Missing KEYSTORE_PASSWORD"; exit 1; }
+          test -n "${{ secrets.KEY_ALIAS }}" || { echo "::error::Missing KEY_ALIAS"; exit 1; }
+          test -n "${{ secrets.KEY_PASSWORD }}" || { echo "::error::Missing KEY_PASSWORD"; exit 1; }
 
-          class DefaultFirebaseOptions {
-            static FirebaseOptions get currentPlatform {
-              if (kIsWeb) {
-                throw UnsupportedError('DefaultFirebaseOptions have not been configured for web');
-              }
-              switch (defaultTargetPlatform) {
-                case TargetPlatform.android:
-                  return android;
-                case TargetPlatform.iOS:
-                  return ios;
-                case TargetPlatform.macOS:
-                  throw UnsupportedError('DefaultFirebaseOptions have not been configured for macos');
-                default:
-                  throw UnsupportedError('DefaultFirebaseOptions are not supported for this platform.');
-              }
-            }
-
-            static const FirebaseOptions android = FirebaseOptions(
-              apiKey: 'MOCK_API_KEY',
-              appId: 'MOCK_APP_ID',
-              messagingSenderId: 'MOCK_SENDER_ID',
-              projectId: 'MOCK_PROJECT_ID',
-              storageBucket: 'MOCK_BUCKET',
-            );
-
-            static const FirebaseOptions ios = FirebaseOptions(
-              apiKey: 'MOCK_API_KEY',
-              appId: 'MOCK_APP_ID',
-              messagingSenderId: 'MOCK_SENDER_ID',
-              projectId: 'MOCK_PROJECT_ID',
-              storageBucket: 'MOCK_BUCKET',
-              iosBundleId: 'com.lebedev.seasons',
-            );
-          }
-          EOF
-          
-          cat > android/app/google-services.json << 'EOF'
+      - name: 🔐 Decode Android keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "${RUNNER_TEMP}/release-keystore.jks"
           {
-            "project_info": {
-              "project_number": "000000000000",
-              "project_id": "mock-project",
-              "storage_bucket": "mock-project.appspot.com"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
-                  "android_client_info": {
-                    "package_name": "lebedev.seasons"
-                  }
-                },
-                "oauth_client": [],
-                "api_key": [
-                  {
-                    "current_key": "MOCK_API_KEY"
-                  }
-                ],
-                "services": {
-                  "appinvite_service": {
-                    "other_platform_oauth_client": []
-                  }
-                }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          EOF
+            echo "KEYSTORE_PATH=${RUNNER_TEMP}/release-keystore.jks"
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}"
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}"
+          } >> "$GITHUB_ENV"
 
-      - name: 🏗️ Build APK
-        run: flutter build apk --debug
+      # Cache Gradle for faster builds
+      - name: 🗄️ Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: 🏗️ Build Release APK
+        run: |
+          flutter build apk --release \
+            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
+            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
+
+      - name: 🏗️ Build Release AAB
+        run: |
+          flutter build appbundle --release \
+            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
+            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
+
+      - name: 📦 Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+      - name: 📦 Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 14
+
+  build_ios:
+    name: 🍎 Build iOS
+    runs-on: macos-latest
+    needs: analyze_and_test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devs' || github.ref == 'refs/heads/dev')
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: 📦 Get dependencies
+        run: flutter pub get
+
+      # Cache CocoaPods for faster builds
+      - name: 🗄️ Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
+      - name: 📱 Build iOS (no codesign)
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
+            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
+            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
+
+      - name: 📦 Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 14

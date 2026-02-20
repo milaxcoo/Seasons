@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -71,55 +72,78 @@ class _ResultsView extends StatelessWidget {
         ? dateFormat.format(event.votingEndDate!)
         : l10n.notSet;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE4DCC5),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              event.title,
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+    // FIXED: Standardized scrollable area style (Window with internal scroll)
+    // FIXED: Standardized scrollable area style (Window with internal scroll)
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          // Responsive padding: Smaller margins in landscape to maximize card size
+          padding: isLandscape 
+              ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
+              : const EdgeInsets.all(24.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFE4DCC5),
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2), // Subtle shadow
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Divider(),
-            Text(
-              event.description,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 8),
-            const Divider(),
-            _InfoRow(label: l10n.votingStartLabel, value: startDate),
-            _InfoRow(label: l10n.votingEndLabel, value: endDate),
-            const SizedBox(height: 24),
-            _ResultsTable(results: event.results),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  l10n.sessionCompleted,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(color: Colors.white),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24), // Inner padding for content
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // Shrink to fit content if small
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      event.title,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    Text(
+                      event.description,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    _InfoRow(label: l10n.votingStartLabel, value: startDate),
+                    _InfoRow(label: l10n.votingEndLabel, value: endDate),
+                    const SizedBox(height: 24),
+                    _ResultsTable(results: event.results),
+                    const SizedBox(height: 32),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(26),
+                      ),
+                      child: Center(
+                        child: Text(
+                          l10n.sessionCompleted,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -142,7 +166,7 @@ class _ResultsTable extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFD9D3BF),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(26),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -172,11 +196,8 @@ class _ResultsTable extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 8),
-                  // Оборачиваем таблицу в SingleChildScrollView для горизонтальной прокрутки
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: _buildDataTable(context, questionResult, l10n),
-                  ),
+                  // Таблица сама управляет своим скроллом внутри LayoutBuilder
+                  _buildDataTable(context, questionResult, l10n),
                 ],
               ),
             );
@@ -187,147 +208,162 @@ class _ResultsTable extends StatelessWidget {
   }
 
   Widget _buildDataTable(BuildContext context, QuestionResult data, AppLocalizations l10n) {
-    // Для qualification_council показываем варианты ответов как строки, а не колонки
-    if (data.type == 'qualification_council') {
-      return Table(
-        border: TableBorder(
-          verticalInside: BorderSide(
-            color: Colors.black.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-        columnWidths: const {
-          0: IntrinsicColumnWidth(),
-          1: IntrinsicColumnWidth(),
-        },
-        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-        children: [
-          // Заголовок таблицы
-          TableRow(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.1),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double availableWidth = constraints.maxWidth;
+
+        // Определяем колонки
+        List<String> columns;
+        if (data.type == 'qualification_council') {
+          // Для qualification_council структура специфичная, но по сути 2 колонки
+          columns = ['', l10n.voteCount];
+        } else if (data.type == 'multiple_variants') {
+          columns = ['', l10n.voteCount];
+        } else {
+          columns = ['', ...data.allColumns];
+        }
+
+        final int colCount = columns.length;
+
+        // --- ЛОГИКА РАСЧЕТА ШИРИНЫ КОЛОНОК ---
+        // 1. Первая колонка (Имя субъекта) - 40% от ширины, но не меньше 160 и не больше 320
+        final double firstColWidth = (availableWidth * 0.40).clamp(160.0, 320.0);
+
+        // 2. Остальные колонки (данные)
+        final int dataColsCount = max(1, colCount - 1);
+        final double minDataColWidth = 96.0;
+        final double remainingWidth = availableWidth - firstColWidth;
+
+        // Ширина колонки данных: либо доля остатка, либо минимум (если остаток слишком мал)
+        final double dataColWidth = max(minDataColWidth, remainingWidth / dataColsCount);
+
+        // 3. Общая ширина таблицы
+        final double totalTableWidth = firstColWidth + (dataColWidth * dataColsCount);
+
+        // 4. Формируем карту ширины колонок для Table
+        final Map<int, TableColumnWidth> tableColumnWidths = {
+          0: FixedColumnWidth(firstColWidth),
+        };
+        for (int i = 1; i < colCount; i++) {
+          tableColumnWidths[i] = FixedColumnWidth(dataColWidth);
+        }
+
+        // --- ВИЗУАЛЬНЫЕ НАСТРОЙКИ ---
+        const cellPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+
+        // Вспомогательная функция для ячейки
+        Widget buildCell(String text, {bool isHeader = false, bool alignCenter = false}) {
+          return Padding(
+            padding: cellPadding,
+            child: Text(
+              text,
+              textAlign: alignCenter ? TextAlign.center : TextAlign.start,
+              style: isHeader
+                  ? Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w900)
+                  : Theme.of(context).textTheme.bodyLarge,
             ),
+          );
+        }
+
+        // --- СБОРКА ТАБЛИЦЫ ---
+        Widget tableContent;
+
+        if (data.type == 'qualification_council') {
+          tableContent = Table(
+            border: TableBorder(
+              verticalInside: BorderSide(
+                color: Colors.black.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            columnWidths: tableColumnWidths,
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Text(
-                  '',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+              // Заголовок
+              TableRow(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.1),
                 ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Text(
-                  l10n.voteCount,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
-                ),
-              ),
-            ],
-          ),
-          // Строки с данными - каждая комбинация субъект-ответ это отдельная строка
-          ...data.subjectResults.expand((subject) {
-            return subject.voteCounts.entries.map((entry) {
-              return TableRow(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Text(
-                      subject.name,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Center(
-                      child: Text(entry.value.toString()),
-                    ),
-                  ),
+                  buildCell('', isHeader: true),
+                  buildCell(l10n.voteCount, isHeader: true, alignCenter: true),
                 ],
-              );
-            });
-          }),
-        ],
-      );
-    }
-
-    // Для остальных типов (yes_no, yes_no_abstained, multiple_variants, subject_oriented)
-    List<String> columns;
-    if (data.type == 'multiple_variants') {
-      columns = ['', l10n.voteCount];
-    } else {
-      columns = ['', ...data.allColumns];
-    }
-
-    Map<int, TableColumnWidth> columnWidths = {};
-    for (int i = 0; i < columns.length; i++) {
-      columnWidths[i] = const IntrinsicColumnWidth();
-    }
-
-    return Table(
-      border: TableBorder(
-        verticalInside: BorderSide(
-          color: Colors.black.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      columnWidths: columnWidths,
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: [
-        TableRow(
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.1),
-          ),
-          children: columns.map((colName) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Text(
-                colName,
-                textAlign: colName.isEmpty ? TextAlign.start : TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w900),
               ),
-            );
-          }).toList(),
-        ),
-        ...data.subjectResults.map((row) {
-          return TableRow(
+              // Строки
+              ...data.subjectResults.expand((subject) {
+                return subject.voteCounts.entries.map((entry) {
+                  return TableRow(
+                    children: [
+                      buildCell(subject.name),
+                      Padding(
+                        padding: cellPadding,
+                        child: Center(child: Text(entry.value.toString())),
+                      ),
+                    ],
+                  );
+                });
+              }),
+            ],
+          );
+        } else {
+          // Стандартная таблица
+          tableContent = Table(
+            border: TableBorder(
+              verticalInside: BorderSide(
+                color: Colors.black.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            columnWidths: tableColumnWidths,
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Text(row.name,
-                    style: Theme.of(context).textTheme.bodyLarge),
+              // Заголовок
+              TableRow(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.1),
+                ),
+                children: columns.map((colName) {
+                  return buildCell(colName,
+                      isHeader: true, alignCenter: colName.isNotEmpty);
+                }).toList(),
               ),
-              ...columns.sublist(1).map((colName) {
-                String cellValue;
-                if (data.type == 'multiple_variants') {
-                  cellValue = (row.voteCounts[row.name] ?? 0).toString();
-                } else {
-                  cellValue = (row.voteCounts[colName] ?? 0).toString();
-                }
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Center(child: Text(cellValue)),
+              // Строки
+              ...data.subjectResults.map((row) {
+                return TableRow(
+                  children: [
+                    buildCell(row.name),
+                    ...columns.sublist(1).map((colName) {
+                      String cellValue;
+                      if (data.type == 'multiple_variants') {
+                        cellValue = (row.voteCounts[row.name] ?? 0).toString();
+                      } else {
+                        cellValue = (row.voteCounts[colName] ?? 0).toString();
+                      }
+                      return Padding(
+                        padding: cellPadding,
+                        child: Center(child: Text(cellValue)),
+                      );
+                    }),
+                  ],
                 );
               }),
             ],
           );
-        }),
-      ],
+        }
+
+        // Возвращаем скроллируемый контейнер с ограниченной минимальной шириной
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints:
+                BoxConstraints(minWidth: max(availableWidth, totalTableWidth)),
+            child: tableContent,
+          ),
+        );
+      },
     );
   }
 }

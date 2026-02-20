@@ -11,7 +11,7 @@
     "description": "Login button text"
   },
   
-  "copyright": "© RUDN University 2025",
+  "copyright": "© RUDN University 2026",
   "@copyright": {
     "description": "Copyright text"
   },
@@ -39,6 +39,11 @@
   "registrationOpen": "Регистрация открыта",
   "@registrationOpen": {
     "description": "Registration is open"
+  },
+  
+  "registrationClosed": "Регистрация закрыта",
+  "@registrationClosed": {
+    "description": "Registration is closed for user"
   },
   
   "votingUntil": "Голосование до: {date}",
@@ -294,5 +299,15 @@
   "languageEnglish": "English",
   "@languageEnglish": {
     "description": "English language option"
+  },
+
+  "connectionError": "Не удалось загрузить голосования",
+  "@connectionError": {
+    "description": "Error message when votings fail to load"
+  },
+
+  "tapToRetry": "Нажмите, чтобы обновить",
+  "@tapToRetry": {
+    "description": "Tap to retry hint"
   }
 }

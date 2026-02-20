@@ -1,8 +1,5 @@
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -11,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.votepfurapp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -34,15 +31,20 @@ android {
         versionName = flutter.versionName
     }
 
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    val keyAliasValue = System.getenv("KEY_ALIAS")
+    val keyPasswordValue = System.getenv("KEY_PASSWORD")
+    val hasReleaseSigningConfig =
+        !keystorePath.isNullOrBlank() &&
+        file(keystorePath).exists() &&
+        !keystorePassword.isNullOrBlank() &&
+        !keyAliasValue.isNullOrBlank() &&
+        !keyPasswordValue.isNullOrBlank()
+
     signingConfigs {
         create("release") {
-            // Only configure release signing if env vars are set
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
-            val keyAliasValue = System.getenv("KEY_ALIAS")
-            val keyPasswordValue = System.getenv("KEY_PASSWORD")
-            
-            if (keystorePath != null && keystorePassword != null) {
+            if (hasReleaseSigningConfig) {
                 storeFile = file(keystorePath)
                 storePassword = keystorePassword
                 keyAlias = keyAliasValue
@@ -53,16 +55,41 @@ android {
 
     buildTypes {
         release {
-            // Use release signing only if keystore is configured
-            // Otherwise fall back to debug signing (for CI builds)
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            if (keystorePath != null && file(keystorePath).exists()) {
+            // Enable R8 code shrinking and obfuscation
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
+            // Only use release signing when fully configured.
+            if (hasReleaseSigningConfig) {
                 signingConfig = signingConfigs.getByName("release")
-            } else {
-                // CI/development builds: use debug signing
-                signingConfig = signingConfigs.getByName("debug")
             }
         }
+    }
+}
+
+// Fail fast only when a release task is requested.
+val requestedTasks = gradle.startParameter.taskNames.joinToString(" ").lowercase()
+val isReleaseTaskRequested = requestedTasks.contains("release")
+if (isReleaseTaskRequested) {
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    val keyAliasValue = System.getenv("KEY_ALIAS")
+    val keyPasswordValue = System.getenv("KEY_PASSWORD")
+    val hasReleaseSigningConfig =
+        !keystorePath.isNullOrBlank() &&
+        file(keystorePath).exists() &&
+        !keystorePassword.isNullOrBlank() &&
+        !keyAliasValue.isNullOrBlank() &&
+        !keyPasswordValue.isNullOrBlank()
+
+    if (!hasReleaseSigningConfig) {
+        throw GradleException(
+            "Missing release signing configuration. Set KEYSTORE_PATH, KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD.",
+        )
     }
 }
 
@@ -71,5 +98,5 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

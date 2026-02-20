@@ -8,12 +8,21 @@ class AppTheme {
   static const Color tertiaryColor = Color(0xFFA5D4F7);
   static const Color backgroundColor = Color(0xFFF0F8FF);
   static const Color textColor = Color(0xFF333333);
+  
+  // --- RUDN BRAND COLORS ---
+  static const Color rudnGreenColor = Color(0xFF23a74c);
+  static const Color rudnRedColor = Color(0xFFD32F2F); // Standard red for alerts/errors
 
   // --- THEME GETTER ---
   static ThemeData get lightTheme {
     final baseTheme = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      dividerTheme: const DividerThemeData(
+        color: Colors.grey,
+        thickness: 1, 
+        space: 1,
+      ),
       scaffoldBackgroundColor: backgroundColor,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
@@ -28,36 +37,48 @@ class AppTheme {
 
     // --- TYPOGRAPHY ---
 
-    // 1. --- ИСПРАВЛЕНИЕ ---
-    // Используем 'Exo 2' как ОСНОВНОЙ шрифт для ВСЕГО.
-    // Он поддерживает и латиницу, и кириллицу, и НЕ курсивный.
-    // Нам больше не нужен 'Russo One' или 'fontFamilyFallback'.
-    final baseTextTheme = GoogleFonts.exo2TextTheme(baseTheme.textTheme)
+    // Common shadow to improve readability for all text
+    final textShadow = [
+      Shadow(
+        offset: const Offset(0, 1),
+        blurRadius: 2.0,
+        color: Colors.black.withValues(alpha: 0.3),
+      ),
+    ];
+
+    // Use 'Gentium Book Plus' as the body font to match seasons.rudn.ru website
+    // This font supports both Latin and Cyrillic characters
+    final baseTextTheme = GoogleFonts.gentiumBookPlusTextTheme(baseTheme.textTheme)
         .copyWith(
-          // --- ИЗМЕНЕНИЕ: Делаем Exo 2 жирнее (w700), чтобы он был похож на Russo One ---
-          bodyLarge: GoogleFonts.exo2(
+          bodyLarge: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.bodyLarge,
             fontWeight: FontWeight.w700,
+            shadows: textShadow,
           ),
-          bodyMedium: GoogleFonts.exo2(
+          bodyMedium: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.bodyMedium,
             fontWeight: FontWeight.w700,
+            shadows: textShadow,
           ),
-          bodySmall: GoogleFonts.exo2(
+          bodySmall: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.bodySmall,
             fontWeight: FontWeight.w700,
+            shadows: textShadow,
           ),
-          labelLarge: GoogleFonts.exo2(
+          labelLarge: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.labelLarge,
             fontWeight: FontWeight.w700,
+            shadows: textShadow,
           ),
-          labelMedium: GoogleFonts.exo2(
+          labelMedium: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.labelMedium,
             fontWeight: FontWeight.w700,
+            shadows: textShadow,
           ),
-          labelSmall: GoogleFonts.exo2(
+          labelSmall: GoogleFonts.gentiumBookPlus(
             textStyle: baseTheme.textTheme.labelSmall,
             fontWeight: FontWeight.w700,
+            shadows: textShadow,
           ),
         )
         .apply(
@@ -65,52 +86,57 @@ class AppTheme {
       displayColor: textColor,
     );
 
-    // 2. --- ИСПРАВЛЕНИЕ ---
-    // Теперь переопределяем ЗАГОЛОВКИ,
-    // чтобы они использовали 'HemiHead'
-    // и принудительно ставим курсив.
-    // 'Exo 2' (из baseTextTheme) автоматически станет запасным шрифтом
-    // для кириллицы в заголовках и тоже будет курсивным.
+    // 2. --- FIX ---
+    // Now overriding HEADLINES to use 'HemiHead'
     final finalTheme = baseTextTheme.copyWith(
       displayLarge: baseTextTheme.displayLarge?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
       displayMedium: baseTextTheme.displayMedium?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
       displaySmall: baseTextTheme.displaySmall?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
       headlineLarge: baseTextTheme.headlineLarge?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
       headlineMedium: baseTextTheme.headlineMedium?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
       headlineSmall: baseTextTheme.headlineSmall?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
-      // 'titleLarge' часто используется для AppBar
+      // 'titleLarge' is often used for AppBar
       titleLarge: baseTextTheme.titleLarge?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
       titleMedium: baseTextTheme.titleMedium?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
       titleSmall: baseTextTheme.titleSmall?.copyWith(
         fontFamily: 'HemiHead',
         fontStyle: FontStyle.italic,
+        shadows: textShadow,
       ),
-      // Все остальные стили (body, label, button)
-      // автоматически будут 'Exo 2' (Normal) из baseTextTheme.
+      // All other styles (body, label, button)
+      // will automatically be 'Exo 2' (Normal) from baseTextTheme.
     );
 
     // 3. --- ИСПРАВЛЕНИЕ ---

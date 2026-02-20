@@ -1,36 +1,109 @@
-# Seasons
+# 🌿 Seasons
 
-A cross-platform mobile application built with Flutter for participating in voting at PFUR University.
+A privacy-focused mobile app for voting at RUDN / PFUR University.
+
+![Flutter](https://img.shields.io/badge/Flutter-3.4+-02569B?logo=flutter)
+![Dart](https://img.shields.io/badge/Dart-3.4+-0175C2?logo=dart)
 
 ## ✨ Features
 
-  * **Secure Login:** Access the app with your university credentials.
-  * **Event Lists:** See voting events organized into three tabs: "Registration," "Active," and "Results."
-  * **Cast Your Vote:** Select a nominee and submit your vote in active events.
-  * **View Results:** See the final outcome of completed events with a clean bar chart.
-  * **Push Notifications:** Get notified about important event updates.
+- **Secure Login** — RUDN university credentials via WebView
+- **Voting Events** — Three tabs: Registration, Active, Results
+- **Real-time Updates** — WebSocket connection for live notifications
+- **Push Notifications** — Get notified about new votings
+- **Bilingual** — Russian and English interface
+- **Privacy-First** — No third-party analytics, no data collection
+
+## 📱 Screenshots
+
+*Coming soon*
 
 ## 🛠️ Tech Stack
 
-  * **Framework:** Flutter
-  * **State Management:** BLoC
-  * **Backend Services:** Firebase (for push notifications)
+| Layer | Technology |
+|-------|------------|
+| Framework | Flutter 3.4+ |
+| State Management | BLoC |
+| Storage | flutter_secure_storage |
+| Notifications | Local notifications + WebSocket |
+| Backend | RUDN University (seasons.rudn.ru) |
+
+## 🔒 Privacy
+
+- ❌ No Firebase
+- ❌ No Google Analytics
+- ❌ No Crashlytics
+- ❌ No third-party SDKs that collect data
+- ✅ All data stays on RUDN servers
+- ✅ Optional Telegram crash reporting (disabled by default)
+- ✅ Diagnostic auth telemetry is opt-in and disabled by default
 
 ## 🚀 Getting Started
 
-1.  **Clone the repo**
-    ```sh
-    git clone https://github.com/milaxcoo/Seasons.git
-    ```
-2.  **Install dependencies**
-    ```sh
-    flutter pub get
-    ```
-3.  **Connect to Firebase**
-    ```sh
-    flutterfire configure
-    ```
-4.  **Run the app**
-    ```sh
-    flutter run
-    ```
+### Prerequisites
+- Flutter 3.4+
+- Xcode (for iOS)
+- Android Studio (for Android)
+
+### Installation
+
+```bash
+# Clone
+git clone https://github.com/milaxcoo/Seasons.git
+cd Seasons
+
+# Install dependencies
+flutter pub get
+
+# Run
+flutter run
+```
+
+### Building for Release
+
+```bash
+# Create .secrets file with your Telegram credentials (optional)
+echo "TELEGRAM_BOT_TOKEN=your_token" > .secrets
+echo "TELEGRAM_CHAT_ID=your_chat_id" >> .secrets
+
+# Optional telemetry toggles (defaults shown)
+echo "ENABLE_ERROR_REPORTING=false" >> .secrets
+echo "ENABLE_DIAGNOSTIC_EVENTS=false" >> .secrets
+
+# Build with secrets
+./build.sh apk        # Android APK
+./build.sh appbundle  # Android AAB
+./build.sh ios        # iOS
+```
+
+### Android Release Signing
+
+Release builds require a configured keystore:
+
+- `KEYSTORE_PATH`
+- `KEYSTORE_PASSWORD`
+- `KEY_ALIAS`
+- `KEY_PASSWORD`
+
+Release build now fails fast when signing configuration is missing.
+
+### Store Submission Checklist
+
+Use the tracked checklist before shipping:
+
+- `docs/STORE_RELEASE_CHECKLIST.md`
+
+## 📁 Project Structure
+
+```
+lib/
+├── core/               # Theme, services, utilities
+│   └── services/       # Background service, error reporting
+├── data/               # Repositories, data sources
+├── domain/             # Models
+├── l10n/               # Localization (RU/EN)
+└── presentation/       # UI
+    ├── bloc/           # State management
+    ├── screens/        # App screens
+    └── widgets/        # Reusable components
+```

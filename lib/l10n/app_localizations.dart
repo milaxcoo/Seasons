@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// Copyright text
   ///
   /// In ru, this message translates to:
-  /// **'© RUDN University 2025'**
+  /// **'© RUDN University 2026'**
   String get copyright;
 
   /// Help desk email
@@ -139,6 +139,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Регистрация открыта'**
   String get registrationOpen;
+
+  /// Registration is closed for user
+  ///
+  /// In ru, this message translates to:
+  /// **'Регистрация закрыта'**
+  String get registrationClosed;
 
   /// Voting deadline text
   ///
@@ -421,6 +427,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'English'**
   String get languageEnglish;
+
+  /// Error message when votings fail to load
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить голосования'**
+  String get connectionError;
+
+  /// Tap to retry hint
+  ///
+  /// In ru, this message translates to:
+  /// **'Нажмите, чтобы обновить'**
+  String get tapToRetry;
 }
 
 class _AppLocalizationsDelegate

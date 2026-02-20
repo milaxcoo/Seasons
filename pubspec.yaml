@@ -1,7 +1,7 @@
 name: seasons
 description: "Flutter-based application for voting at PFUR University"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+9
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -17,6 +17,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # State Management (BLoC)
+  bloc: ^9.0.0
   flutter_bloc: ^9.1.1
   equatable: ^2.0.5
 
@@ -28,14 +29,16 @@ dependencies:
   # Secure Storage
   flutter_secure_storage: ^9.2.2
 
-  # Firebase for Push Notifications
-  firebase_core: ^4.2.1
-  firebase_messaging: ^16.0.4
+  web_socket_channel: ^3.0.0
+  rxdart: ^0.28.0
   flutter_svg: ^2.2.2
   http: ^1.5.0
   html: ^0.15.6
   shared_preferences: ^2.5.3
   webview_flutter: ^4.13.1
+  flutter_local_notifications: ^19.5.0
+  flutter_background_service: ^5.1.0
+  flutter_background_service_android: ^6.3.1
 
 # ----------------- DEV DEPENDENCIES -----------------
 dev_dependencies:

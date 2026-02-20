@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:seasons/data/models/nominee.dart';
+
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
@@ -66,7 +66,7 @@ class ApiVotingRepository implements VotingRepository {
         final Map<String, dynamic> decodedBody = json.decode(response.body);
 
         if (kDebugMode) {
-          print("DEBUG: API Response: $decodedBody");
+      if (kDebugMode) debugPrint("DEBUG: API Response: $decodedBody");
         }
 
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
@@ -83,9 +83,14 @@ class ApiVotingRepository implements VotingRepository {
             break;
         }
         for (var votingJson in data) {
-          if (votingJson is Map<String, dynamic> &&
-              votingJson['status'] == null) {
-            votingJson['status'] = statusString;
+          if (votingJson is Map<String, dynamic>) {
+             // DEBUG: Print all keys for the first voting to spot the date field
+             if (data.indexOf(votingJson) == 0 && kDebugMode) {
+                if (kDebugMode) debugPrint("DEBUG: Voting Dump: $votingJson");
+             }
+             if (votingJson['status'] == null) {
+                votingJson['status'] = statusString;
+             }
           }
         }
         return data.map((json) => VotingEvent.fromJson(json)).toList();
@@ -118,17 +123,9 @@ class ApiVotingRepository implements VotingRepository {
     }
   }
 
-  @override
-  Future<VotingEvent> getEventDetails(String eventId) async {
-    // Этот метод пока не используется
-    throw UnimplementedError();
-  }
 
-  @override
-  Future<List<Nominee>> getNomineesForEvent(String eventId) async {
-    // Этот метод больше не используется
-    return [];
-  }
+
+
 
   // FIXED: Полностью переписан метод для отправки голоса
   @override
@@ -215,7 +212,8 @@ class ApiVotingRepository implements VotingRepository {
     try {
       final url = Uri.parse('$_baseUrl/');
       final headers = await _headers;
-      final response = await http.get(url, headers: headers);
+      final response = await http.get(url, headers: headers)
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         // Regex to find <a href="/account">Name</a>
@@ -239,7 +237,7 @@ class ApiVotingRepository implements VotingRepository {
         print("Error fetching user login: $e");
       }
     }
-    return "RUDN User"; // Fallback
+    return null; // No valid session
   }
 
   @override
@@ -285,15 +283,20 @@ class ApiVotingRepository implements VotingRepository {
           email = emailMatch.group(1)?.trim() ?? "";
         }
 
-        // 3. Extract Job Title (Position / Должность)
+        // 3. Extract Job Title (Position / Должность / Job Title)
         final RegExp jobRegExp = RegExp(
-            r'<th[^>]*>\s*(?:Position|Должность)\s*</th>[\s\S]*?<td>([^<]+)</td>',
+            r'<th[^>]*>\s*(?:Position|Должность|Job\s*Title)\s*</th>[\s\S]*?<td>([\s\S]*?)</td>',
             caseSensitive: false);
         final jobMatch = jobRegExp.firstMatch(response.body);
         if (jobMatch != null) {
-          // Value might be empty or &nbsp;
-          final rawJob = jobMatch.group(1)?.trim() ?? "";
-          if (rawJob != "&nbsp;") {
+          // Value might be empty or &nbsp;, or contain tags
+          String rawJob = jobMatch.group(1)?.trim() ?? "";
+          
+          // Remove HTML tags if present (e.g. <span>...</span>)
+          rawJob = rawJob.replaceAll(RegExp(r'<[^>]*>'), '');
+          rawJob = rawJob.trim();
+
+          if (rawJob != "&nbsp;" && rawJob.isNotEmpty) {
             jobTitle = rawJob;
           }
         }
@@ -335,5 +338,33 @@ class ApiVotingRepository implements VotingRepository {
 
     // Just return as is if specific format logic doesn't apply
     return fullName;
+  }
+
+  // --- Push Notifications ---
+  @override
+  Future<void> registerDeviceToken(String fcmToken) async {
+    final url = Uri.parse('$_baseUrl/api/v1/voter/register_device');
+    final baseHeaders = await _headers;
+    final headers = {
+      ...baseHeaders,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    };
+    final body = {
+      'fcm_token': fcmToken,
+      'platform': 'android',
+    };
+    
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+      if (kDebugMode) {
+        print('Device token registration response: ${response.statusCode}');
+      }
+      // Silently accept any response - backend may not have endpoint yet
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to register device token: $e');
+      }
+      // Silently fail - push notifications are optional
+    }
   }
 }

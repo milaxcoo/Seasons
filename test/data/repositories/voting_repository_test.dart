@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:seasons/data/models/question.dart';
+
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 
@@ -208,30 +208,7 @@ void main() {
         );
       });
 
-      test('getEventDetails returns event details', () async {
-        // Arrange
-        final event = VotingEvent(
-          id: 'event-01',
-          title: 'Event Details',
-          description: 'Detailed description',
-          status: VotingStatus.active,
-          isRegistered: true,
-          questions: const [
-            Question(id: 'q1', name: 'Question 1', subjects: [], answers: []),
-          ],
-          hasVoted: false,
-          results: const [],
-        );
-        when(() => mockRepository.getEventDetails('event-01'))
-            .thenAnswer((_) async => event);
 
-        // Act
-        final result = await mockRepository.getEventDetails('event-01');
-
-        // Assert
-        expect(result.id, 'event-01');
-        expect(result.questions, hasLength(1));
-      });
     });
 
     group('Registration', () {

@@ -3,11 +3,12 @@
   
   "appTagline": "seasons",
   "login": "Sign In",
-  "copyright": "© RUDN University 2025",
+  "copyright": "© RUDN University 2026",
   "helpEmail": "seasons-helpdesk@rudn.ru",
   "noActiveVotings": "No active votings yet",
   "registrationUntil": "Registration until: {date}",
   "registrationOpen": "Registration is open",
+  "registrationClosed": "Registration closed",
   "votingUntil": "Voting until: {date}",
   "votingActive": "Voting in progress",
   "completedOn": "Completed: {date}",
@@ -54,5 +55,7 @@
   "votingResults": "Voting results",
   "voteCount": "Vote Count",
   "languageRussian": "Русский",
-  "languageEnglish": "English"
+  "languageEnglish": "English",
+  "connectionError": "Could not load votings",
+  "tapToRetry": "Tap to retry"
 }

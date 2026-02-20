@@ -13,6 +13,15 @@ class FetchEventsByStatus extends VotingEvent {
   const FetchEventsByStatus({required this.status});
 }
 
+// Silent refresh event for FCM push notifications
+class RefreshEventsSilent extends VotingEvent {
+  final model.VotingStatus status;
+  const RefreshEventsSilent({required this.status});
+  
+  @override
+  List<Object> get props => [status];
+}
+
 class RegisterForEvent extends VotingEvent {
   final String eventId;
   const RegisterForEvent({required this.eventId});
@@ -31,6 +40,22 @@ class SubmitVote extends VotingEvent {
 class FetchResults extends VotingEvent {
   final String eventId;
   const FetchResults({required this.eventId});
+}
+
+class VotingUpdated extends VotingEvent {
+  final model.VotingEvent event;
+  const VotingUpdated({required this.event});
+
+  @override
+  List<Object> get props => [event];
+}
+
+class VotingListUpdated extends VotingEvent {
+  final List<model.VotingEvent> events;
+  const VotingListUpdated({required this.events});
+
+  @override
+  List<Object> get props => [events];
 }
 
 // Это событие больше не нужно, так как мы его не используем
