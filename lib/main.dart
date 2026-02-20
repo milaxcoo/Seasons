@@ -161,26 +161,28 @@ class SeasonsApp extends StatelessWidget {
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
-              home: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  if (state is AuthInitial) {
-                    return const Scaffold(body: Center(child: SeasonsLoader()));
-                  }
+              home: BlocListener<AuthBloc, AuthState>(
+                listenWhen: (previous, current) =>
+                    previous.runtimeType != current.runtimeType,
+                listener: (context, state) {
                   if (state is AuthAuthenticated) {
-                    // Start background service for WebSocket connection
-                    // Defer to next frame to allow UI to render first (Fixes Black Screen)
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      BackgroundService().startService();
-                    });
-                    return const HomeScreen();
-                  }
-                  if (state is AuthUnauthenticated) {
-                    // Stop background service on logout
+                    BackgroundService().startService();
+                  } else if (state is AuthUnauthenticated) {
                     BackgroundService().stopService();
-                    return const LoginScreen();
                   }
-                  return const LoginScreen();
                 },
+                child: BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    if (state is AuthInitial) {
+                      return const Scaffold(
+                          body: Center(child: SeasonsLoader()));
+                    }
+                    if (state is AuthAuthenticated) {
+                      return const HomeScreen();
+                    }
+                    return const LoginScreen();
+                  },
+                ),
               ),
             );
           },

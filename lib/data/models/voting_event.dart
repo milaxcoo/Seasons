@@ -56,9 +56,14 @@ class VotingEvent extends Equatable {
     DateTime? parseDate(String? dateString) {
       if (dateString == null || dateString.isEmpty) return null;
       try {
-        // Добавляем 'Z' в конец строки, чтобы Dart понял, что это время в UTC
-        final utcDateTime = DateTime.parse('${dateString}Z');
-        // Затем конвертируем его в локальное время устройства
+        // If the server already provides timezone info, parse directly;
+        // otherwise assume UTC by appending 'Z'.
+        final normalized = dateString.contains('Z') ||
+                dateString.contains('+') ||
+                RegExp(r'-\d{2}:\d{2}$').hasMatch(dateString)
+            ? dateString
+            : '${dateString}Z';
+        final utcDateTime = DateTime.parse(normalized);
         return utcDateTime.toLocal();
       } catch (e) {
         return null;

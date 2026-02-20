@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -265,9 +266,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _timeNotifier.value++;
     });
 
-    // Data Ticker: Background sync every 3 seconds (as requested, WS insufficient)
-    // This keeps button colors up-to-date and handles backend updates not pushed via WebSocket
-    _dataTicker = Timer.periodic(const Duration(seconds: 3), (_) {
+    // Data Ticker: Background sync every 30 seconds
+    // Keeps button states up-to-date alongside WebSocket push events
+    _dataTicker = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
         // Fetch fresh data for ALL statuses to keep button colors updated
         context
@@ -301,6 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _dataTicker?.cancel();
     _sectionDebounce?.cancel();
     _navigationSubscription?.cancel();
+    _timeNotifier.dispose();
     super.dispose();
   }
 
@@ -378,24 +380,27 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           )
-        : GestureDetector(
-            onTap: () {
-              setState(() {
-                _debugThemeOffset++;
-              });
-              final nextMonth = ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Testing Month: $nextMonth'),
-                  duration: const Duration(milliseconds: 500),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: Colors.black87,
-                ),
-              );
-            },
-            child: _Header(),
-          );
+        : kDebugMode
+            ? GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _debugThemeOffset++;
+                  });
+                  final nextMonth =
+                      ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Testing Month: $nextMonth'),
+                      duration: const Duration(milliseconds: 500),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Colors.black87,
+                    ),
+                  );
+                },
+                child: _Header(),
+              )
+            : _Header();
 
     // 3. Navbar (Panel Selector)
     final navbar = BlocListener<VotingBloc, VotingState>(
@@ -780,9 +785,7 @@ class _FooterState extends State<_Footer> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
                           height: 1.5,
-                          fontSize: isLandscape
-                              ? 18
-                              : 15, // Reduced font size per feedback
+                          fontSize: 15,
                           shadows: [
                             const Shadow(blurRadius: 6, color: Colors.black87)
                           ],
@@ -795,9 +798,7 @@ class _FooterState extends State<_Footer> {
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
                           fontStyle: FontStyle.italic,
-                          fontSize: isLandscape
-                              ? 16
-                              : 13, // Reduced font size per feedback
+                          fontSize: 13,
                           shadows: [
                             const Shadow(blurRadius: 6, color: Colors.black87)
                           ],

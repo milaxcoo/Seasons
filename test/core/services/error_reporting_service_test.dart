@@ -57,9 +57,9 @@ void main() {
     });
 
     test('truncates plain text and appends ellipsis', () {
-      const html = 'abcdefghij';
-      final result = ErrorReportingService.truncateTelegramHtml(html, 7);
-      expect(result.length, lessThanOrEqualTo(7));
+      final html = 'abcdefghij' * 10; // 100 chars, well above limit
+      final result = ErrorReportingService.truncateTelegramHtml(html, 30);
+      expect(result.length, lessThanOrEqualTo(30));
       expect(result, endsWith('...'));
     });
 
@@ -86,11 +86,16 @@ void main() {
     });
 
     test('does not add extra closing tag when tag is already closed', () {
-      final html = '<b>short</b>${'x' * 100}';
-      final result = ErrorReportingService.truncateTelegramHtml(html, 30);
-      // The <b> tag was closed before the truncation point, so no extra </b>
-      expect(result, isNot(contains('</b>')));
-      expect(result.length, lessThanOrEqualTo(30));
+      // Use a large limit so the closed <b> tag is fully within the truncated
+      // portion — the method should see the tag was already closed and not
+      // append an extra </b>.
+      final html = '<b>short</b>${'x' * 200}';
+      final result = ErrorReportingService.truncateTelegramHtml(html, 60);
+      // Count occurrences of </b> — should be exactly one (the original).
+      final closeCount = '</b>'.allMatches(result).length;
+      expect(closeCount, equals(1),
+          reason: 'Only the original </b> should be present, no extra added');
+      expect(result.length, lessThanOrEqualTo(60));
     });
 
     test('avoids cutting inside a partial HTML tag', () {

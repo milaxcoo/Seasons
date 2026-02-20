@@ -39,7 +39,7 @@ void main() {
 
     registerFallbackValue(AppStarted());
     registerFallbackValue(LoggedOut());
-    registerFallbackValue(const LoggedIn(login: '', password: ''));
+    registerFallbackValue(const LoggedIn());
     registerFallbackValue(
         const FetchEventsByStatus(status: model.VotingStatus.active));
     registerFallbackValue(const RegisterForEvent(eventId: ''));
