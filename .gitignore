@@ -44,8 +44,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-
+android/local.properties
 
 # Environment variables and secrets
 .env
@@ -62,7 +61,9 @@ secrets.json
 # Coverage reports
 coverage/
 *.lcov
-docs/
+
+# IDE personal config
+devtools_options.yaml
 
 # Test results
 test-results/
