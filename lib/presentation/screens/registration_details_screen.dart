@@ -187,54 +187,56 @@ class _RegistrationDetailsView extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                         child: BlocBuilder<VotingBloc, VotingState>(
                           builder: (context, state) {
-                          if (state is RegistrationInProgress) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(26),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  l10n.registering,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(color: Colors.white),
+                            if (state is RegistrationInProgress) {
+                              return Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(26),
                                 ),
+                                child: Center(
+                                  child: Text(
+                                    l10n.registering,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(color: Colors.white),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final isRegistrationClosed =
+                                event.registrationEndDate != null &&
+                                    DateTime.now()
+                                        .isAfter(event.registrationEndDate!);
+
+                            return ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                side: BorderSide(
+                                    color: (event.isRegistered ||
+                                            isRegistrationClosed)
+                                        ? Colors.grey
+                                        : const Color(0xFF6A9457),
+                                    width: 2),
+                                backgroundColor:
+                                    (event.isRegistered || isRegistrationClosed)
+                                        ? Colors.grey.shade300
+                                        : Colors.transparent,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(26)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
-                            );
-                          }
-
-                          final isRegistrationClosed =
-                              event.registrationEndDate != null &&
-                                  DateTime.now()
-                                      .isAfter(event.registrationEndDate!);
-
-                          return ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              side: BorderSide(
-                                  color: (event.isRegistered ||
-                                          isRegistrationClosed)
-                                      ? Colors.grey
-                                      : const Color(0xFF6A9457),
-                                  width: 2),
-                              backgroundColor:
-                                  (event.isRegistered || isRegistrationClosed)
-                                      ? Colors.grey.shade300
-                                      : Colors.transparent,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(26)),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: (event.isRegistered ||
-                                    isRegistrationClosed)
-                                ? null
-                                : () {
-                                    context.read<VotingBloc>().add(
-                                        RegisterForEvent(eventId: event.id));
-                                  },
+                              onPressed: (event.isRegistered ||
+                                      isRegistrationClosed)
+                                  ? null
+                                  : () {
+                                      context.read<VotingBloc>().add(
+                                          RegisterForEvent(eventId: event.id));
+                                    },
                               child: Text(
                                 event.isRegistered
                                     ? l10n.alreadyRegistered
@@ -277,28 +279,28 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(color: Colors.black54)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight
-                        .bold, // bodyLarge уже w700, 'bold' это подтверждает
-                    color: valueColor ?? Colors.black,
-                  ),
-            ),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge
+                ?.copyWith(color: Colors.black54)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            // --- ИЗМЕНЕНИЕ: убираем курсив (titleMedium -> bodyLarge) ---
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight
+                      .bold, // bodyLarge уже w700, 'bold' это подтверждает
+                  color: valueColor ?? Colors.black,
+                ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 }

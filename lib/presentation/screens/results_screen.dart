@@ -98,7 +98,8 @@ class _ResultsView extends StatelessWidget {
               borderRadius: BorderRadius.circular(26),
               child: SingleChildScrollView(
                 padding: isLandscape
-                    ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
+                    ? const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 4.0)
                     : const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize:
@@ -384,22 +385,22 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(color: Colors.black54)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge
+                ?.copyWith(color: Colors.black54)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 }

@@ -134,7 +134,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   const Divider(color: Colors.grey, height: 1),
                                   const SizedBox(height: 16),
                                   _UserInfoRow(
-                                    label: AppLocalizations.of(context)!.jobTitle,
+                                    label:
+                                        AppLocalizations.of(context)!.jobTitle,
                                     value: profile.jobTitle,
                                   ),
                                 ],

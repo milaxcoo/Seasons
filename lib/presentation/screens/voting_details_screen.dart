@@ -682,31 +682,31 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w900,
+                ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: valueColor ?? Colors.black,
-                  ),
-            ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: valueColor ?? Colors.black,
+                ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 }
 
