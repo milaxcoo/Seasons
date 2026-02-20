@@ -71,7 +71,8 @@ class _RegistrationDetailsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
-    final dateFormat = DateFormat('dd.MM.yyyy HH:mm:ss', locale.languageCode == 'ru' ? 'ru' : 'en');
+    final dateFormat = DateFormat(
+        'dd.MM.yyyy HH:mm:ss', locale.languageCode == 'ru' ? 'ru' : 'en');
     final l10n = AppLocalizations.of(context)!;
 
     final startDate = event.votingStartDate != null
@@ -82,7 +83,8 @@ class _RegistrationDetailsView extends StatelessWidget {
         ? dateFormat.format(event.registrationEndDate!)
         : l10n.notSet;
 
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return BlocListener<VotingBloc, VotingState>(
       listener: (context, state) {
@@ -107,7 +109,7 @@ class _RegistrationDetailsView extends StatelessWidget {
         child: Center(
           child: Padding(
             // Responsive padding: Smaller margins in landscape to maximize card size
-            padding: isLandscape 
+            padding: isLandscape
                 ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
                 : const EdgeInsets.all(24.0),
             child: Container(
@@ -125,7 +127,8 @@ class _RegistrationDetailsView extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24), // Inner padding for content
+                  padding:
+                      const EdgeInsets.all(24), // Inner padding for content
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,30 +185,34 @@ class _RegistrationDetailsView extends StatelessWidget {
                             );
                           }
 
-                          final isRegistrationClosed = event.registrationEndDate != null &&
-                              DateTime.now().isAfter(event.registrationEndDate!);
+                          final isRegistrationClosed =
+                              event.registrationEndDate != null &&
+                                  DateTime.now()
+                                      .isAfter(event.registrationEndDate!);
 
                           return ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               side: BorderSide(
-                                  color: (event.isRegistered || isRegistrationClosed)
+                                  color: (event.isRegistered ||
+                                          isRegistrationClosed)
                                       ? Colors.grey
                                       : const Color(0xFF6A9457),
                                   width: 2),
-                              backgroundColor: (event.isRegistered || isRegistrationClosed)
-                                  ? Colors.grey.shade300
-                                  : Colors.transparent,
+                              backgroundColor:
+                                  (event.isRegistered || isRegistrationClosed)
+                                      ? Colors.grey.shade300
+                                      : Colors.transparent,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(26)),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            onPressed: (event.isRegistered || isRegistrationClosed)
+                            onPressed: (event.isRegistered ||
+                                    isRegistrationClosed)
                                 ? null
                                 : () {
-                                    context
-                                        .read<VotingBloc>()
-                                        .add(RegisterForEvent(eventId: event.id));
+                                    context.read<VotingBloc>().add(
+                                        RegisterForEvent(eventId: event.id));
                                   },
                             child: Text(
                               event.isRegistered
@@ -213,12 +220,15 @@ class _RegistrationDetailsView extends StatelessWidget {
                                   : (isRegistrationClosed
                                       ? l10n.registrationClosed
                                       : l10n.registerButton),
-                              style:
-                                  Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                        color: (event.isRegistered || isRegistrationClosed)
-                                            ? Colors.black54
-                                            : const Color(0xFF6A9457),
-                                      ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    color: (event.isRegistered ||
+                                            isRegistrationClosed)
+                                        ? Colors.black54
+                                        : const Color(0xFF6A9457),
+                                  ),
                             ),
                           );
                         },

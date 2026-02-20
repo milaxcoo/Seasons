@@ -55,25 +55,31 @@ class _SeasonsLoaderState extends State<SeasonsLoader>
               // Calculate angle for each dot (0, 90, 180, 270 degrees) + rotation
               final angle = (index * 90.0 * (math.pi / 180.0)) +
                   (_controller.value * 2 * math.pi);
-              
+
               // Variable radius for breathing effect
               // Goes from 0.0 to 1.0 twice per rotation
               final breathing = math.sin(_controller.value * 2 * math.pi);
-              final radius = (widget.size / 3) + (breathing * 2.0); 
+              final radius = (widget.size / 3) + (breathing * 2.0);
 
               return Positioned(
-                left: (widget.size / 2) + (radius * math.cos(angle)) - (widget.size / 8),
-                top: (widget.size / 2) + (radius * math.sin(angle)) - (widget.size / 8),
+                left: (widget.size / 2) +
+                    (radius * math.cos(angle)) -
+                    (widget.size / 8),
+                top: (widget.size / 2) +
+                    (radius * math.sin(angle)) -
+                    (widget.size / 8),
                 child: Container(
                   width: widget.size / 4,
                   height: widget.size / 4,
                   decoration: BoxDecoration(
                     // Make colors less noticeable (more transparent)
-                    color: (widget.color ?? colors[index]).withValues(alpha: 0.8),
+                    color:
+                        (widget.color ?? colors[index]).withValues(alpha: 0.8),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (widget.color ?? colors[index]).withValues(alpha: 0.3),
+                        color: (widget.color ?? colors[index])
+                            .withValues(alpha: 0.3),
                         blurRadius: 4,
                         spreadRadius: 1,
                       ),

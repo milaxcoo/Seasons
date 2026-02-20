@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
 
 /// Mixin for StatefulWidget States to automatically track screen name.
-/// 
+///
 /// Usage:
 /// ```dart
 /// class _MyScreenState extends State<MyScreen> with ScreenTrackingMixin {

@@ -25,12 +25,15 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     on<VotingListUpdated>(_onVotingListUpdated);
 
     // Listen to BackgroundService for updates (or provided stream for testing)
-    _serviceSubscription = (backgroundServiceStream ?? BackgroundService().on).listen((data) {
+    _serviceSubscription =
+        (backgroundServiceStream ?? BackgroundService().on).listen((data) {
       if (data == null) return;
-      
+
       final action = data['action'] as String?;
-      if (kDebugMode) debugPrint("VotingBloc: Received from BackgroundService: $action");
-      
+      if (kDebugMode) {
+        debugPrint("VotingBloc: Received from BackgroundService: $action");
+      }
+
       // Refresh ALL statuses to update all button colors and lists
       // We do this regardless of current state to ensure data is fresh
       add(RefreshEventsSilent(status: model.VotingStatus.registration));
@@ -39,14 +42,17 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     });
   }
 
-  void _onVotingListUpdated(VotingListUpdated event, Emitter<VotingState> emit) {
+  void _onVotingListUpdated(
+      VotingListUpdated event, Emitter<VotingState> emit) {
     if (state is VotingEventsLoadSuccess) {
       final currentState = state as VotingEventsLoadSuccess;
       // Filter for current tab status
-      final filtered = event.events.where((e) => e.status == currentState.status).toList();
-      
-      debugPrint("VotingBloc: _onVotingListUpdated emitting ${filtered.length} filtered events");
-      
+      final filtered =
+          event.events.where((e) => e.status == currentState.status).toList();
+
+      debugPrint(
+          "VotingBloc: _onVotingListUpdated emitting ${filtered.length} filtered events");
+
       emit(VotingEventsLoadSuccess(
         events: filtered,
         status: currentState.status,
@@ -67,12 +73,12 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
         }
         return e;
       }).toList();
-      
+
       // If the event is NOT in the list, should we add it?
       // Only if it matches the current status filter.
       // But checking status logic here is complex.
       // For now, let's just update existing ones.
-      
+
       emit(VotingEventsLoadSuccess(
         events: updatedEvents,
         status: currentState.status,
@@ -132,7 +138,8 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
 
   // FIXED: Обработчик теперь получает полный 'event' из события SubmitVote
   // и ему больше не нужно искать его в 'state'.
-  Future<void> _onSubmitVote(SubmitVote event, Emitter<VotingState> emit) async {
+  Future<void> _onSubmitVote(
+      SubmitVote event, Emitter<VotingState> emit) async {
     emit(VotingLoadInProgress());
     try {
       // Теперь мы передаем 'event.event' (полный объект VotingEvent)
@@ -155,4 +162,3 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     }
   }
 }
-

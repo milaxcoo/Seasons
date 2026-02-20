@@ -101,7 +101,8 @@ void main() {
         type: 'yes_no_abstained',
         subjectResults: [
           SubjectResult(name: 'Project A', voteCounts: {'За': 10, 'Против': 5}),
-          SubjectResult(name: 'Project B', voteCounts: {'За': 8, 'Воздержался': 3}),
+          SubjectResult(
+              name: 'Project B', voteCounts: {'За': 8, 'Воздержался': 3}),
         ],
       );
 
@@ -143,8 +144,10 @@ void main() {
         name: 'Department Performance',
         type: 'subject_oriented',
         subjectResults: [
-          SubjectResult(name: 'Department A', voteCounts: {'За': 20, 'Против': 3}),
-          SubjectResult(name: 'Department B', voteCounts: {'За': 18, 'Против': 5}),
+          SubjectResult(
+              name: 'Department A', voteCounts: {'За': 20, 'Против': 3}),
+          SubjectResult(
+              name: 'Department B', voteCounts: {'За': 18, 'Против': 5}),
         ],
       );
 

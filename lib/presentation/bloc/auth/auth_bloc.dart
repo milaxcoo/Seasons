@@ -40,6 +40,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthUnauthenticated());
           ErrorReportingService().reportEvent('app_start_session_stale');
         }
+      } on TimeoutException {
+        // Temporary network timeout — assume session may still be valid,
+        // do not force logout to avoid unnecessary re-authentication.
+        emit(const AuthAuthenticated(userLogin: 'RUDN User'));
+        ErrorReportingService().reportEvent('app_start_validation_timeout');
+
+        // Fetch real name asynchronously (non-blocking), similar to _onLoggedIn
+        Future<String?>.sync(_votingRepository.getUserLogin).then((name) {
+          if (name != null) {
+            add(_UpdateUserLogin(name));
+            ErrorReportingService()
+                .reportEvent('app_start_name_fetched_after_timeout');
+          }
+        }).catchError((e) {
+          debugPrint('Failed to fetch user login after timeout: $e');
+          ErrorReportingService().reportEvent(
+            'app_start_name_fetch_failed_after_timeout',
+            details: {
+              'exception_type': e.runtimeType.toString(),
+            },
+          );
+        });
       } catch (e) {
         // Network error — can't validate, clear cookie to be safe
         try {

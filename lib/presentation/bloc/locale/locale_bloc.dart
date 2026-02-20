@@ -32,9 +32,10 @@ class LocaleBloc extends Bloc<LocaleEvent, LocaleState> {
     } else {
       // Get device locale
       final deviceLocale = PlatformDispatcher.instance.locale;
-      
+
       // Check if device locale is supported
-      if (_supportedLocales.any((l) => l.languageCode == deviceLocale.languageCode)) {
+      if (_supportedLocales
+          .any((l) => l.languageCode == deviceLocale.languageCode)) {
         resolvedLocale = Locale(deviceLocale.languageCode);
       } else {
         // Fallback to default (Russian)

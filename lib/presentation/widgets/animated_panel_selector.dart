@@ -7,7 +7,7 @@ class AnimatedPanelSelector extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onPanelSelected;
   final Map<model.VotingStatus, int> hasEvents;
-  
+
   // Customizable dimensions
   final double totalHeight;
   final double barHeight;
@@ -40,9 +40,11 @@ class AnimatedPanelSelector extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final double internalPadding = 40.0;
-              final double barWidth = constraints.maxWidth - (horizontalMargin * 2);
+              final double barWidth =
+                  constraints.maxWidth - (horizontalMargin * 2);
               // Effective width for buttons is barWidth minus internal padding
-              final double effectiveButtonAreaWidth = barWidth - (internalPadding * 2);
+              final double effectiveButtonAreaWidth =
+                  barWidth - (internalPadding * 2);
               final double buttonSlotWidth = effectiveButtonAreaWidth / 3;
 
               return TweenAnimationBuilder<double>(
@@ -94,52 +96,59 @@ class AnimatedPanelSelector extends StatelessWidget {
                         right: horizontalMargin,
                         height: barHeight,
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: internalPadding),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: internalPadding),
                           child: Row(
-                          children: [
-                            // Button 1 - Registration
-                            SizedBox(
-                              width: buttonSlotWidth,
-                              child: _AnimatedButton(
-                                icon: RegistrationIcon(isSelected: false),
-                                isSelected: selectedIndex == 0,
-                                onTap: () => onPanelSelected(0),
-                                hasActiveEvents:
-                                    (hasEvents[model.VotingStatus.registration] ?? 0) > 0,
-                                buttonRadius: buttonRadius,
-                                animDuration: animDuration,
-                                animCurve: animCurve,
+                            children: [
+                              // Button 1 - Registration
+                              SizedBox(
+                                width: buttonSlotWidth,
+                                child: _AnimatedButton(
+                                  icon: RegistrationIcon(isSelected: false),
+                                  isSelected: selectedIndex == 0,
+                                  onTap: () => onPanelSelected(0),
+                                  hasActiveEvents: (hasEvents[model
+                                              .VotingStatus.registration] ??
+                                          0) >
+                                      0,
+                                  buttonRadius: buttonRadius,
+                                  animDuration: animDuration,
+                                  animCurve: animCurve,
+                                ),
                               ),
-                            ),
-                            // Button 2 - Active Voting
-                            SizedBox(
-                              width: buttonSlotWidth,
-                              child: _AnimatedButton(
-                                icon: ActiveVotingIcon(isSelected: false),
-                                isSelected: selectedIndex == 1,
-                                onTap: () => onPanelSelected(1),
-                                hasActiveEvents:
-                                    (hasEvents[model.VotingStatus.active] ?? 0) > 0,
-                                buttonRadius: buttonRadius,
-                                animDuration: animDuration,
-                                animCurve: animCurve,
+                              // Button 2 - Active Voting
+                              SizedBox(
+                                width: buttonSlotWidth,
+                                child: _AnimatedButton(
+                                  icon: ActiveVotingIcon(isSelected: false),
+                                  isSelected: selectedIndex == 1,
+                                  onTap: () => onPanelSelected(1),
+                                  hasActiveEvents:
+                                      (hasEvents[model.VotingStatus.active] ??
+                                              0) >
+                                          0,
+                                  buttonRadius: buttonRadius,
+                                  animDuration: animDuration,
+                                  animCurve: animCurve,
+                                ),
                               ),
-                            ),
-                            // Button 3 - Results
-                            SizedBox(
-                              width: buttonSlotWidth,
-                              child: _AnimatedButton(
-                                icon: ResultsIcon(isSelected: false),
-                                isSelected: selectedIndex == 2,
-                                onTap: () => onPanelSelected(2),
-                                hasActiveEvents:
-                                    (hasEvents[model.VotingStatus.completed] ?? 0) > 0,
-                                buttonRadius: buttonRadius,
-                                animDuration: animDuration,
-                                animCurve: animCurve,
+                              // Button 3 - Results
+                              SizedBox(
+                                width: buttonSlotWidth,
+                                child: _AnimatedButton(
+                                  icon: ResultsIcon(isSelected: false),
+                                  isSelected: selectedIndex == 2,
+                                  onTap: () => onPanelSelected(2),
+                                  hasActiveEvents: (hasEvents[
+                                              model.VotingStatus.completed] ??
+                                          0) >
+                                      0,
+                                  buttonRadius: buttonRadius,
+                                  animDuration: animDuration,
+                                  animCurve: animCurve,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
                           ),
                         ),
                       ),
@@ -242,44 +251,44 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     // ===== STEP 1: Create Base Rectangle (Pill Shape) =====
     final basePath = Path();
     basePath.moveTo(barLeft, barTop + cornerRadius);
-    
+
     // Top-left corner (fully rounded)
     basePath.arcToPoint(
       Offset(barLeft + cornerRadius, barTop),
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     // Top edge
     basePath.lineTo(barRight - cornerRadius, barTop);
-    
+
     // Top-right corner (fully rounded)
     basePath.arcToPoint(
       Offset(barRight, barTop + cornerRadius),
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     // Right edge
     basePath.lineTo(barRight, barBottom - cornerRadius);
-    
+
     // Bottom-right corner (fully rounded)
     basePath.arcToPoint(
       Offset(barRight - cornerRadius, barBottom),
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     // Bottom edge
     basePath.lineTo(barLeft + cornerRadius, barBottom);
-    
+
     // Bottom-left corner (fully rounded)
     basePath.arcToPoint(
       Offset(barLeft, barBottom - cornerRadius),
       radius: Radius.circular(cornerRadius),
       clockwise: true,
     );
-    
+
     basePath.close();
 
     // ===== STEP 2: Create Blob/Curve Shape (Exact SVG) =====
@@ -291,7 +300,10 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     final double scaleY = blobHeight / svgHeight;
 
     // Calculate blob center position based on animation with internal padding
-    final double blobCenterX = barLeft + internalPadding + (animationValue * buttonSlotWidth) + (buttonSlotWidth / 2);
+    final double blobCenterX = barLeft +
+        internalPadding +
+        (animationValue * buttonSlotWidth) +
+        (buttonSlotWidth / 2);
     final double blobStartX = blobCenterX - (blobWidth / 2);
 
     final blobPath = Path();
@@ -299,7 +311,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     blobPath.moveTo(101.5, 45.5 + 100.0);
     // Come up to the surface start point
     blobPath.lineTo(6.7, 45.5);
-    
+
     // Curves (unchanged)
     blobPath.relativeCubicTo(15.0, 0.0, 20.0, -1.0, 23.3, -4.0);
     blobPath.relativeCubicTo(5.7, -2.3, 9.9, -5.0, 18.1, -10.5);
@@ -311,7 +323,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     blobPath.relativeCubicTo(8.8, 5.0, 9.9, 7.1, 20.6, 14.3);
     blobPath.relativeCubicTo(8.3, 5.5, 12.4, 8.2, 18.1, 10.5);
     blobPath.relativeCubicTo(3.0, 3.0, 8.3, 4.0, 23.3, 4.0);
-    
+
     // Go back to absolute deep center to close the V
     blobPath.lineTo(101.5, 45.5 + 100.0);
     blobPath.close();
@@ -337,6 +349,6 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant _UnifiedShapeClipper oldClipper) {
     return oldClipper.animationValue != animationValue ||
-           oldClipper.internalPadding != internalPadding;
+        oldClipper.internalPadding != internalPadding;
   }
 }

@@ -45,12 +45,12 @@ void main() async {
 
       await initializeDateFormatting('ru_RU', null);
       await initializeDateFormatting('en_US', null);
-      
+
       // Initialize background service for WebSocket
       // Moved AFTER runApp to prevent black screen on Android (waiting for permissions/init)
-      
+
       runApp(const SeasonsApp());
-      
+
       // Post-launch initialization
       await _initializeNotifications();
       await BackgroundService().initialize();
@@ -73,20 +73,20 @@ Future<void> _initializeNotifications() async {
     requestBadgePermission: true,
     requestSoundPermission: true,
   );
-  
+
   const initSettings = InitializationSettings(
     android: androidSettings,
     iOS: iosSettings,
   );
-  
+
   await flutterLocalNotificationsPlugin.initialize(
     initSettings,
     onDidReceiveNotificationResponse: _onNotificationTapped,
   );
-  
+
   // Check if app was launched from notification
-  final launchDetails = await flutterLocalNotificationsPlugin
-      .getNotificationAppLaunchDetails();
+  final launchDetails =
+      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
   if (launchDetails?.didNotificationLaunchApp ?? false) {
     final payload = launchDetails?.notificationResponse?.payload;
     if (payload != null) {
@@ -106,14 +106,15 @@ void _onNotificationTapped(NotificationResponse response) {
 /// Parse notification payload and navigate accordingly
 void _handleNotificationPayload(String payload) {
   debugPrint('Notification tapped with payload: $payload');
-  
+
   // Payload format: "Navigate:VotingList:tabIndex"
   if (payload.startsWith('Navigate:VotingList:')) {
     final parts = payload.split(':');
     if (parts.length >= 3) {
       final tabIndex = int.tryParse(parts[2]) ?? 0;
       // Signal HomeScreen to navigate to this tab and refresh
-      NotificationNavigationService().navigateToTab(tabIndex, shouldRefresh: true);
+      NotificationNavigationService()
+          .navigateToTab(tabIndex, shouldRefresh: true);
     }
   }
 }
@@ -132,12 +133,14 @@ class SeasonsApp extends StatelessWidget {
           ),
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(
-              votingRepository: RepositoryProvider.of<VotingRepository>(context),
+              votingRepository:
+                  RepositoryProvider.of<VotingRepository>(context),
             )..add(AppStarted()),
           ),
           BlocProvider<VotingBloc>(
             create: (context) => VotingBloc(
-              votingRepository: RepositoryProvider.of<VotingRepository>(context),
+              votingRepository:
+                  RepositoryProvider.of<VotingRepository>(context),
             ),
           ),
         ],
@@ -161,8 +164,7 @@ class SeasonsApp extends StatelessWidget {
               home: BlocBuilder<AuthBloc, AuthState>(
                 builder: (context, state) {
                   if (state is AuthInitial) {
-                    return const Scaffold(
-                        body: Center(child: SeasonsLoader()));
+                    return const Scaffold(body: Center(child: SeasonsLoader()));
                   }
                   if (state is AuthAuthenticated) {
                     // Start background service for WebSocket connection

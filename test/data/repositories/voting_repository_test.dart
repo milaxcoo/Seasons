@@ -207,8 +207,6 @@ void main() {
           throwsA(isA<Exception>()),
         );
       });
-
-
     });
 
     group('Registration', () {

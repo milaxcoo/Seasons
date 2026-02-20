@@ -62,4 +62,3 @@ class ResultsIcon extends _SvgIcon {
           ''',
         );
 }
-

@@ -14,7 +14,6 @@ dependencies:
     sdk: flutter
 
   # For iOS style icons
-  cupertino_icons: ^1.0.8
 
   # State Management (BLoC)
   bloc: ^9.0.0
@@ -23,17 +22,14 @@ dependencies:
 
   # UI & Styling
   google_fonts: ^6.2.1
-  fl_chart: ^1.1.0
   intl: ^0.20.2
 
   # Secure Storage
   flutter_secure_storage: ^9.2.2
 
   web_socket_channel: ^3.0.0
-  rxdart: ^0.28.0
   flutter_svg: ^2.2.2
   http: ^1.5.0
-  html: ^0.15.6
   shared_preferences: ^2.5.3
   webview_flutter: ^4.13.1
   flutter_local_notifications: ^19.5.0

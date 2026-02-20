@@ -24,8 +24,10 @@ void main() {
             name: 'Вопрос 1',
             type: 'standard',
             subjectResults: [
-              SubjectResult(name: 'Кандидат А', voteCounts: {'За': 10, 'Против': 5}),
-              SubjectResult(name: 'Кандидат Б', voteCounts: {'За': 8, 'Против': 7}),
+              SubjectResult(
+                  name: 'Кандидат А', voteCounts: {'За': 10, 'Против': 5}),
+              SubjectResult(
+                  name: 'Кандидат Б', voteCounts: {'За': 8, 'Против': 7}),
             ],
           ),
         ],
@@ -79,7 +81,8 @@ void main() {
         name: 'Тестовый вопрос',
         type: 'standard',
         subjectResults: [
-          SubjectResult(name: 'Кандидат А', voteCounts: {'За': 10, 'Против': 5}),
+          SubjectResult(
+              name: 'Кандидат А', voteCounts: {'За': 10, 'Против': 5}),
         ],
       );
 

@@ -8,10 +8,11 @@ class AppTheme {
   static const Color tertiaryColor = Color(0xFFA5D4F7);
   static const Color backgroundColor = Color(0xFFF0F8FF);
   static const Color textColor = Color(0xFF333333);
-  
+
   // --- RUDN BRAND COLORS ---
   static const Color rudnGreenColor = Color(0xFF23a74c);
-  static const Color rudnRedColor = Color(0xFFD32F2F); // Standard red for alerts/errors
+  static const Color rudnRedColor =
+      Color(0xFFD32F2F); // Standard red for alerts/errors
 
   // --- THEME GETTER ---
   static ThemeData get lightTheme {
@@ -20,7 +21,7 @@ class AppTheme {
       brightness: Brightness.light,
       dividerTheme: const DividerThemeData(
         color: Colors.grey,
-        thickness: 1, 
+        thickness: 1,
         space: 1,
       ),
       scaffoldBackgroundColor: backgroundColor,
@@ -48,43 +49,44 @@ class AppTheme {
 
     // Use 'Gentium Book Plus' as the body font to match seasons.rudn.ru website
     // This font supports both Latin and Cyrillic characters
-    final baseTextTheme = GoogleFonts.gentiumBookPlusTextTheme(baseTheme.textTheme)
-        .copyWith(
-          bodyLarge: GoogleFonts.gentiumBookPlus(
-            textStyle: baseTheme.textTheme.bodyLarge,
-            fontWeight: FontWeight.w700,
-            shadows: textShadow,
-          ),
-          bodyMedium: GoogleFonts.gentiumBookPlus(
-            textStyle: baseTheme.textTheme.bodyMedium,
-            fontWeight: FontWeight.w700,
-            shadows: textShadow,
-          ),
-          bodySmall: GoogleFonts.gentiumBookPlus(
-            textStyle: baseTheme.textTheme.bodySmall,
-            fontWeight: FontWeight.w700,
-            shadows: textShadow,
-          ),
-          labelLarge: GoogleFonts.gentiumBookPlus(
-            textStyle: baseTheme.textTheme.labelLarge,
-            fontWeight: FontWeight.w700,
-            shadows: textShadow,
-          ),
-          labelMedium: GoogleFonts.gentiumBookPlus(
-            textStyle: baseTheme.textTheme.labelMedium,
-            fontWeight: FontWeight.w700,
-            shadows: textShadow,
-          ),
-          labelSmall: GoogleFonts.gentiumBookPlus(
-            textStyle: baseTheme.textTheme.labelSmall,
-            fontWeight: FontWeight.w700,
-            shadows: textShadow,
-          ),
-        )
-        .apply(
-      bodyColor: textColor,
-      displayColor: textColor,
-    );
+    final baseTextTheme =
+        GoogleFonts.gentiumBookPlusTextTheme(baseTheme.textTheme)
+            .copyWith(
+              bodyLarge: GoogleFonts.gentiumBookPlus(
+                textStyle: baseTheme.textTheme.bodyLarge,
+                fontWeight: FontWeight.w700,
+                shadows: textShadow,
+              ),
+              bodyMedium: GoogleFonts.gentiumBookPlus(
+                textStyle: baseTheme.textTheme.bodyMedium,
+                fontWeight: FontWeight.w700,
+                shadows: textShadow,
+              ),
+              bodySmall: GoogleFonts.gentiumBookPlus(
+                textStyle: baseTheme.textTheme.bodySmall,
+                fontWeight: FontWeight.w700,
+                shadows: textShadow,
+              ),
+              labelLarge: GoogleFonts.gentiumBookPlus(
+                textStyle: baseTheme.textTheme.labelLarge,
+                fontWeight: FontWeight.w700,
+                shadows: textShadow,
+              ),
+              labelMedium: GoogleFonts.gentiumBookPlus(
+                textStyle: baseTheme.textTheme.labelMedium,
+                fontWeight: FontWeight.w700,
+                shadows: textShadow,
+              ),
+              labelSmall: GoogleFonts.gentiumBookPlus(
+                textStyle: baseTheme.textTheme.labelSmall,
+                fontWeight: FontWeight.w700,
+                shadows: textShadow,
+              ),
+            )
+            .apply(
+              bodyColor: textColor,
+              displayColor: textColor,
+            );
 
     // 2. --- FIX ---
     // Now overriding HEADLINES to use 'HemiHead'

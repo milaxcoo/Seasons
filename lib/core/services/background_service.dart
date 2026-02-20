@@ -18,13 +18,14 @@ class BackgroundService {
   BackgroundService._internal();
 
   final FlutterBackgroundService _service = FlutterBackgroundService();
-  
+
   // Notification channel IDs
   static const String serviceChannelId = 'seasons_service';
   static const String alertChannelId = 'seasons_alerts';
-  
+
   // WebSocket URL for negotiation
-  static const String _wsNegotiateUrl = 'https://seasons.rudn.ru/api/v1/voters/ws_connect';
+  static const String _wsNegotiateUrl =
+      'https://seasons.rudn.ru/api/v1/voters/ws_connect';
 
   // Completer to ensure config is done before starting
   final Completer<void> _initCompleter = Completer<void>();
@@ -35,7 +36,7 @@ class BackgroundService {
 
     // Initialize local notifications first
     await _initNotifications();
-    
+
     // Configure the background service
     await _service.configure(
       androidConfiguration: AndroidConfiguration(
@@ -54,7 +55,7 @@ class BackgroundService {
         onBackground: onIosBackground,
       ),
     );
-    
+
     if (!_initCompleter.isCompleted) {
       _initCompleter.complete();
     }
@@ -63,7 +64,7 @@ class BackgroundService {
   /// Initialize notification channels
   Future<void> _initNotifications() async {
     final plugin = FlutterLocalNotificationsPlugin();
-    
+
     // Service status channel (silent, low importance)
     const serviceChannel = AndroidNotificationChannel(
       serviceChannelId,
@@ -73,7 +74,7 @@ class BackgroundService {
       playSound: false,
       enableVibration: false,
     );
-    
+
     // Alert channel (high importance for actual updates)
     const alertChannel = AndroidNotificationChannel(
       alertChannelId,
@@ -83,17 +84,17 @@ class BackgroundService {
       playSound: true,
       enableVibration: true,
     );
-    
+
     await plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(serviceChannel);
-    
+
     await plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(alertChannel);
-        
+
     // Explicitly request permission for Android 13+
     await plugin
         .resolvePlatformSpecificImplementation<
@@ -123,7 +124,7 @@ class BackgroundService {
 
   /// Get the service stream for UI updates
   Stream<Map<String, dynamic>?> get on => _service.on('update');
-  
+
   /// Check if service is running
   Future<bool> get isRunning => _service.isRunning();
 }
@@ -144,15 +145,15 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
-  
+
   if (kDebugMode) print("BackgroundService: onStart called");
-  
+
   // Handle stop request
   service.on('stopService').listen((event) {
     service.stopSelf();
     if (kDebugMode) print("BackgroundService: Stopped by request");
   });
-  
+
   // Initialize notifications plugin for this isolate
   final notificationsPlugin = FlutterLocalNotificationsPlugin();
   await notificationsPlugin.initialize(
@@ -161,28 +162,31 @@ void onStart(ServiceInstance service) async {
       iOS: DarwinInitializationSettings(),
     ),
   );
-  
+
   // WebSocket connection state
   IOWebSocketChannel? channel;
   Timer? reconnectTimer;
   bool isConnected = false;
-  
+
   // Connect to WebSocket
   Future<void> connect() async {
     if (isConnected) return;
-    
+
     try {
       // Get auth cookie from secure storage (need to access it differently in isolate)
       final cookie = await RudnAuthService().getCookie();
       if (cookie == null || cookie.isEmpty) {
-        if (kDebugMode) print("BackgroundService: No auth cookie, scheduling reconnect");
+        if (kDebugMode) {
+          print("BackgroundService: No auth cookie, scheduling reconnect");
+        }
         reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
         return;
       }
 
       final headers = {
         'Cookie': 'session=$cookie',
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        'User-Agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
       };
 
       if (kDebugMode) print("BackgroundService: Negotiating WS connection...");
@@ -199,7 +203,7 @@ void onStart(ServiceInstance service) async {
 
       final data = jsonDecode(response.body);
       final realWsUrl = data['url'] as String;
-      
+
       if (kDebugMode) print("BackgroundService: Connecting to $realWsUrl");
 
       // Step 2: Connect to the dynamic URL
@@ -238,18 +242,18 @@ void onStart(ServiceInstance service) async {
       reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
     }
   }
-  
+
   // Initial connection
   await connect();
-  
+
   // Keep service alive with periodic updates (Android foreground requirement)
   if (service is AndroidServiceInstance) {
     Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (await service.isForegroundService()) {
         service.setForegroundNotificationInfo(
           title: 'Seasons',
-          content: isConnected 
-              ? 'Подключено к серверу уведомлений' 
+          content: isConnected
+              ? 'Подключено к серверу уведомлений'
               : 'Переподключение...',
         );
       }
@@ -259,7 +263,7 @@ void onStart(ServiceInstance service) async {
 
 /// Handle incoming WebSocket message
 void _handleMessage(
-  dynamic message, 
+  dynamic message,
   ServiceInstance service,
   FlutterLocalNotificationsPlugin notificationsPlugin,
 ) async {
@@ -268,15 +272,15 @@ void _handleMessage(
     if (message.startsWith('Connection') || message.startsWith('Ping')) {
       return;
     }
-    
+
     try {
       final json = jsonDecode(message);
       if (json is Map<String, dynamic> && json.containsKey('action')) {
         final action = json['action'] as String?;
-        
+
         // Notify UI to refresh (if app is open)
         service.invoke('update', {'action': action, 'data': json['data']});
-        
+
         // Show local notification
         await _showAlertNotification(notificationsPlugin, action);
       }
@@ -297,7 +301,7 @@ Future<void> _showAlertNotification(
   String? title;
   String? body;
   String payload = 'Navigate:VotingList:0';
-  
+
   if (action != null) {
     if (action.contains('VotingStarted')) {
       title = 'Голосование началось!';
@@ -320,7 +324,10 @@ Future<void> _showAlertNotification(
 
   // If the action is unknown or not one of the above, DO NOT show a notification
   if (title == null || body == null) {
-      if (kDebugMode) debugPrint("BackgroundService: Action '$action' ignored for notification");
+    if (kDebugMode) {
+      debugPrint(
+          "BackgroundService: Action '$action' ignored for notification");
+    }
     return;
   }
 
@@ -350,6 +357,8 @@ Future<void> _showAlertNotification(
 /// Schedule reconnection
 Timer _scheduleReconnect(Timer? timer, Function() connect) {
   timer?.cancel();
-  if (kDebugMode) debugPrint("BackgroundService: Scheduling reconnect in 5s...");
+  if (kDebugMode) {
+    debugPrint("BackgroundService: Scheduling reconnect in 5s...");
+  }
   return Timer(const Duration(seconds: 5), connect);
 }
