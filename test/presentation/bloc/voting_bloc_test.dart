@@ -20,7 +20,8 @@ void main() {
 
     setUp(() {
       mockVotingRepository = MockVotingRepository();
-      mockServiceStreamController = StreamController<Map<String, dynamic>?>.broadcast();
+      mockServiceStreamController =
+          StreamController<Map<String, dynamic>?>.broadcast();
       votingBloc = VotingBloc(
         votingRepository: mockVotingRepository,
         backgroundServiceStream: mockServiceStreamController.stream,
@@ -96,7 +97,8 @@ void main() {
           VotingLoadInProgress(),
           isA<VotingEventsLoadSuccess>()
               .having((s) => s.events, 'events', testEvents)
-              .having((s) => s.status, 'status', model.VotingStatus.registration),
+              .having(
+                  (s) => s.status, 'status', model.VotingStatus.registration),
         ],
         verify: (_) {
           verify(() => mockVotingRepository
@@ -385,7 +387,8 @@ void main() {
           VotingLoadInProgress(),
           isA<VotingEventsLoadSuccess>()
               .having((s) => s.events, 'events', isEmpty)
-              .having((s) => s.status, 'status', model.VotingStatus.registration),
+              .having(
+                  (s) => s.status, 'status', model.VotingStatus.registration),
         ],
       );
     });

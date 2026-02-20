@@ -21,4 +21,3 @@ class Nominee extends Equatable {
   @override
   List<Object> get props => [id, name];
 }
-

@@ -55,8 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               future: _profileFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                      child: SeasonsLoader());
+                  return const Center(child: SeasonsLoader());
                 }
 
                 final profile = snapshot.data;
@@ -72,21 +71,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // FIXED: Standardized scrollable area style (Window with internal scroll)
                 // FIXED: Standardized scrollable area style (Window with internal scroll)
-                final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+                final isLandscape =
+                    MediaQuery.of(context).orientation == Orientation.landscape;
                 return SafeArea(
                   child: Center(
                     child: Padding(
                       // Responsive padding: Smaller margins in landscape to maximize card size
-                      padding: isLandscape 
-                          ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
-                          : const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                      padding: isLandscape
+                          ? const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 4.0)
+                          : const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 24.0),
                       child: Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(26),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2), // Subtle shadow
+                              color: Colors.black
+                                  .withValues(alpha: 0.2), // Subtle shadow
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -110,7 +113,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 const Divider(height: 24),
                                 _UserInfoRow(
-                                  label: AppLocalizations.of(context)!.patronymic,
+                                  label:
+                                      AppLocalizations.of(context)!.patronymic,
                                   value: profile.patronymic,
                                 ),
                                 const Divider(height: 24),
@@ -146,7 +150,7 @@ class _UserInfoRow extends StatelessWidget {
 
   void _showFullText(BuildContext context) {
     if (value.isEmpty) return;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

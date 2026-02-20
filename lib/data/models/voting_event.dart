@@ -37,8 +37,9 @@ class VotingEvent extends Equatable {
     final votingData = json['voting'] as Map<String, dynamic>? ?? json;
 
     VotingStatus status;
-    final statusString = json['status'] as String? ?? votingData['status'] as String?;
-    
+    final statusString =
+        json['status'] as String? ?? votingData['status'] as String?;
+
     switch (statusString) {
       case 'active':
       case 'ongoing':
@@ -82,31 +83,35 @@ class VotingEvent extends Equatable {
     List<QuestionResult> parsedResults = [];
     try {
       if (json['resultsData']?['results'] is Map) {
-        final resultsMap = json['resultsData']['results'] as Map<String, dynamic>;
-        
+        final resultsMap =
+            json['resultsData']['results'] as Map<String, dynamic>;
+
         resultsMap.forEach((questionName, questionData) {
           final questionValue = questionData as Map<String, dynamic>;
           final questionType = questionValue['type'] as String? ?? 'unknown';
           final List<SubjectResult> subjectResults = [];
 
           if (questionValue['results'] is Map) {
-            final subjectsMap = questionValue['results'] as Map<String, dynamic>;
+            final subjectsMap =
+                questionValue['results'] as Map<String, dynamic>;
 
             // Проверяем, есть ли вложенный ключ 'details' (для multiple_variants)
             if (subjectsMap['details'] is Map) {
-                final details = subjectsMap['details'] as Map<String, dynamic>;
-                details.forEach((variantName, voteCount) {
-                    subjectResults.add(SubjectResult(
-                        name: variantName,
-                        voteCounts: {variantName: voteCount as int? ?? 0},
-                    ));
-                });
+              final details = subjectsMap['details'] as Map<String, dynamic>;
+              details.forEach((variantName, voteCount) {
+                subjectResults.add(SubjectResult(
+                  name: variantName,
+                  voteCounts: {variantName: voteCount as int? ?? 0},
+                ));
+              });
             } else {
               // Стандартный парсинг для yes_no, yes_no_abstained, subject_oriented
               subjectsMap.forEach((subjectName, subjectData) {
-                final details = subjectData['details'] as Map<String, dynamic>? ?? {};
-                final voteCounts = details.map((key, value) => MapEntry(key, value as int? ?? 0));
-                
+                final details =
+                    subjectData['details'] as Map<String, dynamic>? ?? {};
+                final voteCounts = details
+                    .map((key, value) => MapEntry(key, value as int? ?? 0));
+
                 subjectResults.add(SubjectResult(
                   name: subjectName,
                   voteCounts: voteCounts,
@@ -114,7 +119,10 @@ class VotingEvent extends Equatable {
               });
             }
           }
-          parsedResults.add(QuestionResult(name: questionName, type: questionType, subjectResults: subjectResults));
+          parsedResults.add(QuestionResult(
+              name: questionName,
+              type: questionType,
+              subjectResults: subjectResults));
         });
       }
     } catch (e) {
@@ -126,11 +134,17 @@ class VotingEvent extends Equatable {
     return VotingEvent(
       id: votingData['id'] as String? ?? 'unknown_id',
       title: votingData['name'] as String? ?? 'Без названия',
-      description: votingData['description'] as String? ?? 'Описание отсутствует.',
+      description:
+          votingData['description'] as String? ?? 'Описание отсутствует.',
       status: status,
-      registrationEndDate: parseDate(votingData['end_registration_at'] as String?) ?? parseDate(votingData['registration_ended_at'] as String?),
-      votingStartDate: parseDate(votingData['registration_started_at'] as String?) ?? parseDate(votingData['voting_started_at'] as String?),
-      votingEndDate: parseDate(votingData['end_voting_at'] as String?) ?? parseDate(votingData['voting_ended_at'] as String?),
+      registrationEndDate:
+          parseDate(votingData['end_registration_at'] as String?) ??
+              parseDate(votingData['registration_ended_at'] as String?),
+      votingStartDate:
+          parseDate(votingData['registration_started_at'] as String?) ??
+              parseDate(votingData['voting_started_at'] as String?),
+      votingEndDate: parseDate(votingData['end_voting_at'] as String?) ??
+          parseDate(votingData['voting_ended_at'] as String?),
       isRegistered: votingData['registered'] == 1,
       questions: parsedQuestions, // Передаем распарсенный список вопросов
       hasVoted: votingData['voted'] == 1,
@@ -153,4 +167,3 @@ class VotingEvent extends Equatable {
         results, // Добавлено в props
       ];
 }
-

@@ -17,4 +17,5 @@ class MockDraftService extends Mock implements DraftService {}
 // as it provides a robust API for stubbing and verification.
 class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
-class MockVotingBloc extends MockBloc<VotingEvent, VotingState> implements VotingBloc {}
+class MockVotingBloc extends MockBloc<VotingEvent, VotingState>
+    implements VotingBloc {}

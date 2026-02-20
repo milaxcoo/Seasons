@@ -19,13 +19,13 @@ class VotingEventsLoadSuccess extends VotingState {
   final List<model.VotingEvent> events;
   final model.VotingStatus status; // Which section's data this is
   final int timestamp; // Force unique state for refresh
-  
+
   const VotingEventsLoadSuccess({
     required this.events,
     required this.status,
     this.timestamp = 0,
   });
-  
+
   @override
   List<Object> get props => [events, status, timestamp];
 }
@@ -61,4 +61,3 @@ class RegistrationFailure extends VotingState {
   final String error;
   const RegistrationFailure({required this.error});
 }
-

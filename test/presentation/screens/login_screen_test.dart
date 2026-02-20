@@ -101,8 +101,6 @@ void main() {
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
 
-
-
     testWidgets('navigates to HomeScreen when AuthAuthenticated',
         (tester) async {
       // Arrange
