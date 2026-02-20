@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:seasons/data/models/user_profile.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 
@@ -361,6 +362,81 @@ void main() {
         // Act & Assert
         expect(
           () => mockRepository.getResultsForEvent('event-01'),
+          throwsA(isA<Exception>()),
+        );
+      });
+    });
+
+    group('User Profile', () {
+      test('getUserProfile returns profile when available', () async {
+        // Arrange
+        const profile = UserProfile(
+          surname: 'Иванов',
+          name: 'Иван',
+          patronymic: 'Иванович',
+          email: 'ivanov@rudn.ru',
+          jobTitle: 'Студент',
+        );
+        when(() => mockRepository.getUserProfile())
+            .thenAnswer((_) async => profile);
+
+        // Act
+        final result = await mockRepository.getUserProfile();
+
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.surname, 'Иванов');
+        expect(result.email, 'ivanov@rudn.ru');
+        expect(result.fullName, 'Иванов Иван Иванович');
+      });
+
+      test('getUserProfile returns null when not available', () async {
+        // Arrange
+        when(() => mockRepository.getUserProfile())
+            .thenAnswer((_) async => null);
+
+        // Act
+        final result = await mockRepository.getUserProfile();
+
+        // Assert
+        expect(result, isNull);
+      });
+
+      test('getUserProfile throws exception on error', () async {
+        // Arrange
+        when(() => mockRepository.getUserProfile())
+            .thenThrow(Exception('Failed to fetch profile'));
+
+        // Act & Assert
+        expect(
+          () => mockRepository.getUserProfile(),
+          throwsA(isA<Exception>()),
+        );
+      });
+    });
+
+    group('Device Token', () {
+      test('registerDeviceToken completes successfully', () async {
+        // Arrange
+        when(() => mockRepository.registerDeviceToken(any()))
+            .thenAnswer((_) async {});
+
+        // Act
+        await mockRepository.registerDeviceToken('fcm_token_123');
+
+        // Assert
+        verify(() => mockRepository.registerDeviceToken('fcm_token_123'))
+            .called(1);
+      });
+
+      test('registerDeviceToken handles error gracefully', () async {
+        // Arrange
+        when(() => mockRepository.registerDeviceToken(any()))
+            .thenThrow(Exception('Network error'));
+
+        // Act & Assert
+        expect(
+          () => mockRepository.registerDeviceToken('fcm_token_123'),
           throwsA(isA<Exception>()),
         );
       });
