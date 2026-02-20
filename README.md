@@ -109,7 +109,7 @@ Every push/PR to `main`, `devs`, or `dev` triggers the [Flutter CI](.github/work
 1. 🎨 **Format** — `dart format --set-exit-if-changed`
 2. 🔍 **Analyze** — `flutter analyze --fatal-infos --fatal-warnings`
 3. 🧪 **Test** — `flutter test --coverage`
-4. ✅ **Coverage** — ≥ 30% (generated files excluded)
+4. ✅ **Coverage** — ≥ 50% filtered (generated code excluded; raw + filtered reports uploaded)
 
 CodeQL security scanning ([workflow](.github/workflows/codeql.yml)) also runs for Java/Kotlin and Swift code.
 
