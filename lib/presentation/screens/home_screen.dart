@@ -603,6 +603,7 @@ class _FooterState extends State<_Footer> {
   final ScrollController _scrollController = ScrollController();
   bool _isUserScrolling = false;
   Timer? _resumeTimer;
+  int _scrollGeneration = 0;
 
   @override
   void initState() {
@@ -623,8 +624,10 @@ class _FooterState extends State<_Footer> {
   @override
   void didUpdateWidget(covariant _Footer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the poem changes (e.g. month changes), reset scroll
+    // If the poem changes (e.g. month changes), reset scroll and invalidate
+    // any in-flight animateTo callbacks by bumping the generation.
     if (oldWidget.poem != widget.poem) {
+      _scrollGeneration++;
       _resumeTimer?.cancel();
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(0);
@@ -635,15 +638,22 @@ class _FooterState extends State<_Footer> {
 
   void _resumeAutoScroll({Duration delay = const Duration(seconds: 2)}) {
     _resumeTimer?.cancel();
+    final generation = _scrollGeneration;
     _resumeTimer = Timer(delay, () {
-      if (mounted && !_isUserScrolling && _scrollController.hasClients) {
-        _scrollLoop();
+      if (mounted &&
+          !_isUserScrolling &&
+          _scrollController.hasClients &&
+          _scrollGeneration == generation) {
+        _scrollLoop(generation);
       }
     });
   }
 
-  void _scrollLoop() {
-    if (!mounted || _isUserScrolling || !_scrollController.hasClients) return;
+  void _scrollLoop(int generation) {
+    if (!mounted ||
+        _isUserScrolling ||
+        !_scrollController.hasClients ||
+        _scrollGeneration != generation) return;
 
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
@@ -661,27 +671,33 @@ class _FooterState extends State<_Footer> {
         curve: Curves.linear,
       )
           .then((_) {
-        // When finished (either reached end or interrupted)
-        if (mounted && !_isUserScrolling && _scrollController.hasClients) {
-          if (_scrollController.offset >=
-              _scrollController.position.maxScrollExtent) {
-            // Reset to top after a delay if at the bottom
-            _resumeTimer = Timer(const Duration(seconds: 5), () {
-              if (mounted &&
-                  !_isUserScrolling &&
-                  _scrollController.hasClients) {
-                _scrollController.jumpTo(0);
-                _resumeAutoScroll(delay: const Duration(seconds: 1));
-              }
-            });
-          }
+        // Stale callback guard: discard if poem changed while animating.
+        if (!mounted ||
+            _isUserScrolling ||
+            !_scrollController.hasClients ||
+            _scrollGeneration != generation) return;
+        if (_scrollController.offset >=
+            _scrollController.position.maxScrollExtent) {
+          // Reset to top after a delay if at the bottom
+          _resumeTimer = Timer(const Duration(seconds: 5), () {
+            if (mounted &&
+                !_isUserScrolling &&
+                _scrollController.hasClients &&
+                _scrollGeneration == generation) {
+              _scrollController.jumpTo(0);
+              _resumeAutoScroll(delay: const Duration(seconds: 1));
+            }
+          });
         }
       });
     } else {
       // We are already at the bottom (e.g., user scrolled here manually).
       // Wait a bit and reset to top.
       _resumeTimer = Timer(const Duration(seconds: 5), () {
-        if (mounted && !_isUserScrolling && _scrollController.hasClients) {
+        if (mounted &&
+            !_isUserScrolling &&
+            _scrollController.hasClients &&
+            _scrollGeneration == generation) {
           _scrollController.jumpTo(0);
           _resumeAutoScroll(delay: const Duration(seconds: 1));
         }
@@ -731,10 +747,14 @@ class _FooterState extends State<_Footer> {
               ),
               child: NotificationListener<ScrollNotification>(
                 onNotification: (ScrollNotification notification) {
-                  if (notification is ScrollStartNotification) {
+                  // Only react to user-driven scroll events (dragDetails != null),
+                  // not programmatic scrolls like animateTo.
+                  if (notification is ScrollStartNotification &&
+                      notification.dragDetails != null) {
                     _isUserScrolling = true;
                     _resumeTimer?.cancel();
-                  } else if (notification is ScrollEndNotification) {
+                  } else if (notification is ScrollEndNotification &&
+                      notification.dragDetails != null) {
                     _isUserScrolling = false;
                     _resumeAutoScroll(delay: const Duration(seconds: 3));
                   }
