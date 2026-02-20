@@ -98,36 +98,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(26),
                           child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _UserInfoRow(
-                                  label: AppLocalizations.of(context)!.surname,
-                                  value: profile.surname,
-                                ),
-                                const Divider(height: 24),
-                                _UserInfoRow(
-                                  label: AppLocalizations.of(context)!.name,
-                                  value: profile.name,
-                                ),
-                                const Divider(height: 24),
-                                _UserInfoRow(
-                                  label:
-                                      AppLocalizations.of(context)!.patronymic,
-                                  value: profile.patronymic,
-                                ),
-                                const Divider(height: 24),
-                                _UserInfoRow(
-                                  label: AppLocalizations.of(context)!.email,
-                                  value: profile.email,
-                                ),
-                                const Divider(height: 24),
-                                _UserInfoRow(
-                                  label: AppLocalizations.of(context)!.jobTitle,
-                                  value: profile.jobTitle,
-                                ),
-                              ],
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _UserInfoRow(
+                                    label:
+                                        AppLocalizations.of(context)!.surname,
+                                    value: profile.surname,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(color: Colors.grey, height: 1),
+                                  const SizedBox(height: 16),
+                                  _UserInfoRow(
+                                    label: AppLocalizations.of(context)!.name,
+                                    value: profile.name,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(color: Colors.grey, height: 1),
+                                  const SizedBox(height: 16),
+                                  _UserInfoRow(
+                                    label: AppLocalizations.of(context)!
+                                        .patronymic,
+                                    value: profile.patronymic,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(color: Colors.grey, height: 1),
+                                  const SizedBox(height: 16),
+                                  _UserInfoRow(
+                                    label: AppLocalizations.of(context)!.email,
+                                    value: profile.email,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(color: Colors.grey, height: 1),
+                                  const SizedBox(height: 16),
+                                  _UserInfoRow(
+                                    label:
+                                        AppLocalizations.of(context)!.jobTitle,
+                                    value: profile.jobTitle,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

@@ -95,24 +95,52 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           l10n.areYouSure,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w900,
+                fontSize: 22, // Increased size
               ),
         ),
-        content: Text(l10n.voteConfirmationMessage),
+        content: Text(
+          l10n.voteConfirmationMessage,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontSize: 18, // Increased size
+              ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
         actions: <Widget>[
           TextButton(
-            child: Text(l10n.cancel),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            ),
+            child: Text(
+              l10n.cancel,
+              style: const TextStyle(fontSize: 18), // Increased size
+            ),
             onPressed: () {
               Navigator.of(dialogContext).pop();
             },
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.rudnGreenColor),
-            child: Text(l10n.vote, style: const TextStyle(color: Colors.white)),
+              backgroundColor: AppTheme.rudnGreenColor,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: Text(
+              l10n.vote,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18, // Increased size
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.read<VotingBloc>().add(
@@ -186,27 +214,48 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             context: context,
             barrierDismissible: false,
             builder: (dialogContext) => AlertDialog(
+              contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: Text(
                 l10n.voteAccepted,
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w900,
+                      fontSize: 22,
+                    ),
+              ),
+              content: Text(
+                l10n.thankYou,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontSize: 18,
                     ),
               ),
-              content: Text(l10n.thankYou),
               actionsAlignment: MainAxisAlignment.center,
+              actionsPadding: const EdgeInsets.only(bottom: 24),
               actions: [
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.rudnGreenColor,
-                    minimumSize: const Size(120, 44),
+                    minimumSize: const Size(140, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
                     Navigator.of(context).pop(true);
                   },
-                  child:
-                      const Text('OK', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -293,51 +342,58 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                   padding:
                                       const EdgeInsets.fromLTRB(0, 0, 0, 0),
                                   child: Container(
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFe4dcc5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFe4dcc5)
+                                          .withValues(alpha: 0.9),
                                       // Use only bottom radius? Or all?
                                       // The header looks like a card.
-                                      borderRadius: BorderRadius.vertical(
+                                      borderRadius: const BorderRadius.vertical(
                                           bottom: Radius.circular(26)),
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        if (widget.event.description.isNotEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                                16, 8, 16, 8),
-                                            child: Text(
-                                              widget.event.description,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyLarge
-                                                  ?.copyWith(
-                                                    color: Colors.black,
-                                                  ),
-                                            ),
-                                          ),
                                         Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              16, 8, 16, 16),
+                                          padding: const EdgeInsets.all(20),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              if (widget
-                                                  .event.description.isNotEmpty)
+                                              if (widget.event.description
+                                                  .isNotEmpty) ...[
+                                                Text(
+                                                  widget.event.description,
+                                                  textAlign: TextAlign.left,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyLarge
+                                                      ?.copyWith(
+                                                        color: Colors.black,
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 16),
                                                 const Divider(
                                                     color: Colors.grey,
                                                     height: 1),
+                                                const SizedBox(height: 16),
+                                              ],
                                               _InfoRow(
                                                   label: l10n.votingStart,
                                                   value: startDate),
-                                              const Divider(color: Colors.grey),
+                                              const SizedBox(height: 16),
+                                              const Divider(
+                                                  color: Colors.grey,
+                                                  height: 1),
+                                              const SizedBox(height: 16),
                                               _InfoRow(
                                                   label: l10n.votingEnd,
                                                   value: endDate),
-                                              const Divider(color: Colors.grey),
+                                              const SizedBox(height: 16),
+                                              const Divider(
+                                                  color: Colors.grey,
+                                                  height: 1),
+                                              const SizedBox(height: 16),
                                               _InfoRow(
                                                 label: l10n.status,
                                                 value: statusText,
@@ -452,7 +508,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                             right: 0,
                             bottom: 0,
                             child: Padding(
-                              padding: const EdgeInsets.all(24.0),
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                               child: SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -625,34 +681,31 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w900,
+                ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: valueColor ?? Colors.black,
-                  ),
-            ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: valueColor ?? Colors.black,
+                ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
