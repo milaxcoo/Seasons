@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -84,10 +85,6 @@ class ApiVotingRepository implements VotingRepository {
         }
         for (var votingJson in data) {
           if (votingJson is Map<String, dynamic>) {
-             // DEBUG: Print all keys for the first voting to spot the date field
-             if (data.indexOf(votingJson) == 0 && kDebugMode) {
-                if (kDebugMode) debugPrint("DEBUG: Voting Dump: $votingJson");
-             }
              if (votingJson['status'] == null) {
                 votingJson['status'] = statusString;
              }
@@ -232,6 +229,9 @@ class ApiVotingRepository implements VotingRepository {
           }
         }
       }
+    } on TimeoutException {
+      // Temporary network issue - do not force logout, propagate to caller
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         print("Error fetching user login: $e");

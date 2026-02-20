@@ -73,7 +73,6 @@ class _ResultsView extends StatelessWidget {
         : l10n.notSet;
 
     // FIXED: Standardized scrollable area style (Window with internal scroll)
-    // FIXED: Standardized scrollable area style (Window with internal scroll)
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     return SafeArea(
       child: Center(

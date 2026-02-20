@@ -54,8 +54,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             body: FutureBuilder<UserProfile?>(
               future: _profileFuture,
               builder: (context, snapshot) {
-
-
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
                       child: SeasonsLoader());
