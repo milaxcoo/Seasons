@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
 
-class MockHttpClient extends Mock implements http.Client {}
+import '../../mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -162,7 +161,7 @@ void main() {
   // sendTestMessage (with mock HTTP client)
   // ─────────────────────────────────────────────────────────────────────────
   group('sendTestMessage', () {
-    test('returns false when Telegram is not configured (empty token)', () async {
+    test('returns true when Telegram is not configured (no error thrown)', () async {
       // Default env has empty TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID,
       // so _sendToTelegram returns without calling the HTTP client.
       final mockClient = MockHttpClient();
