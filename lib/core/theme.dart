@@ -14,8 +14,10 @@ class AppTheme {
   static const Color rudnRedColor =
       Color(0xFFD32F2F); // Standard red for alerts/errors
 
-  // --- THEME GETTER ---
-  static ThemeData get lightTheme {
+  // --- THEME ---
+  static final ThemeData lightTheme = _buildLightTheme();
+
+  static ThemeData _buildLightTheme() {
     final baseTheme = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,

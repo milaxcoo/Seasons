@@ -37,9 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success == true && context.mounted) {
       ErrorReportingService().reportEvent('dispatching_logged_in');
-      context
-          .read<AuthBloc>()
-          .add(const LoggedIn(login: "rudn_user", password: ""));
+      context.read<AuthBloc>().add(const LoggedIn());
     } else if (success == true && !context.mounted) {
       ErrorReportingService()
           .reportEvent('LOGIN_FAILED_CONTEXT_UNMOUNTED', details: {

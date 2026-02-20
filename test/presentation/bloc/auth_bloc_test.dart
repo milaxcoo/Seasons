@@ -120,8 +120,7 @@ void main() {
               .thenAnswer((_) async => 'user');
           return authBloc;
         },
-        act: (bloc) =>
-            bloc.add(const LoggedIn(login: 'user', password: 'pass')),
+        act: (bloc) => bloc.add(const LoggedIn()),
         expect: () => const [
           AuthAuthenticated(userLogin: 'RUDN User'),
           AuthAuthenticated(userLogin: 'user'),
@@ -139,8 +138,7 @@ void main() {
               .thenAnswer((_) async => null);
           return authBloc;
         },
-        act: (bloc) =>
-            bloc.add(const LoggedIn(login: 'user', password: 'pass')),
+        act: (bloc) => bloc.add(const LoggedIn()),
         expect: () => const [
           AuthAuthenticated(userLogin: 'RUDN User'),
         ],
@@ -153,8 +151,7 @@ void main() {
               .thenThrow(Exception('Lookup failed'));
           return authBloc;
         },
-        act: (bloc) =>
-            bloc.add(const LoggedIn(login: 'user', password: 'pass')),
+        act: (bloc) => bloc.add(const LoggedIn()),
         expect: () => const [
           AuthAuthenticated(userLogin: 'RUDN User'),
         ],
@@ -193,7 +190,7 @@ void main() {
         return authBloc;
       },
       act: (bloc) async {
-        bloc.add(const LoggedIn(login: 'user', password: 'pass'));
+        bloc.add(const LoggedIn());
         await Future<void>.delayed(const Duration(milliseconds: 20));
         bloc.add(LoggedOut());
       },

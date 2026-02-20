@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
-import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
@@ -23,42 +22,39 @@ class RegistrationDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => VotingBloc(
-        votingRepository: RepositoryProvider.of<VotingRepository>(context),
-      ),
-      child: AppBackground(
-        imagePath: imagePath,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.35),
-                      Colors.black.withValues(alpha: 0.25),
-                      Colors.black.withValues(alpha: 0.35),
-                    ],
-                  ),
+    // Use the parent-provided VotingBloc so registration state
+    // propagates back to HomeScreen (no orphaned local bloc).
+    return AppBackground(
+      imagePath: imagePath,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.25),
+                    Colors.black.withValues(alpha: 0.35),
+                  ],
                 ),
               ),
             ),
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-              child: Scaffold(
+          ),
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: AppBar(
                 backgroundColor: Colors.transparent,
-                appBar: AppBar(
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                ),
-                body: _RegistrationDetailsView(event: event),
+                elevation: 0,
               ),
+              body: _RegistrationDetailsView(event: event),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

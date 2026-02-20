@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -66,9 +67,7 @@ class ApiVotingRepository implements VotingRepository {
         // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);
 
-        if (kDebugMode) {
-          if (kDebugMode) debugPrint("DEBUG: API Response: $decodedBody");
-        }
+        if (kDebugMode) debugPrint("DEBUG: API Response: $decodedBody");
 
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
         String statusString;
@@ -110,7 +109,9 @@ class ApiVotingRepository implements VotingRepository {
     };
     final body = {'voting_id': eventId};
     try {
-      final response = await http.post(url, headers: headers, body: body);
+      final response = await http
+          .post(url, headers: headers, body: body)
+          .timeout(const Duration(seconds: 15));
       if (response.statusCode != 200 ||
           !response.body.contains('"status":"registered"')) {
         throw Exception('Ошибка регистрации. Сервер ответил: ${response.body}');
@@ -162,16 +163,18 @@ class ApiVotingRepository implements VotingRepository {
     }
 
     try {
-      final response = await http.post(url, headers: headers, body: body);
+      final response = await http
+          .post(url, headers: headers, body: body)
+          .timeout(const Duration(seconds: 15));
 
       if (kDebugMode) {
-        print('--- ЗАПРОС ГОЛОСОВАНИЯ ---');
-        print('URL: $url');
-        print('Тело: $body');
-        print('--- ОТВЕТ СЕРВЕРА ---');
-        print('Статус: ${response.statusCode}');
-        print('Тело: ${response.body}');
-        print('--------------------');
+        debugPrint('--- ЗАПРОС ГОЛОСОВАНИЯ ---');
+        debugPrint('URL: $url');
+        debugPrint('Тело: $body');
+        debugPrint('--- ОТВЕТ СЕРВЕРА ---');
+        debugPrint('Статус: ${response.statusCode}');
+        debugPrint('Тело: ${response.body}');
+        debugPrint('--------------------');
       }
 
       // Успешный ответ
@@ -242,7 +245,9 @@ class ApiVotingRepository implements VotingRepository {
     try {
       final url = Uri.parse('$_baseUrl/account');
       final headers = await _headers;
-      final response = await http.get(url, headers: headers);
+      final response = await http
+          .get(url, headers: headers)
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         String surname = "";
@@ -348,18 +353,21 @@ class ApiVotingRepository implements VotingRepository {
     };
     final body = {
       'fcm_token': fcmToken,
-      'platform': 'android',
+      'platform': Platform.isIOS ? 'ios' : 'android',
     };
 
     try {
-      final response = await http.post(url, headers: headers, body: body);
+      final response = await http
+          .post(url, headers: headers, body: body)
+          .timeout(const Duration(seconds: 15));
       if (kDebugMode) {
-        print('Device token registration response: ${response.statusCode}');
+        debugPrint(
+            'Device token registration response: ${response.statusCode}');
       }
       // Silently accept any response - backend may not have endpoint yet
     } catch (e) {
       if (kDebugMode) {
-        print('Failed to register device token: $e');
+        debugPrint('Failed to register device token: $e');
       }
       // Silently fail - push notifications are optional
     }

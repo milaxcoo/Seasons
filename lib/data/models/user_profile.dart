@@ -1,4 +1,6 @@
-class UserProfile {
+import 'package:equatable/equatable.dart';
+
+class UserProfile extends Equatable {
   final String surname;
   final String name;
   final String patronymic;
@@ -12,6 +14,9 @@ class UserProfile {
     required this.email,
     required this.jobTitle,
   });
+
+  @override
+  List<Object> get props => [surname, name, patronymic, email, jobTitle];
 
   String get fullName => '$surname $name $patronymic';
 

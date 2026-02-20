@@ -69,7 +69,7 @@ void main() {
       when(() => mockRepository.logout()).thenAnswer((_) async {});
 
       // Act & Assert - Login
-      authBloc.add(const LoggedIn(login: 'user', password: 'pass'));
+      authBloc.add(const LoggedIn());
       await Future<void>.delayed(const Duration(milliseconds: 30));
       expect(authBloc.state, isA<AuthAuthenticated>());
 
@@ -166,7 +166,7 @@ void main() {
           .thenThrow(Exception('Lookup failed'));
 
       // Act
-      authBloc.add(const LoggedIn(login: 'wrong', password: 'wrong'));
+      authBloc.add(const LoggedIn());
       await Future<void>.delayed(const Duration(milliseconds: 30));
 
       // Verify

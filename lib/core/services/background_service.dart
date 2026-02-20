@@ -167,6 +167,7 @@ void onStart(ServiceInstance service) async {
   IOWebSocketChannel? channel;
   Timer? reconnectTimer;
   bool isConnected = false;
+  int reconnectAttempts = 0;
 
   // Connect to WebSocket
   Future<void> connect() async {
@@ -179,7 +180,8 @@ void onStart(ServiceInstance service) async {
         if (kDebugMode) {
           print("BackgroundService: No auth cookie, scheduling reconnect");
         }
-        reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
+        reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
+            attempts: reconnectAttempts++);
         return;
       }
 
@@ -217,6 +219,7 @@ void onStart(ServiceInstance service) async {
 
       isConnected = true;
       reconnectTimer?.cancel();
+      reconnectAttempts = 0; // Reset backoff on successful connection
 
       // Listen to messages
       channel!.stream.listen(
@@ -228,18 +231,21 @@ void onStart(ServiceInstance service) async {
           if (kDebugMode) print("BackgroundService: WS Connection closed");
           isConnected = false;
           channel = null;
-          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
+          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
+              attempts: reconnectAttempts++);
         },
         onError: (error) {
           if (kDebugMode) print("BackgroundService: WS Error: $error");
           isConnected = false;
           channel = null;
-          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
+          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
+              attempts: reconnectAttempts++);
         },
       );
     } catch (e) {
       if (kDebugMode) print("BackgroundService: Connection failed: $e");
-      reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect());
+      reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
+          attempts: reconnectAttempts++);
     }
   }
 
@@ -354,11 +360,13 @@ Future<void> _showAlertNotification(
   );
 }
 
-/// Schedule reconnection
-Timer _scheduleReconnect(Timer? timer, Function() connect) {
+/// Schedule reconnection with exponential backoff (5s, 10s, 20s, ... capped at 300s)
+Timer _scheduleReconnect(Timer? timer, Function() connect, {int attempts = 0}) {
   timer?.cancel();
+  final delaySec = (5 * (1 << attempts)).clamp(5, 300);
   if (kDebugMode) {
-    debugPrint("BackgroundService: Scheduling reconnect in 5s...");
+    debugPrint(
+        "BackgroundService: Scheduling reconnect in ${delaySec}s (attempt ${attempts + 1})...");
   }
-  return Timer(const Duration(seconds: 5), connect);
+  return Timer(Duration(seconds: delaySec), connect);
 }
