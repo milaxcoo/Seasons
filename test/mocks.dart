@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
@@ -19,3 +20,6 @@ class MockAuthBloc extends MockBloc<AuthEvent, AuthState> implements AuthBloc {}
 
 class MockVotingBloc extends MockBloc<VotingEvent, VotingState>
     implements VotingBloc {}
+
+// Mock for the http.Client used in ErrorReportingService.
+class MockHttpClient extends Mock implements http.Client {}
