@@ -233,8 +233,6 @@ class _ResultsTable extends StatelessWidget {
       BuildContext context, QuestionResult data, AppLocalizations l10n) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double availableWidth = constraints.maxWidth;
-
         // Определяем колонки
         List<String> columns;
         if (data.type == 'qualification_council') {
@@ -251,7 +249,6 @@ class _ResultsTable extends StatelessWidget {
         // --- ЛОГИКА РАСЧЕТА ШИРИНЫ КОЛОНОК ---
         // Use flexible widths so the table always fits without horizontal scroll.
         // First column (subject name) gets ~50%, data columns share the rest equally.
-        final int dataColsCount = max(1, colCount - 1);
         final Map<int, TableColumnWidth> tableColumnWidths = {
           0: const FlexColumnWidth(3),
         };
