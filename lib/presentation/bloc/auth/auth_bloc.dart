@@ -40,6 +40,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthUnauthenticated());
           ErrorReportingService().reportEvent('app_start_session_stale');
         }
+      } on TimeoutException {
+        // Temporary network timeout — assume session may still be valid,
+        // do not force logout to avoid unnecessary re-authentication.
+        emit(const AuthAuthenticated(userLogin: 'RUDN User'));
+        ErrorReportingService().reportEvent('app_start_validation_timeout');
       } catch (e) {
         // Network error — can't validate, clear cookie to be safe
         try {
