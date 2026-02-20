@@ -683,6 +683,7 @@ class _FooterState extends State<_Footer> {
         if (_scrollController.offset >=
             _scrollController.position.maxScrollExtent) {
           // Reset to top after a delay if at the bottom
+          _resumeTimer?.cancel();
           _resumeTimer = Timer(const Duration(seconds: 5), () {
             if (mounted &&
                 !_isUserScrolling &&
@@ -697,6 +698,7 @@ class _FooterState extends State<_Footer> {
     } else {
       // We are already at the bottom (e.g., user scrolled here manually).
       // Wait a bit and reset to top.
+      _resumeTimer?.cancel();
       _resumeTimer = Timer(const Duration(seconds: 5), () {
         if (mounted &&
             !_isUserScrolling &&
@@ -774,7 +776,7 @@ class _FooterState extends State<_Footer> {
                     children: [
                       Text(
                         widget.poem,
-                        textAlign: TextAlign.left, // Explictly left align
+                        textAlign: TextAlign.left, // Explicitly left align
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
                           height: 1.5,

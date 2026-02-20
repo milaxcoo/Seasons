@@ -15,7 +15,13 @@ class ErrorReportingService {
   static final ErrorReportingService _instance =
       ErrorReportingService._internal();
   factory ErrorReportingService() => _instance;
-  ErrorReportingService._internal();
+  ErrorReportingService._internal() : _httpClient = http.Client();
+
+  /// Named constructor for testing: creates a non-singleton instance with an
+  /// injectable [http.Client] so network calls can be stubbed in unit tests.
+  @visibleForTesting
+  ErrorReportingService.withHttpClient(http.Client httpClient)
+      : _httpClient = httpClient;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CONFIGURATION
@@ -50,6 +56,7 @@ class ErrorReportingService {
 
   // ═══════════════════════════════════════════════════════════════════════════
 
+  final http.Client _httpClient;
   String _appVersion = 'unknown';
   String _currentScreen = 'unknown';
   bool _isInitialized = false;
@@ -85,8 +92,8 @@ class ErrorReportingService {
       context: 'Test message',
       timestamp: DateTime.now().toUtc().toIso8601String(),
       appVersion: _appVersion,
-      platform: _detectPlatform(),
-      osVersion: Platform.operatingSystemVersion,
+      platform: detectPlatform(),
+      osVersion: detectOsVersion(),
       screenName: 'TestScreen',
     );
 
@@ -199,8 +206,8 @@ class ErrorReportingService {
       context: context,
       timestamp: DateTime.now().toUtc().toIso8601String(),
       appVersion: _appVersion,
-      platform: _detectPlatform(),
-      osVersion: Platform.operatingSystemVersion,
+      platform: detectPlatform(),
+      osVersion: detectOsVersion(),
       screenName: _currentScreen,
     );
 
@@ -213,9 +220,22 @@ class ErrorReportingService {
     return _enableErrorReporting;
   }
 
+  /// Detect OS version safely (works on mobile and desktop; returns 'web' on web
+  /// because [Platform] APIs are unavailable there).
+  @visibleForTesting
+  static String detectOsVersion() {
+    if (kIsWeb) return 'web';
+    try {
+      return Platform.operatingSystemVersion;
+    } catch (_) {
+      return 'unknown';
+    }
+  }
+
   /// Detect platform safely (works on mobile and desktop only; web is handled
   /// via [kIsWeb] before reaching [Platform] APIs, which are unavailable on web).
-  static String _detectPlatform() {
+  @visibleForTesting
+  static String detectPlatform() {
     if (kIsWeb) return 'web';
     try {
       if (Platform.isIOS) return 'ios';
@@ -245,7 +265,7 @@ class ErrorReportingService {
         final telegramUrl = Uri.parse(
             'https://api.telegram.org/bot$_telegramBotToken/sendMessage');
 
-        final response = await http
+        final response = await _httpClient
             .post(
               telegramUrl,
               headers: {'Content-Type': 'application/json'},
@@ -316,29 +336,29 @@ class ErrorReportingService {
 
     final buffer = StringBuffer();
     buffer.writeln(
-        '$emoji <b>${_escapeHtml(report.type.toUpperCase())}</b> в Seasons');
+        '$emoji <b>${escapeHtml(report.type.toUpperCase())}</b> в Seasons');
     buffer.writeln();
     buffer.writeln(
-        '📱 ${_escapeHtml(report.platform)} ${_escapeHtml(report.osVersion)}');
-    buffer.writeln('📦 Версия: ${_escapeHtml(report.appVersion)}');
-    buffer.writeln('📍 Экран: ${_escapeHtml(report.screenName)}');
-    buffer.writeln('🕐 ${_escapeHtml(report.timestamp)}');
+        '📱 ${escapeHtml(report.platform)} ${escapeHtml(report.osVersion)}');
+    buffer.writeln('📦 Версия: ${escapeHtml(report.appVersion)}');
+    buffer.writeln('📍 Экран: ${escapeHtml(report.screenName)}');
+    buffer.writeln('🕐 ${escapeHtml(report.timestamp)}');
     buffer.writeln();
-    buffer.writeln('❌ <code>${_escapeHtml(report.message)}</code>');
+    buffer.writeln('❌ <code>${escapeHtml(report.message)}</code>');
 
     if (report.context != null && report.context!.isNotEmpty) {
-      buffer.writeln('📋 ${_escapeHtml(report.context!)}');
+      buffer.writeln('📋 ${escapeHtml(report.context!)}');
     }
 
     if (report.stackTrace != null && report.stackTrace!.isNotEmpty) {
       final shortStack = report.stackTrace!.split('\n').take(5).join('\n');
       buffer.writeln();
-      buffer.writeln('<pre>${_escapeHtml(shortStack)}</pre>');
+      buffer.writeln('<pre>${escapeHtml(shortStack)}</pre>');
     }
 
     var message = buffer.toString();
     if (message.length > _kTelegramMaxLength) {
-      message = _truncateTelegramHtml(message, _kTelegramMaxLength);
+      message = truncateTelegramHtml(message, _kTelegramMaxLength);
     }
     return message;
   }
@@ -348,7 +368,8 @@ class ErrorReportingService {
   /// - Avoids cutting inside an HTML tag.
   /// - Ensures all opened tags (<b>, <code>, <pre>) are properly closed.
   /// - Appends "..." to indicate truncation while staying within [maxLength].
-  String _truncateTelegramHtml(String html, int maxLength) {
+  @visibleForTesting
+  static String truncateTelegramHtml(String html, int maxLength) {
     if (html.length <= maxLength) return html;
 
     const String ellipsis = '...';
@@ -373,7 +394,7 @@ class ErrorReportingService {
 
     // Track which tags are still open at the end of `truncated`.
     final openTags = <String>[];
-    final tagPattern = RegExp(r'<(/?)(b|code|pre)>');
+    final tagPattern = RegExp(r'<(/?)(b|code|pre)(\s+[^>]*)?>');
     for (final match in tagPattern.allMatches(truncated)) {
       final isClosing = match.group(1) == '/';
       final tagName = match.group(2)!;
@@ -399,13 +420,28 @@ class ErrorReportingService {
     // Safety: hard truncate if we somehow exceeded maxLength.
     if (result.length > maxLength) {
       result = result.substring(0, maxLength);
+
+      // After hard truncation, remove any partial opening HTML tag.
+      final int lastLt = result.lastIndexOf('<');
+      final int lastGt = result.lastIndexOf('>');
+      if (lastLt > lastGt) {
+        result = result.substring(0, lastLt);
+      }
+
+      // Remove any partial HTML entity.
+      final int lastAmp = result.lastIndexOf('&');
+      final int lastSemi = result.lastIndexOf(';');
+      if (lastAmp > lastSemi) {
+        result = result.substring(0, lastAmp);
+      }
     }
 
     return result;
   }
 
   /// Escape HTML special characters for Telegram HTML parse mode.
-  String _escapeHtml(String text) {
+  @visibleForTesting
+  static String escapeHtml(String text) {
     return text
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')
