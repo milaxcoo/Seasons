@@ -444,7 +444,9 @@ class ApiVotingRepository implements VotingRepository {
       // Silently accept any response - backend may not have endpoint yet
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Failed to register device token: $e');
+        debugPrint(
+          'Failed to register device token: ${sanitizeObjectForLog(e)}',
+        );
       }
       // Silently fail - push notifications are optional
     }
