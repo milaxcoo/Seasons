@@ -21,7 +21,7 @@ dependencies:
   equatable: ^2.0.5
 
   # UI & Styling
-  google_fonts: ^6.2.1
+  google_fonts: ^8.0.2
   intl: ^0.20.2
 
   # Secure Storage
