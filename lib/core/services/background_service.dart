@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:http/http.dart' as http;
 import 'package:seasons/core/services/rudn_auth_service.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 
 /// Background Service for maintaining WebSocket connection 24/7 on Android.
 /// On iOS, standard behavior applies (connection only while app is active).
@@ -235,7 +236,11 @@ void onStart(ServiceInstance service) async {
       final data = jsonDecode(response.body);
       final realWsUrl = data['url'] as String;
 
-      if (kDebugMode) print("BackgroundService: Connecting to $realWsUrl");
+      if (kDebugMode) {
+        print(
+          "BackgroundService: Connecting to ${sanitizeUrlForLog(realWsUrl)}",
+        );
+      }
 
       // Step 2: Connect to the dynamic URL
       channel = IOWebSocketChannel.connect(
