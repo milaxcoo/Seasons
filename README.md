@@ -59,34 +59,6 @@ flutter pub get
 flutter run
 ```
 
-### Building for Release
-
-```bash
-# Create .secrets file with your Telegram credentials (optional)
-echo "TELEGRAM_BOT_TOKEN=your_token" > .secrets
-echo "TELEGRAM_CHAT_ID=your_chat_id" >> .secrets
-
-# Optional telemetry toggles (defaults shown)
-echo "ENABLE_ERROR_REPORTING=false" >> .secrets
-echo "ENABLE_DIAGNOSTIC_EVENTS=false" >> .secrets
-
-# Build with secrets
-./build.sh apk        # Android APK
-./build.sh appbundle  # Android AAB
-./build.sh ios        # iOS
-```
-
-### Android Release Signing
-
-Release builds require a configured keystore:
-
-- `KEYSTORE_PATH`
-- `KEYSTORE_PASSWORD`
-- `KEY_ALIAS`
-- `KEY_PASSWORD`
-
-Release build now fails fast when signing configuration is missing.
-
 ## 🧪 Testing
 
 ```bash
