@@ -196,7 +196,6 @@ const Set<String> _blockedWebViewSchemes = {
   'data',
   'javascript',
   'intent',
-  'about',
   'chrome',
   'blob',
 };
@@ -234,6 +233,10 @@ bool isAllowedWebViewUrl(String rawUrl) {
   if (uri == null || !uri.hasScheme) return false;
 
   final scheme = uri.scheme.toLowerCase();
+  if (scheme == 'about') {
+    final aboutPath = uri.path.toLowerCase();
+    return aboutPath == 'blank' || aboutPath == 'srcdoc';
+  }
   if (_blockedWebViewSchemes.contains(scheme)) return false;
   if (scheme != 'https') return false;
 

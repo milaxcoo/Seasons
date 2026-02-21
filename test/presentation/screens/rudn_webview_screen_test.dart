@@ -77,13 +77,22 @@ void main() {
       );
     });
 
+    test('isAllowedWebViewUrl allows internal about:blank and about:srcdoc',
+        () {
+      expect(isAllowedWebViewUrl('about:blank'), isTrue);
+      expect(isAllowedWebViewUrl('about:srcdoc'), isTrue);
+    });
+
+    test('isAllowedWebViewUrl blocks unsupported about URLs', () {
+      expect(isAllowedWebViewUrl('about:config'), isFalse);
+    });
+
     test('isAllowedWebViewUrl blocks dangerous schemes', () {
       for (final url in const [
         'file:///etc/passwd',
         'data:text/html,hello',
         'javascript:alert(1)',
         'intent://scan/#Intent;scheme=zxing;package=com.example;end',
-        'about:blank',
         'chrome://settings',
         'blob:https://seasons.rudn.ru/abc',
       ]) {
