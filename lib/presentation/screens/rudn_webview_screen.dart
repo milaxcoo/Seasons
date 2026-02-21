@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class RudnWebviewScreen extends StatefulWidget {
@@ -71,7 +72,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             if (shouldUpgradeToHttps(request.url)) {
               final secureUrl = upgradeToHttps(request.url);
               if (kDebugMode) {
-                debugPrint('Upgrading insecure redirect to: $secureUrl');
+                debugPrint(
+                  'Upgrading insecure redirect to ${sanitizeUrlForLog(secureUrl)}',
+                );
+                if (secureUrl.contains('/oauth/login_callback')) {
+                  debugPrint('Received oauth login_callback redirect');
+                }
               }
               _controller.loadRequest(Uri.parse(secureUrl));
               return NavigationDecision.prevent;

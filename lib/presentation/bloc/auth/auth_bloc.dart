@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -54,7 +55,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 .reportEvent('app_start_name_fetched_after_timeout');
           }
         }).catchError((e) {
-          debugPrint('Failed to fetch user login after timeout: $e');
+          debugPrint(
+            'Failed to fetch user login after timeout: ${sanitizeObjectForLog(e)}',
+          );
           ErrorReportingService().reportEvent(
             'app_start_name_fetch_failed_after_timeout',
             details: {
@@ -94,7 +97,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ErrorReportingService().reportEvent('auth_bloc_name_fetched');
       }
     }).catchError((e) {
-      debugPrint('Failed to fetch user login: $e');
+      debugPrint('Failed to fetch user login: ${sanitizeObjectForLog(e)}');
       ErrorReportingService()
           .reportEvent('auth_bloc_name_fetch_failed', details: {
         'exception_type': e.runtimeType.toString(),
