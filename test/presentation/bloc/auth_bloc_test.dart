@@ -2,19 +2,28 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 
 class MockVotingRepository extends Mock implements VotingRepository {}
 
+class MockDraftService extends Mock implements DraftService {}
+
 void main() {
   group('AuthBloc', () {
     late VotingRepository mockVotingRepository;
+    late DraftService mockDraftService;
     late AuthBloc authBloc;
 
     setUp(() {
       mockVotingRepository = MockVotingRepository();
-      authBloc = AuthBloc(votingRepository: mockVotingRepository);
+      mockDraftService = MockDraftService();
+      when(() => mockDraftService.clearAllDrafts()).thenAnswer((_) async {});
+      authBloc = AuthBloc(
+        votingRepository: mockVotingRepository,
+        draftService: mockDraftService,
+      );
     });
 
     tearDown(() {
@@ -64,6 +73,7 @@ void main() {
         expect: () => [AuthUnauthenticated()],
         verify: (_) {
           verify(() => mockVotingRepository.logout()).called(1);
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
         },
       );
 
@@ -81,6 +91,7 @@ void main() {
         expect: () => [const AuthAuthenticated(userLogin: 'RUDN User')],
         verify: (_) {
           verifyNever(() => mockVotingRepository.logout());
+          verifyNever(() => mockDraftService.clearAllDrafts());
         },
       );
 
@@ -98,6 +109,7 @@ void main() {
         expect: () => [const AuthAuthenticated(userLogin: 'RUDN User')],
         verify: (_) {
           verifyNever(() => mockVotingRepository.logout());
+          verifyNever(() => mockDraftService.clearAllDrafts());
         },
       );
 
@@ -184,6 +196,9 @@ void main() {
         },
         act: (bloc) => bloc.add(LoggedOut()),
         expect: () => [AuthUnauthenticated()],
+        verify: (_) {
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
+        },
       );
 
       blocTest<AuthBloc, AuthState>(
@@ -195,6 +210,9 @@ void main() {
         },
         act: (bloc) => bloc.add(LoggedOut()),
         expect: () => [AuthUnauthenticated()],
+        verify: (_) {
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
+        },
       );
     });
 

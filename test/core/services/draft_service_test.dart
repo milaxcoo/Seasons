@@ -82,5 +82,31 @@ void main() {
         expect(loaded2, equals({'q2': 'a2'}));
       });
     });
+
+    group('clearAllDrafts', () {
+      test('clearAllDrafts removes all voting drafts', () async {
+        await draftService.saveDraft('v1', {'q1': 'a1'});
+        await draftService.saveDraft('v2', {'q2': 'a2'});
+
+        await draftService.clearAllDrafts();
+
+        final loaded1 = await draftService.loadDraft('v1');
+        final loaded2 = await draftService.loadDraft('v2');
+        expect(loaded1, isEmpty);
+        expect(loaded2, isEmpty);
+      });
+
+      test('clearAllDrafts does not remove non-draft keys', () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('non_draft_key', 'keep-me');
+        await draftService.saveDraft('v1', {'q1': 'a1'});
+
+        await draftService.clearAllDrafts();
+
+        expect(prefs.getString('non_draft_key'), 'keep-me');
+        final loaded = await draftService.loadDraft('v1');
+        expect(loaded, isEmpty);
+      });
+    });
   });
 }
