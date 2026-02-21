@@ -85,6 +85,23 @@ void main() {
       );
 
       blocTest<AuthBloc, AuthState>(
+        'keeps user authenticated when session validation fails transiently',
+        build: () {
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'some_token');
+          when(() => mockVotingRepository.getUserLogin()).thenThrow(
+            const SessionValidationException.transientNetwork(),
+          );
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AppStarted()),
+        expect: () => [const AuthAuthenticated(userLogin: 'RUDN User')],
+        verify: (_) {
+          verifyNever(() => mockVotingRepository.logout());
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
         'emits placeholder then resolved name when getUserLogin times out then succeeds',
         build: () {
           when(() => mockVotingRepository.getAuthToken())

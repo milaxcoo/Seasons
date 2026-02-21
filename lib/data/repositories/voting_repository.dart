@@ -2,6 +2,28 @@ import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/models/user_profile.dart';
 
+enum SessionValidationFailureType { transientNetwork }
+
+class SessionValidationException implements Exception {
+  final SessionValidationFailureType type;
+  final String message;
+
+  const SessionValidationException({
+    required this.type,
+    required this.message,
+  });
+
+  const SessionValidationException.transientNetwork([String? message])
+      : type = SessionValidationFailureType.transientNetwork,
+        message =
+            message ?? 'Transient network failure during session validation';
+
+  @override
+  String toString() {
+    return 'SessionValidationException(type: $type, message: $message)';
+  }
+}
+
 abstract class VotingRepository {
   // --- Методы аутентификации ---
   Future<String> login(String login, String password);

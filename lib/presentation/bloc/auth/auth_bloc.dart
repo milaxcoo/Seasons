@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -22,7 +23,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    final bool hasToken = await _votingRepository.getAuthToken() != null;
+    final token = await _votingRepository.getAuthToken();
+    final bool hasToken = token != null && token.isNotEmpty;
     if (hasToken) {
       // Validate the stored cookie by checking with the server
       try {
@@ -32,55 +34,67 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthAuthenticated(userLogin: userLogin));
           ErrorReportingService().reportEvent('app_start_session_valid');
         } else {
-          // Server didn't confirm the session — cookie is stale
-          try {
-            await _votingRepository.logout(); // Clear the stale cookie
-          } catch (_) {
-            // If backend logout fails, we still clear local auth state.
-          }
-          emit(AuthUnauthenticated());
-          ErrorReportingService().reportEvent('app_start_session_stale');
+          await _clearSessionAndEmitUnauthenticated(emit);
+          ErrorReportingService().reportEvent('app_start_session_invalid');
         }
-      } on TimeoutException {
-        // Temporary network timeout — assume session may still be valid,
-        // do not force logout to avoid unnecessary re-authentication.
-        emit(const AuthAuthenticated(userLogin: 'RUDN User'));
-        ErrorReportingService().reportEvent('app_start_validation_timeout');
-
-        // Fetch real name asynchronously (non-blocking), similar to _onLoggedIn
-        Future<String?>.sync(_votingRepository.getUserLogin).then((name) {
-          if (name != null) {
-            add(_UpdateUserLogin(name));
-            ErrorReportingService()
-                .reportEvent('app_start_name_fetched_after_timeout');
-          }
-        }).catchError((e) {
-          debugPrint(
-            'Failed to fetch user login after timeout: ${sanitizeObjectForLog(e)}',
-          );
-          ErrorReportingService().reportEvent(
-            'app_start_name_fetch_failed_after_timeout',
-            details: {
-              'exception_type': e.runtimeType.toString(),
-            },
-          );
-        });
+      } on SessionValidationException catch (e) {
+        _handleTransientValidationFailure(emit, e);
+      } on TimeoutException catch (e) {
+        _handleTransientValidationFailure(emit, e);
+      } on SocketException catch (e) {
+        _handleTransientValidationFailure(emit, e);
       } catch (e) {
-        // Network error — can't validate, clear cookie to be safe
-        try {
-          await _votingRepository.logout();
-        } catch (_) {
-          // Local state should still move to unauthenticated.
-        }
-        emit(AuthUnauthenticated());
-        ErrorReportingService()
-            .reportEvent('app_start_validation_failed', details: {
-          'exception_type': e.runtimeType.toString(),
-        });
+        _handleTransientValidationFailure(emit, e);
       }
     } else {
       emit(AuthUnauthenticated());
     }
+  }
+
+  Future<void> _clearSessionAndEmitUnauthenticated(
+      Emitter<AuthState> emit) async {
+    try {
+      await _votingRepository.logout();
+    } catch (_) {
+      // If backend/local logout cleanup fails, state must still be unauthenticated.
+    }
+    emit(AuthUnauthenticated());
+  }
+
+  void _handleTransientValidationFailure(
+      Emitter<AuthState> emit, Object error) {
+    // Keep session on transient failures to avoid forcing unnecessary relogin.
+    emit(const AuthAuthenticated(userLogin: 'RUDN User'));
+    ErrorReportingService().reportEvent(
+      'app_start_validation_transient',
+      details: {
+        'exception_type': error.runtimeType.toString(),
+      },
+    );
+
+    _refreshUserNameAfterTransientFailure();
+  }
+
+  void _refreshUserNameAfterTransientFailure() {
+    // Fetch real name asynchronously (non-blocking), same UX as login timeout path.
+    Future<String?>.sync(_votingRepository.getUserLogin).then((name) {
+      if (name != null) {
+        add(_UpdateUserLogin(name));
+        ErrorReportingService().reportEvent(
+          'app_start_name_fetched_after_transient',
+        );
+      }
+    }).catchError((e) {
+      debugPrint(
+        'Failed to fetch user login after transient validation error: ${sanitizeObjectForLog(e)}',
+      );
+      ErrorReportingService().reportEvent(
+        'app_start_name_fetch_failed_after_transient',
+        details: {
+          'exception_type': e.runtimeType.toString(),
+        },
+      );
+    });
   }
 
   Future<void> _onLoggedIn(LoggedIn event, Emitter<AuthState> emit) async {
