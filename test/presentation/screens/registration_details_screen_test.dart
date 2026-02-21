@@ -1,71 +1,91 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
+import 'package:seasons/l10n/app_localizations.dart';
+import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_event.dart';
+import 'package:seasons/presentation/bloc/voting/voting_state.dart';
+import 'package:seasons/presentation/screens/registration_details_screen.dart';
+
+import '../../mocks.dart';
 
 void main() {
-  group('RegistrationDetailsScreen - Unit Tests', () {
-    // Note: Full widget tests are skipped due to complex widget tree with
-    // BackdropFilter, Google Fonts, and animations that require extensive
-    // test infrastructure. These are covered by integration tests.
+  late MockVotingBloc mockVotingBloc;
 
-    test('VotingEvent model correctly identifies registration status', () {
-      final registeredEvent = model.VotingEvent(
-        id: 'reg-01',
-        title: 'Test',
-        description: 'Desc',
-        status: model.VotingStatus.registration,
-        isRegistered: true,
-        hasVoted: false,
-        questions: const [],
-        results: const [],
-      );
+  setUpAll(() {
+    registerFallbackValue(const RegisterForEvent(eventId: 'fallback-event'));
+  });
 
-      final unregisteredEvent = model.VotingEvent(
-        id: 'reg-02',
-        title: 'Test',
-        description: 'Desc',
-        status: model.VotingStatus.registration,
-        isRegistered: false,
-        hasVoted: false,
-        questions: const [],
-        results: const [],
-      );
+  setUp(() {
+    mockVotingBloc = MockVotingBloc();
+    when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+    when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+    when(() => mockVotingBloc.add(any())).thenReturn(null);
+  });
 
-      expect(registeredEvent.isRegistered, true);
-      expect(unregisteredEvent.isRegistered, false);
-    });
+  Widget createTestWidget(model.VotingEvent event) {
+    return BlocProvider<VotingBloc>.value(
+      value: mockVotingBloc,
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('ru'), Locale('en')],
+        locale: const Locale('en'),
+        home: RegistrationDetailsScreen(event: event, imagePath: ''),
+      ),
+    );
+  }
 
-    test('VotingEvent correctly determines if registration is closed', () {
-      final futureEvent = model.VotingEvent(
-        id: 'reg-03',
-        title: 'Test',
-        description: 'Desc',
-        status: model.VotingStatus.registration,
-        registrationEndDate: DateTime.now().add(const Duration(days: 30)),
-        isRegistered: false,
-        hasVoted: false,
-        questions: const [],
-        results: const [],
-      );
+  testWidgets('dispatches RegisterForEvent when registration button is tapped',
+      (tester) async {
+    final event = model.VotingEvent(
+      id: 'reg-1',
+      title: 'Student Vote',
+      description: 'Registration details',
+      status: model.VotingStatus.registration,
+      registrationEndDate: DateTime.now().add(const Duration(days: 2)),
+      votingStartDate: DateTime(2026, 2, 1),
+      isRegistered: false,
+      questions: const [],
+      hasVoted: false,
+      results: const [],
+    );
 
-      final pastEvent = model.VotingEvent(
-        id: 'reg-04',
-        title: 'Test',
-        description: 'Desc',
-        status: model.VotingStatus.registration,
-        registrationEndDate: DateTime.now().subtract(const Duration(days: 1)),
-        isRegistered: false,
-        hasVoted: false,
-        questions: const [],
-        results: const [],
-      );
+    await tester.pumpWidget(createTestWidget(event));
+    await tester.pumpAndSettle();
 
-      final isFutureClosed = futureEvent.registrationEndDate != null &&
-          DateTime.now().isAfter(futureEvent.registrationEndDate!);
-      final isPastClosed = pastEvent.registrationEndDate != null &&
-          DateTime.now().isAfter(pastEvent.registrationEndDate!);
+    await tester.tap(find.byType(ElevatedButton));
+    await tester.pump();
 
-      expect(isFutureClosed, false);
-      expect(isPastClosed, true);
-    });
+    verify(() => mockVotingBloc.add(const RegisterForEvent(eventId: 'reg-1')))
+        .called(1);
+  });
+
+  testWidgets('disables register button when user is already registered',
+      (tester) async {
+    final event = model.VotingEvent(
+      id: 'reg-2',
+      title: 'Already registered',
+      description: 'Registration details',
+      status: model.VotingStatus.registration,
+      registrationEndDate: DateTime.now().add(const Duration(days: 2)),
+      isRegistered: true,
+      questions: const [],
+      hasVoted: false,
+      results: const [],
+    );
+
+    await tester.pumpWidget(createTestWidget(event));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+    expect(button.onPressed, isNull);
   });
 }

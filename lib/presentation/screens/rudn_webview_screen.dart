@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class RudnWebviewScreen extends StatefulWidget {
@@ -68,10 +69,15 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             // Error logging removed for production
           },
           onNavigationRequest: (NavigationRequest request) {
-            if (request.url.startsWith('http://seasons.rudn.ru')) {
-              final secureUrl = request.url.replaceFirst('http://', 'https://');
+            if (shouldUpgradeToHttps(request.url)) {
+              final secureUrl = upgradeToHttps(request.url);
               if (kDebugMode) {
-                debugPrint('Upgrading insecure redirect to: $secureUrl');
+                debugPrint(
+                  'Upgrading insecure redirect to ${sanitizeUrlForLog(secureUrl)}',
+                );
+                if (secureUrl.contains('/oauth/login_callback')) {
+                  debugPrint('Received oauth login_callback redirect');
+                }
               }
               _controller.loadRequest(Uri.parse(secureUrl));
               return NavigationDecision.prevent;
@@ -122,46 +128,26 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
         'document.cookie',
       );
 
-      // Parse the cookie string (format: "name1=value1; name2=value2")
-      final cookies = cookieString.toString();
+      final sessionCookie = extractSessionCookieValue(cookieString.toString());
+      if (sessionCookie != null) {
+        await RudnAuthService().saveCookie(sessionCookie);
+        ErrorReportingService().reportEvent('webview_cookie_found', details: {
+          'cookie_length': '${sessionCookie.length}',
+        });
 
-      // Remove quotes if present (JavaScript returns quoted string)
-      final cleanCookies = cookies.replaceAll('"', '');
-
-      if (cleanCookies.isNotEmpty && cleanCookies != 'null') {
-        // Split into individual cookies
-        final cookieList = cleanCookies.split(';');
-
-        for (final cookie in cookieList) {
-          final parts = cookie.trim().split('=');
-          if (parts.length >= 2) {
-            final name = parts[0].trim();
-            final value = parts.sublist(1).join('=').trim();
-
-            if (name == 'session' && value.isNotEmpty) {
-              // Session cookie found
-              await RudnAuthService().saveCookie(value);
-              ErrorReportingService()
-                  .reportEvent('webview_cookie_found', details: {
-                'cookie_length': '${value.length}',
-              });
-
-              if (mounted && !_hasPopped) {
-                _hasPopped = true;
-                _cookieCheckTimer?.cancel();
-                ErrorReportingService().reportEvent('webview_popping');
-                Navigator.of(context).pop(true);
-              } else {
-                ErrorReportingService()
-                    .reportEvent('webview_duplicate_pop_blocked', details: {
-                  'mounted': '$mounted',
-                  'hasPopped': '$_hasPopped',
-                });
-              }
-              return;
-            }
-          }
+        if (mounted && !_hasPopped) {
+          _hasPopped = true;
+          _cookieCheckTimer?.cancel();
+          ErrorReportingService().reportEvent('webview_popping');
+          Navigator.of(context).pop(true);
+        } else {
+          ErrorReportingService()
+              .reportEvent('webview_duplicate_pop_blocked', details: {
+            'mounted': '$mounted',
+            'hasPopped': '$_hasPopped',
+          });
         }
+        return;
       }
     } catch (e) {
       // Error ignored - page might not be ready yet
@@ -185,4 +171,36 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       ),
     );
   }
+}
+
+@visibleForTesting
+bool shouldUpgradeToHttps(String url) {
+  return url.startsWith('http://seasons.rudn.ru');
+}
+
+@visibleForTesting
+String upgradeToHttps(String url) {
+  return url.replaceFirst('http://', 'https://');
+}
+
+@visibleForTesting
+String? extractSessionCookieValue(String rawCookieString) {
+  final cleanCookies = rawCookieString.replaceAll('"', '').trim();
+  if (cleanCookies.isEmpty || cleanCookies == 'null') {
+    return null;
+  }
+
+  for (final cookie in cleanCookies.split(';')) {
+    final parts = cookie.trim().split('=');
+    if (parts.length < 2) {
+      continue;
+    }
+    final name = parts.first.trim();
+    final value = parts.sublist(1).join('=').trim();
+    if (name == 'session' && value.isNotEmpty) {
+      return value;
+    }
+  }
+
+  return null;
 }

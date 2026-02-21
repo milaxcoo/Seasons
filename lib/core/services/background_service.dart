@@ -9,15 +9,41 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:http/http.dart' as http;
 import 'package:seasons/core/services/rudn_auth_service.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 
 /// Background Service for maintaining WebSocket connection 24/7 on Android.
 /// On iOS, standard behavior applies (connection only while app is active).
 class BackgroundService {
   static final BackgroundService _instance = BackgroundService._internal();
   factory BackgroundService() => _instance;
-  BackgroundService._internal();
+  BackgroundService._internal({
+    FlutterBackgroundService? service,
+    FlutterLocalNotificationsPlugin? notificationsPlugin,
+    Future<void> Function(FlutterLocalNotificationsPlugin plugin)?
+        notificationsInitializer,
+  })  : _service = service ?? FlutterBackgroundService(),
+        _notificationsPlugin =
+            notificationsPlugin ?? FlutterLocalNotificationsPlugin(),
+        _notificationsInitializer = notificationsInitializer;
 
-  final FlutterBackgroundService _service = FlutterBackgroundService();
+  @visibleForTesting
+  factory BackgroundService.forTesting({
+    required FlutterBackgroundService service,
+    FlutterLocalNotificationsPlugin? notificationsPlugin,
+    Future<void> Function(FlutterLocalNotificationsPlugin plugin)?
+        notificationsInitializer,
+  }) {
+    return BackgroundService._internal(
+      service: service,
+      notificationsPlugin: notificationsPlugin,
+      notificationsInitializer: notificationsInitializer,
+    );
+  }
+
+  final FlutterBackgroundService _service;
+  final FlutterLocalNotificationsPlugin _notificationsPlugin;
+  final Future<void> Function(FlutterLocalNotificationsPlugin plugin)?
+      _notificationsInitializer;
 
   // Notification channel IDs
   static const String serviceChannelId = 'seasons_service';
@@ -63,7 +89,11 @@ class BackgroundService {
 
   /// Initialize notification channels
   Future<void> _initNotifications() async {
-    final plugin = FlutterLocalNotificationsPlugin();
+    final notificationsInitializer = _notificationsInitializer;
+    if (notificationsInitializer != null) {
+      await notificationsInitializer(_notificationsPlugin);
+      return;
+    }
 
     // Service status channel (silent, low importance)
     const serviceChannel = AndroidNotificationChannel(
@@ -85,18 +115,18 @@ class BackgroundService {
       enableVibration: true,
     );
 
-    await plugin
+    await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(serviceChannel);
 
-    await plugin
+    await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(alertChannel);
 
     // Explicitly request permission for Android 13+
-    await plugin
+    await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
@@ -206,7 +236,11 @@ void onStart(ServiceInstance service) async {
       final data = jsonDecode(response.body);
       final realWsUrl = data['url'] as String;
 
-      if (kDebugMode) print("BackgroundService: Connecting to $realWsUrl");
+      if (kDebugMode) {
+        print(
+          "BackgroundService: Connecting to ${sanitizeUrlForLog(realWsUrl)}",
+        );
+      }
 
       // Step 2: Connect to the dynamic URL
       channel = IOWebSocketChannel.connect(
@@ -268,7 +302,7 @@ void onStart(ServiceInstance service) async {
 }
 
 /// Handle incoming WebSocket message
-void _handleMessage(
+Future<void> _handleMessage(
   dynamic message,
   ServiceInstance service,
   FlutterLocalNotificationsPlugin notificationsPlugin,
@@ -369,4 +403,30 @@ Timer _scheduleReconnect(Timer? timer, Function() connect, {int attempts = 0}) {
         "BackgroundService: Scheduling reconnect in ${delaySec}s (attempt ${attempts + 1})...");
   }
   return Timer(Duration(seconds: delaySec), connect);
+}
+
+@visibleForTesting
+Future<void> handleMessageForTest(
+  dynamic message,
+  ServiceInstance service,
+  FlutterLocalNotificationsPlugin notificationsPlugin,
+) {
+  return _handleMessage(message, service, notificationsPlugin);
+}
+
+@visibleForTesting
+Future<void> showAlertNotificationForTest(
+  FlutterLocalNotificationsPlugin plugin,
+  String? action,
+) {
+  return _showAlertNotification(plugin, action);
+}
+
+@visibleForTesting
+Timer scheduleReconnectForTest(
+  Timer? timer,
+  Function() connect, {
+  int attempts = 0,
+}) {
+  return _scheduleReconnect(timer, connect, attempts: attempts);
 }

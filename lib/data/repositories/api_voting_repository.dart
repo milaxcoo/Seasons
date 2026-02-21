@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:seasons/core/utils/safe_log.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
@@ -11,18 +12,78 @@ import 'package:seasons/data/models/user_profile.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 
 class ApiVotingRepository implements VotingRepository {
-  final String _baseUrl = 'https://seasons.rudn.ru';
+  final Uri _baseUri;
+  final http.Client _httpClient;
+  final RudnAuthService _authService;
+  final Map<VotingStatus, String> _lastEventsLogSignatureByStatus = {};
+
+  ApiVotingRepository({
+    String baseUrl = 'https://seasons.rudn.ru',
+    http.Client? httpClient,
+    RudnAuthService? authService,
+  })  : _baseUri = Uri.parse(baseUrl),
+        _httpClient = httpClient ?? http.Client(),
+        _authService = authService ?? RudnAuthService();
   // No longer needed internal state given we use the service
   // String? _userLogin;
   // String? _authToken;
 
   // Helper to retrieve the current headers with the valid cookie
   Future<Map<String, String>> get _headers async {
-    final cookie = await RudnAuthService().getCookie() ?? '';
+    final cookie = await _authService.getCookie() ?? '';
     return {
       'Cookie': 'session=$cookie',
       'X-Requested-With': 'XMLHttpRequest',
     };
+  }
+
+  Uri _buildSeasonsUri(String path, [Map<String, String>? queryParameters]) {
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    final scheme = _baseUri.scheme.isEmpty ? 'https' : _baseUri.scheme;
+    final host = _baseUri.host.isEmpty ? _baseUri.path : _baseUri.host;
+
+    return Uri(
+      scheme: scheme,
+      host: host,
+      port: _baseUri.hasPort ? _baseUri.port : null,
+      path: normalizedPath,
+      queryParameters: queryParameters == null || queryParameters.isEmpty
+          ? null
+          : queryParameters,
+    );
+  }
+
+  @visibleForTesting
+  Uri buildSeasonsUriForTest(String path,
+      [Map<String, String>? queryParameters]) {
+    return _buildSeasonsUri(path, queryParameters);
+  }
+
+  void _logEventsSummaryIfChanged(
+    VotingStatus status,
+    Map<String, dynamic> decodedBody,
+  ) {
+    if (!kDebugMode) {
+      return;
+    }
+
+    final votingCount = (decodedBody['votings'] as List?)?.length ?? 0;
+    final pending = decodedBody['pendingVotings'];
+    final pendingSignature = pending is Map ? pending.toString() : '';
+    final signature = '${status.name}|$votingCount|$pendingSignature';
+
+    if (_lastEventsLogSignatureByStatus[status] == signature) {
+      return;
+    }
+    _lastEventsLogSignatureByStatus[status] = signature;
+
+    if (pending is Map) {
+      debugPrint(
+        'API events summary (${status.name}): votings=$votingCount, pending=$pending',
+      );
+    } else {
+      debugPrint('API events summary (${status.name}): votings=$votingCount');
+    }
   }
 
   // --- Методы аутентификации ---
@@ -30,18 +91,18 @@ class ApiVotingRepository implements VotingRepository {
   Future<String> login(String login, String password) async {
     // This is now handled by the UI and RudnAuthService directly.
     // We can just return the token if we have it, or throw.
-    final token = await RudnAuthService().getCookie();
+    final token = await _authService.getCookie();
     if (token != null) return token;
     throw Exception("Login logic moved to WebView");
   }
 
   @override
   Future<void> logout() async {
-    await RudnAuthService().logout();
+    await _authService.logout();
   }
 
   @override
-  Future<String?> getAuthToken() async => await RudnAuthService().getCookie();
+  Future<String?> getAuthToken() async => await _authService.getCookie();
 
   // --- Методы для голосований ---
   @override
@@ -58,16 +119,16 @@ class ApiVotingRepository implements VotingRepository {
         path = '/api/v1/voters_page/finished_votings';
         break;
     }
-    final url = Uri.parse('$_baseUrl$path');
+    final url = _buildSeasonsUri(path);
     // ... (rest of method)
     try {
       final headers = await _headers;
-      final response = await http.get(url, headers: headers);
+      final response = await _httpClient.get(url, headers: headers);
       if (response.statusCode == 200) {
         // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);
 
-        if (kDebugMode) debugPrint("DEBUG: API Response: $decodedBody");
+        _logEventsSummaryIfChanged(status, decodedBody);
 
         final List<dynamic> data = decodedBody['votings'] as List<dynamic>;
         String statusString;
@@ -101,7 +162,7 @@ class ApiVotingRepository implements VotingRepository {
 
   @override
   Future<void> registerForEvent(String eventId) async {
-    final url = Uri.parse('$_baseUrl/api/v1/voter/register_in_voting');
+    final url = _buildSeasonsUri('/api/v1/voter/register_in_voting');
     final baseHeaders = await _headers;
     final headers = {
       ...baseHeaders,
@@ -109,7 +170,7 @@ class ApiVotingRepository implements VotingRepository {
     };
     final body = {'voting_id': eventId};
     try {
-      final response = await http
+      final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
       if (response.statusCode != 200 ||
@@ -125,7 +186,7 @@ class ApiVotingRepository implements VotingRepository {
   @override
   Future<bool> submitVote(
       VotingEvent event, Map<String, String> answers) async {
-    final url = Uri.parse('$_baseUrl/api/v1/voter/vote');
+    final url = _buildSeasonsUri('/api/v1/voter/vote');
 
     final baseHeaders = await _headers;
     final headers = {
@@ -163,18 +224,17 @@ class ApiVotingRepository implements VotingRepository {
     }
 
     try {
-      final response = await http
+      final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
 
       if (kDebugMode) {
-        debugPrint('--- ЗАПРОС ГОЛОСОВАНИЯ ---');
-        debugPrint('URL: $url');
-        debugPrint('Тело: $body');
-        debugPrint('--- ОТВЕТ СЕРВЕРА ---');
-        debugPrint('Статус: ${response.statusCode}');
-        debugPrint('Тело: ${response.body}');
-        debugPrint('--------------------');
+        debugPrint(
+          'Vote submit request: url=${sanitizeUriForLog(url)}, answers=${answers.length}',
+        );
+        debugPrint(
+          'Vote submit response: status=${response.statusCode}, body=${redactSensitive(response.body)}',
+        );
       }
 
       // Успешный ответ
@@ -205,10 +265,10 @@ class ApiVotingRepository implements VotingRepository {
 
   @override
   Future<String?> getUserLogin() async {
+    final url = _buildSeasonsUri('/');
     try {
-      final url = Uri.parse('$_baseUrl/');
       final headers = await _headers;
-      final response = await http
+      final response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 5));
 
@@ -232,9 +292,22 @@ class ApiVotingRepository implements VotingRepository {
     } on TimeoutException {
       // Temporary network issue - do not force logout, propagate to caller
       rethrow;
+    } on http.ClientException catch (e) {
+      final isRedirectLoop = e.message.toLowerCase().contains('redirect loop');
+      if (isRedirectLoop) {
+        if (kDebugMode) {
+          debugPrint(
+            'Session validation redirect loop at ${sanitizeUriForLog(url)}; treating session as invalid.',
+          );
+        }
+        return null;
+      }
+      if (kDebugMode) {
+        debugPrint('Error fetching user login: ${sanitizeObjectForLog(e)}');
+      }
     } catch (e) {
       if (kDebugMode) {
-        print("Error fetching user login: $e");
+        debugPrint('Error fetching user login: ${sanitizeObjectForLog(e)}');
       }
     }
     return null; // No valid session
@@ -243,9 +316,9 @@ class ApiVotingRepository implements VotingRepository {
   @override
   Future<UserProfile?> getUserProfile() async {
     try {
-      final url = Uri.parse('$_baseUrl/account');
+      final url = _buildSeasonsUri('/account');
       final headers = await _headers;
-      final response = await http
+      final response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 15));
 
@@ -312,7 +385,9 @@ class ApiVotingRepository implements VotingRepository {
         );
       }
     } catch (e) {
-      if (kDebugMode) print("Error fetching profile: $e");
+      if (kDebugMode) {
+        debugPrint('Error fetching profile: ${sanitizeObjectForLog(e)}');
+      }
     }
     return null;
   }
@@ -345,7 +420,7 @@ class ApiVotingRepository implements VotingRepository {
   // --- Push Notifications ---
   @override
   Future<void> registerDeviceToken(String fcmToken) async {
-    final url = Uri.parse('$_baseUrl/api/v1/voter/register_device');
+    final url = _buildSeasonsUri('/api/v1/voter/register_device');
     final baseHeaders = await _headers;
     final headers = {
       ...baseHeaders,
@@ -357,7 +432,7 @@ class ApiVotingRepository implements VotingRepository {
     };
 
     try {
-      final response = await http
+      final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
       if (kDebugMode) {
