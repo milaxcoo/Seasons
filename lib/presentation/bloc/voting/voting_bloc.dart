@@ -5,6 +5,7 @@ import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/core/services/background_service.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 
 class VotingBloc extends Bloc<VotingEvent, VotingState> {
@@ -50,8 +51,11 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       final filtered =
           event.events.where((e) => e.status == currentState.status).toList();
 
-      debugPrint(
-          "VotingBloc: _onVotingListUpdated emitting ${filtered.length} filtered events");
+      if (kDebugMode) {
+        debugPrint(
+          "VotingBloc: _onVotingListUpdated emitting ${filtered.length} filtered events",
+        );
+      }
 
       emit(VotingEventsLoadSuccess(
         events: filtered,
@@ -121,7 +125,9 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       ));
     } catch (e) {
       // Silently fail - don't show error to user for background refresh
-      debugPrint('Silent refresh failed: $e');
+      if (kDebugMode) {
+        debugPrint('Silent refresh failed: ${sanitizeObjectForLog(e)}');
+      }
     }
   }
 
