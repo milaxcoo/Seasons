@@ -224,10 +224,12 @@ void onStart(ServiceInstance service) async {
       if (kDebugMode) print("BackgroundService: Negotiating WS connection...");
 
       // Step 1: Get the actual WebSocket URL
-      final response = await http.get(
-        Uri.parse(BackgroundService._wsNegotiateUrl),
-        headers: headers,
-      );
+      final response = await http
+          .get(
+            Uri.parse(BackgroundService._wsNegotiateUrl),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
         throw Exception("Failed to negotiate WS URL: ${response.statusCode}");
@@ -258,7 +260,15 @@ void onStart(ServiceInstance service) async {
       // Listen to messages
       channel!.stream.listen(
         (message) {
-          if (kDebugMode) print("BackgroundService: WS Received: $message");
+          if (kDebugMode) {
+            final sanitized = sanitizeObjectForLog(message)
+                .replaceAll('\n', ' ')
+                .replaceAll('\r', ' ');
+            final preview = sanitized.length > 200
+                ? '${sanitized.substring(0, 200)}...'
+                : sanitized;
+            debugPrint("BackgroundService: WS Received (preview): $preview");
+          }
           _handleMessage(message, service, notificationsPlugin);
         },
         onDone: () {
@@ -269,7 +279,10 @@ void onStart(ServiceInstance service) async {
               attempts: reconnectAttempts++);
         },
         onError: (error) {
-          if (kDebugMode) print("BackgroundService: WS Error: $error");
+          if (kDebugMode) {
+            debugPrint(
+                "BackgroundService: WS Error: ${sanitizeObjectForLog(error)}");
+          }
           isConnected = false;
           channel = null;
           reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
@@ -277,7 +290,10 @@ void onStart(ServiceInstance service) async {
         },
       );
     } catch (e) {
-      if (kDebugMode) print("BackgroundService: Connection failed: $e");
+      if (kDebugMode) {
+        debugPrint(
+            "BackgroundService: Connection failed: ${sanitizeObjectForLog(e)}");
+      }
       reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
           attempts: reconnectAttempts++);
     }
@@ -325,7 +341,10 @@ Future<void> _handleMessage(
         await _showAlertNotification(notificationsPlugin, action);
       }
     } catch (e) {
-      if (kDebugMode) print("BackgroundService: Parse error: $e");
+      if (kDebugMode) {
+        debugPrint(
+            "BackgroundService: Parse error: ${sanitizeObjectForLog(e)}");
+      }
       // Still trigger refresh for unrecognized messages
       service.invoke('update', {'action': 'unknown', 'raw': message});
     }
@@ -403,6 +422,16 @@ Timer _scheduleReconnect(Timer? timer, Function() connect, {int attempts = 0}) {
         "BackgroundService: Scheduling reconnect in ${delaySec}s (attempt ${attempts + 1})...");
   }
   return Timer(Duration(seconds: delaySec), connect);
+}
+
+@visibleForTesting
+Future<http.Response> negotiateWsUrlWithTimeout({
+  required http.Client client,
+  required Uri uri,
+  required Map<String, String> headers,
+  Duration timeout = const Duration(seconds: 10),
+}) {
+  return client.get(uri, headers: headers).timeout(timeout);
 }
 
 @visibleForTesting

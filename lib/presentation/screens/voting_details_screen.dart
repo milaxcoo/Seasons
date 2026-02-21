@@ -80,6 +80,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
 
   Future<void> _loadDraft() async {
     final draft = await _draftService.loadDraft(widget.event.id);
+    if (!mounted) return;
     setState(() {
       _selectedAnswers = draft;
       _isLoadingDraft = false;

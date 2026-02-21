@@ -130,6 +130,33 @@ void main() {
   });
 
   // ─────────────────────────────────────────────────────────────────────────
+  // sanitizeTelemetryText / sanitizeTelemetryDetails
+  // ─────────────────────────────────────────────────────────────────────────
+  group('sanitize telemetry helpers', () {
+    test('sanitizeTelemetryText redacts sensitive values and truncates', () {
+      final sanitized = ErrorReportingService.sanitizeTelemetryText(
+        'Authorization: Bearer secret-token?code=abc123',
+        maxLength: 40,
+      );
+
+      expect(sanitized, isNot(contains('secret-token')));
+      expect(sanitized, isNot(contains('abc123')));
+      expect(sanitized.length, lessThanOrEqualTo(40));
+    });
+
+    test('sanitizeTelemetryDetails keeps only allowlisted keys', () {
+      final sanitized = ErrorReportingService.sanitizeTelemetryDetails({
+        'exception_type': 'TimeoutException',
+        'cookie_length': '42',
+        'unexpected_key': 'should_be_dropped',
+      });
+
+      expect(sanitized.keys, containsAll(['exception_type', 'cookie_length']));
+      expect(sanitized.containsKey('unexpected_key'), isFalse);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
   // detectPlatform / detectOsVersion
   // ─────────────────────────────────────────────────────────────────────────
   group('detectPlatform', () {

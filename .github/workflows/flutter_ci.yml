@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: 🐦 Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff
         with:
           channel: stable
           cache: true
@@ -91,7 +91,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: ☕ Set up JDK 17
         uses: actions/setup-java@v4
@@ -100,7 +100,7 @@ jobs:
           java-version: '17'
 
       - name: 🐦 Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff
         with:
           channel: stable
           cache: true
@@ -125,6 +125,11 @@ jobs:
             echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}"
           } >> "$GITHUB_ENV"
 
+      - name: 🚫 Block Telegram token injection in release builds
+        run: |
+          test -z "${TELEGRAM_BOT_TOKEN:-}" || { echo "::error::TELEGRAM_BOT_TOKEN must not be set for release/profile builds"; exit 1; }
+          test -z "${TELEGRAM_CHAT_ID:-}" || { echo "::error::TELEGRAM_CHAT_ID must not be set for release/profile builds"; exit 1; }
+
       # Cache Gradle for faster builds
       - name: 🗄️ Cache Gradle
         uses: actions/cache@v4
@@ -139,16 +144,12 @@ jobs:
       - name: 🏗️ Build Release APK
         run: |
           flutter build apk --release \
-            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
-            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
             --dart-define=ENABLE_ERROR_REPORTING=true \
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 🏗️ Build Release AAB
         run: |
           flutter build appbundle --release \
-            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
-            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
             --dart-define=ENABLE_ERROR_REPORTING=true \
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
@@ -177,16 +178,21 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: 🐦 Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff
         with:
           channel: stable
           cache: true
 
       - name: 📦 Get dependencies
         run: flutter pub get
+
+      - name: 🚫 Block Telegram token injection in release builds
+        run: |
+          test -z "${TELEGRAM_BOT_TOKEN:-}" || { echo "::error::TELEGRAM_BOT_TOKEN must not be set for release/profile builds"; exit 1; }
+          test -z "${TELEGRAM_CHAT_ID:-}" || { echo "::error::TELEGRAM_CHAT_ID must not be set for release/profile builds"; exit 1; }
 
       # Cache CocoaPods for faster builds
       - name: 🗄️ Cache CocoaPods
@@ -200,8 +206,6 @@ jobs:
       - name: 📱 Build iOS (no codesign)
         run: |
           flutter build ios --release --no-codesign \
-            --dart-define=TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} \
-            --dart-define=TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} \
             --dart-define=ENABLE_ERROR_REPORTING=true \
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 

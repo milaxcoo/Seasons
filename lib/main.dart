@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:seasons/core/services/background_service.dart';
@@ -20,6 +21,7 @@ import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/bloc/locale/locale_state.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 
 /// Global notification plugin for handling taps
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -105,13 +107,19 @@ void _onNotificationTapped(NotificationResponse response) {
 
 /// Parse notification payload and navigate accordingly
 void _handleNotificationPayload(String payload) {
-  debugPrint('Notification tapped with payload: $payload');
+  if (kDebugMode) {
+    debugPrint('Notification tapped with payload: ${redactSensitive(payload)}');
+  }
 
   // Payload format: "Navigate:VotingList:tabIndex"
   if (payload.startsWith('Navigate:VotingList:')) {
     final parts = payload.split(':');
     if (parts.length >= 3) {
-      final tabIndex = int.tryParse(parts[2]) ?? 0;
+      final parsedIndex = int.tryParse(parts[2]);
+      final tabIndex =
+          (parsedIndex != null && parsedIndex >= 0 && parsedIndex <= 2)
+              ? parsedIndex
+              : 0;
       // Signal HomeScreen to navigate to this tab and refresh
       NotificationNavigationService()
           .navigateToTab(tabIndex, shouldRefresh: true);

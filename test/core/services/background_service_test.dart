@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/core/services/background_service.dart';
 
@@ -13,6 +14,8 @@ class MockServiceInstance extends Mock implements ServiceInstance {}
 
 class MockNotificationsPlugin extends Mock
     implements FlutterLocalNotificationsPlugin {}
+
+class MockHttpClient extends Mock implements http.Client {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -128,10 +131,12 @@ void main() {
   group('BackgroundService top-level logic', () {
     late MockServiceInstance mockInstance;
     late MockNotificationsPlugin mockNotifications;
+    late MockHttpClient mockHttpClient;
 
     setUp(() {
       mockInstance = MockServiceInstance();
       mockNotifications = MockNotificationsPlugin();
+      mockHttpClient = MockHttpClient();
       when(() => mockInstance.invoke(any(), any())).thenReturn(null);
       when(() => mockNotifications.show(
             any(),
@@ -213,6 +218,46 @@ void main() {
 
     test('onIosBackground returns true', () async {
       expect(await onIosBackground(mockInstance), isTrue);
+    });
+
+    test('negotiateWsUrlWithTimeout returns response before timeout', () async {
+      final uri = Uri.parse('https://example.com/ws');
+      final headers = {'Cookie': 'session=token'};
+
+      when(() => mockHttpClient.get(uri, headers: headers))
+          .thenAnswer((_) async => http.Response('{"url":"wss://x"}', 200));
+
+      final response = await negotiateWsUrlWithTimeout(
+        client: mockHttpClient,
+        uri: uri,
+        headers: headers,
+        timeout: const Duration(seconds: 1),
+      );
+
+      expect(response.statusCode, 200);
+    });
+
+    test('negotiateWsUrlWithTimeout throws TimeoutException on slow response',
+        () async {
+      final uri = Uri.parse('https://example.com/ws');
+      final headers = {'Cookie': 'session=token'};
+
+      when(() => mockHttpClient.get(uri, headers: headers)).thenAnswer(
+        (_) => Future<http.Response>.delayed(
+          const Duration(milliseconds: 30),
+          () => http.Response('{"url":"wss://x"}', 200),
+        ),
+      );
+
+      await expectLater(
+        () => negotiateWsUrlWithTimeout(
+          client: mockHttpClient,
+          uri: uri,
+          headers: headers,
+          timeout: const Duration(milliseconds: 1),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
     });
   });
 }
