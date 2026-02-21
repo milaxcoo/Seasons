@@ -87,12 +87,6 @@ Release builds require a configured keystore:
 
 Release build now fails fast when signing configuration is missing.
 
-### Store Submission Checklist
-
-Use the tracked checklist before shipping:
-
-- `docs/STORE_RELEASE_CHECKLIST.md`
-
 ## 🧪 Testing
 
 ```bash
