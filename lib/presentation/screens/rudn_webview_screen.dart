@@ -41,7 +41,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             });
 
             // Auto-click the login button when homepage loads
-            if (url.startsWith('https://seasons.rudn.ru')) {
+            if (isAllowedWebViewUrl(url)) {
               // Efficiently poll for the login button
               await _controller.runJavaScript('''
                 (function() {
@@ -81,6 +81,17 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
               }
               _controller.loadRequest(Uri.parse(secureUrl));
               return NavigationDecision.prevent;
+            }
+            if (!isAllowedWebViewUrl(request.url)) {
+              if (kDebugMode) {
+                debugPrint(
+                  'Blocked WebView navigation to ${sanitizeUrlForLog(request.url, keepQuery: true)}',
+                );
+              }
+              return NavigationDecision.prevent;
+            }
+            if (kDebugMode && request.url.contains('/oauth/login_callback')) {
+              debugPrint('Received oauth login_callback redirect');
             }
             return NavigationDecision.navigate;
           },
@@ -173,6 +184,20 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 }
 
+const Set<String> _allowedWebViewHosts = {
+  'seasons.rudn.ru',
+};
+
+const Set<String> _blockedWebViewSchemes = {
+  'file',
+  'data',
+  'javascript',
+  'intent',
+  'about',
+  'chrome',
+  'blob',
+};
+
 @visibleForTesting
 bool shouldUpgradeToHttps(String url) {
   return url.startsWith('http://seasons.rudn.ru');
@@ -181,6 +206,20 @@ bool shouldUpgradeToHttps(String url) {
 @visibleForTesting
 String upgradeToHttps(String url) {
   return url.replaceFirst('http://', 'https://');
+}
+
+@visibleForTesting
+bool isAllowedWebViewUrl(String rawUrl) {
+  final uri = Uri.tryParse(rawUrl);
+  if (uri == null || !uri.hasScheme) return false;
+
+  final scheme = uri.scheme.toLowerCase();
+  if (_blockedWebViewSchemes.contains(scheme)) return false;
+  if (scheme != 'https') return false;
+
+  final host = uri.host.toLowerCase();
+  if (host.isEmpty) return false;
+  return _allowedWebViewHosts.contains(host);
 }
 
 @visibleForTesting
