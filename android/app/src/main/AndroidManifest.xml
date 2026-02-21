@@ -49,6 +49,7 @@
         <!-- Android 14 requirement: Explicitly declare the service with type -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
+            android:exported="false"
             android:foregroundServiceType="dataSync" />
     </application>
     <!-- Required to query activities that can process text, see:
