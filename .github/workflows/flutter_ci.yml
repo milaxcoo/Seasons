@@ -72,7 +72,7 @@ jobs:
 
       - name: 📦 Upload coverage artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-reports
           path: |
@@ -154,14 +154,14 @@ jobs:
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 📦 Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
       - name: 📦 Upload AAB artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-aab
           path: build/app/outputs/bundle/release/app-release.aab
@@ -210,7 +210,7 @@ jobs:
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 📦 Upload iOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ios-build
           path: build/ios/iphoneos/Runner.app
