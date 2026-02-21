@@ -77,7 +77,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                 debugPrint(
                   'Upgrading insecure redirect to ${sanitizeUrlForLog(secureUrl)}',
                 );
-                if (secureUrl.contains('/oauth/login_callback')) {
+                if (isExpectedAuthCallbackUrl(secureUrl)) {
                   debugPrint('Received oauth login_callback redirect');
                 }
               }
@@ -92,7 +92,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
               }
               return NavigationDecision.prevent;
             }
-            if (kDebugMode && request.url.contains('/oauth/login_callback')) {
+            if (kDebugMode && isExpectedAuthCallbackUrl(request.url)) {
               debugPrint('Received oauth login_callback redirect');
             }
             return NavigationDecision.navigate;
@@ -188,6 +188,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
 const Set<String> _allowedWebViewHosts = {
   'seasons.rudn.ru',
+  'id.rudn.ru',
 };
 
 const Set<String> _blockedWebViewSchemes = {
@@ -200,14 +201,31 @@ const Set<String> _blockedWebViewSchemes = {
   'blob',
 };
 
+const String _seasonsHost = 'seasons.rudn.ru';
+const String _authCallbackPath = '/oauth/login_callback';
+
 @visibleForTesting
 bool shouldUpgradeToHttps(String url) {
-  return url.startsWith('http://seasons.rudn.ru');
+  final uri = Uri.tryParse(url);
+  if (uri == null || !uri.hasScheme) return false;
+  return uri.scheme.toLowerCase() == 'http' &&
+      uri.host.toLowerCase() == _seasonsHost;
 }
 
 @visibleForTesting
 String upgradeToHttps(String url) {
-  return url.replaceFirst('http://', 'https://');
+  final uri = Uri.tryParse(url);
+  if (uri == null) return url;
+  return uri.replace(scheme: 'https').toString();
+}
+
+@visibleForTesting
+bool isExpectedAuthCallbackUrl(String rawUrl) {
+  final uri = Uri.tryParse(rawUrl);
+  if (uri == null || !uri.hasScheme) return false;
+  return uri.scheme.toLowerCase() == 'https' &&
+      uri.host.toLowerCase() == _seasonsHost &&
+      uri.path == _authCallbackPath;
 }
 
 @visibleForTesting
