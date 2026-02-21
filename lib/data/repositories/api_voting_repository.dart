@@ -11,14 +11,24 @@ import 'package:seasons/data/models/user_profile.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 
 class ApiVotingRepository implements VotingRepository {
-  final String _baseUrl = 'https://seasons.rudn.ru';
+  final String _baseUrl;
+  final http.Client _httpClient;
+  final RudnAuthService _authService;
+
+  ApiVotingRepository({
+    String baseUrl = 'https://seasons.rudn.ru',
+    http.Client? httpClient,
+    RudnAuthService? authService,
+  })  : _baseUrl = baseUrl,
+        _httpClient = httpClient ?? http.Client(),
+        _authService = authService ?? RudnAuthService();
   // No longer needed internal state given we use the service
   // String? _userLogin;
   // String? _authToken;
 
   // Helper to retrieve the current headers with the valid cookie
   Future<Map<String, String>> get _headers async {
-    final cookie = await RudnAuthService().getCookie() ?? '';
+    final cookie = await _authService.getCookie() ?? '';
     return {
       'Cookie': 'session=$cookie',
       'X-Requested-With': 'XMLHttpRequest',
@@ -30,18 +40,18 @@ class ApiVotingRepository implements VotingRepository {
   Future<String> login(String login, String password) async {
     // This is now handled by the UI and RudnAuthService directly.
     // We can just return the token if we have it, or throw.
-    final token = await RudnAuthService().getCookie();
+    final token = await _authService.getCookie();
     if (token != null) return token;
     throw Exception("Login logic moved to WebView");
   }
 
   @override
   Future<void> logout() async {
-    await RudnAuthService().logout();
+    await _authService.logout();
   }
 
   @override
-  Future<String?> getAuthToken() async => await RudnAuthService().getCookie();
+  Future<String?> getAuthToken() async => await _authService.getCookie();
 
   // --- Методы для голосований ---
   @override
@@ -62,7 +72,7 @@ class ApiVotingRepository implements VotingRepository {
     // ... (rest of method)
     try {
       final headers = await _headers;
-      final response = await http.get(url, headers: headers);
+      final response = await _httpClient.get(url, headers: headers);
       if (response.statusCode == 200) {
         // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);
@@ -109,7 +119,7 @@ class ApiVotingRepository implements VotingRepository {
     };
     final body = {'voting_id': eventId};
     try {
-      final response = await http
+      final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
       if (response.statusCode != 200 ||
@@ -163,7 +173,7 @@ class ApiVotingRepository implements VotingRepository {
     }
 
     try {
-      final response = await http
+      final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
 
@@ -208,7 +218,7 @@ class ApiVotingRepository implements VotingRepository {
     try {
       final url = Uri.parse('$_baseUrl/');
       final headers = await _headers;
-      final response = await http
+      final response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 5));
 
@@ -245,7 +255,7 @@ class ApiVotingRepository implements VotingRepository {
     try {
       final url = Uri.parse('$_baseUrl/account');
       final headers = await _headers;
-      final response = await http
+      final response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 15));
 
@@ -357,7 +367,7 @@ class ApiVotingRepository implements VotingRepository {
     };
 
     try {
-      final response = await http
+      final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
       if (kDebugMode) {
