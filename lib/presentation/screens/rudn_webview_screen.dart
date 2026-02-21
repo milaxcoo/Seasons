@@ -31,11 +31,13 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
+            if (!mounted) return;
             setState(() {
               _isLoading = true;
             });
           },
           onPageFinished: (String url) async {
+            if (!mounted) return;
             setState(() {
               _isLoading = false;
             });
