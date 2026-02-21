@@ -4,9 +4,28 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:seasons/core/utils/safe_log.dart';
 
 /// Maximum Telegram message length (API limit).
 const int _kTelegramMaxLength = 4096;
+const int _kMaxTelemetryMessageLength = 600;
+const int _kMaxTelemetryContextLength = 400;
+const int _kMaxTelemetryStackLength = 1200;
+const int _kMaxTelemetryDetailLength = 120;
+
+const Set<String> _allowedTelemetryDetailKeys = {
+  'event_name',
+  'version',
+  'platform',
+  'timestamp',
+  'exception_type',
+  'mounted',
+  'haspopped',
+  'success',
+  'context_mounted',
+  'cookie_length',
+  'error_category',
+};
 
 /// Privacy-first error reporting service.
 ///
@@ -60,6 +79,33 @@ class ErrorReportingService {
   String _appVersion = 'unknown';
   String _currentScreen = 'unknown';
   bool _isInitialized = false;
+
+  @visibleForTesting
+  static String sanitizeTelemetryText(String value, {required int maxLength}) {
+    final redacted = redactSensitive(value);
+    if (redacted.length <= maxLength) return redacted;
+    if (maxLength <= 3) return redacted.substring(0, maxLength);
+    return '${redacted.substring(0, maxLength - 3)}...';
+  }
+
+  @visibleForTesting
+  static Map<String, String> sanitizeTelemetryDetails(
+    Map<String, String>? details,
+  ) {
+    if (details == null || details.isEmpty) return {};
+    final sanitized = <String, String>{};
+    for (final entry in details.entries) {
+      final key = entry.key.trim();
+      if (key.isEmpty) continue;
+      final normalizedKey = key.toLowerCase();
+      if (!_allowedTelemetryDetailKeys.contains(normalizedKey)) continue;
+      sanitized[normalizedKey] = sanitizeTelemetryText(
+        entry.value,
+        maxLength: _kMaxTelemetryDetailLength,
+      );
+    }
+    return sanitized;
+  }
 
   /// Initialize the error reporting service.
   /// Call this in main() before runApp().
@@ -116,10 +162,19 @@ class ErrorReportingService {
 
     // Don't report in debug mode unless explicitly enabled
     if (kDebugMode) {
+      final sanitizedError = sanitizeTelemetryText(
+        error.toString(),
+        maxLength: _kMaxTelemetryMessageLength,
+      );
       debugPrint(
-          'ErrorReportingService: ${severity.name.toUpperCase()} - $error');
+          'ErrorReportingService: ${severity.name.toUpperCase()} - $sanitizedError');
       if (stackTrace != null) {
-        debugPrint(stackTrace.toString().split('\n').take(5).join('\n'));
+        debugPrint(
+          sanitizeTelemetryText(
+            stackTrace.toString().split('\n').take(5).join('\n'),
+            maxLength: _kMaxTelemetryStackLength,
+          ),
+        );
       }
       return;
     }
@@ -135,12 +190,14 @@ class ErrorReportingService {
   /// Report a diagnostic event (non-error telemetry for auth flow debugging).
   /// Works in both debug and release mode for testing visibility.
   Future<void> reportEvent(String event, {Map<String, String>? details}) async {
+    final sanitizedEvent = sanitizeTelemetryText(event, maxLength: 120);
+    final sanitizedDetails = sanitizeTelemetryDetails(details);
     final detailStr =
-        details?.entries.map((e) => '${e.key}=${e.value}').join(', ') ?? '';
+        sanitizedDetails.entries.map((e) => '${e.key}=${e.value}').join(', ');
 
     if (kDebugMode) {
       debugPrint(
-          'ErrorReportingService: EVENT - $event ${detailStr.isNotEmpty ? "($detailStr)" : ""}');
+          'ErrorReportingService: EVENT - $sanitizedEvent ${detailStr.isNotEmpty ? "($detailStr)" : ""}');
       if (!_enableDiagnosticEvents) return;
     }
 
@@ -148,7 +205,7 @@ class ErrorReportingService {
 
     await _sendOrQueueReport(
       type: 'auth_event',
-      message: event,
+      message: sanitizedEvent,
       context: detailStr.isNotEmpty ? detailStr : null,
     );
   }
@@ -161,8 +218,15 @@ class ErrorReportingService {
     if (!_enableErrorReporting) return;
 
     if (kDebugMode) {
-      debugPrint('ErrorReportingService: CRASH - $error');
-      debugPrint(stackTrace.toString());
+      debugPrint(
+        'ErrorReportingService: CRASH - ${sanitizeTelemetryText(error.toString(), maxLength: _kMaxTelemetryMessageLength)}',
+      );
+      debugPrint(
+        sanitizeTelemetryText(
+          stackTrace.toString(),
+          maxLength: _kMaxTelemetryStackLength,
+        ),
+      );
       return;
     }
 
@@ -179,7 +243,7 @@ class ErrorReportingService {
 
     if (kDebugMode) {
       debugPrint(
-          'ErrorReportingService: FLUTTER_ERROR - ${details.exceptionAsString()}');
+          'ErrorReportingService: FLUTTER_ERROR - ${sanitizeTelemetryText(details.exceptionAsString(), maxLength: _kMaxTelemetryMessageLength)}');
       return;
     }
 
@@ -199,16 +263,34 @@ class ErrorReportingService {
   }) async {
     if (!_isReportingEnabledForType(type)) return;
 
+    final sanitizedType = sanitizeTelemetryText(type, maxLength: 32);
+    final sanitizedMessage =
+        sanitizeTelemetryText(message, maxLength: _kMaxTelemetryMessageLength);
+    final sanitizedContext = context == null
+        ? null
+        : sanitizeTelemetryText(context, maxLength: _kMaxTelemetryContextLength);
+    final sanitizedStack = stackTrace == null
+        ? null
+        : sanitizeTelemetryText(stackTrace, maxLength: _kMaxTelemetryStackLength);
+    final sanitizedAppVersion =
+        sanitizeTelemetryText(_appVersion, maxLength: 40);
+    final sanitizedPlatform =
+        sanitizeTelemetryText(detectPlatform(), maxLength: 20);
+    final sanitizedOsVersion =
+        sanitizeTelemetryText(detectOsVersion(), maxLength: 120);
+    final sanitizedScreen =
+        sanitizeTelemetryText(_currentScreen, maxLength: 80);
+
     final report = ErrorReport(
-      type: type,
-      message: message,
-      stackTrace: stackTrace,
-      context: context,
+      type: sanitizedType,
+      message: sanitizedMessage,
+      stackTrace: sanitizedStack,
+      context: sanitizedContext,
       timestamp: DateTime.now().toUtc().toIso8601String(),
-      appVersion: _appVersion,
-      platform: detectPlatform(),
-      osVersion: detectOsVersion(),
-      screenName: _currentScreen,
+      appVersion: sanitizedAppVersion,
+      platform: sanitizedPlatform,
+      osVersion: sanitizedOsVersion,
+      screenName: sanitizedScreen,
     );
 
     // Send to Telegram (fire and forget, don't block)
@@ -294,7 +376,7 @@ class ErrorReportingService {
         if (!isRetryable) {
           if (kDebugMode) {
             debugPrint(
-                'ErrorReportingService: Telegram API error ${response.statusCode}: ${response.body}');
+                'ErrorReportingService: Telegram API error ${response.statusCode}: ${sanitizeTelemetryText(response.body, maxLength: _kMaxTelemetryContextLength)}');
           }
           return; // Don't retry non-retryable client errors
         }
@@ -306,16 +388,17 @@ class ErrorReportingService {
       } on SocketException catch (e) {
         if (kDebugMode) {
           debugPrint(
-              'ErrorReportingService: Network error (attempt ${attempt + 1}): $e');
+              'ErrorReportingService: Network error (attempt ${attempt + 1}): ${sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}');
         }
       } on TimeoutException catch (e) {
         if (kDebugMode) {
           debugPrint(
-              'ErrorReportingService: Timeout (attempt ${attempt + 1}): $e');
+              'ErrorReportingService: Timeout (attempt ${attempt + 1}): ${sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}');
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('ErrorReportingService: Failed to send to Telegram: $e');
+          debugPrint(
+              'ErrorReportingService: Failed to send to Telegram: ${sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}');
         }
         return; // Unknown errors are not retried
       }
