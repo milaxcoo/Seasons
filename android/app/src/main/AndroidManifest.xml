@@ -49,6 +49,7 @@
         <!-- Android 14 requirement: Explicitly declare the service with type -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
+            tools:replace="android:exported"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
     </application>
