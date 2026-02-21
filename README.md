@@ -38,6 +38,12 @@ A privacy-focused mobile app for voting at RUDN / PFUR University.
 - ✅ Optional Telegram crash reporting (disabled by default)
 - ✅ Diagnostic auth telemetry is opt-in and disabled by default
 
+### Security note (release/profile builds)
+
+- Never pass `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` to release/profile builds.
+- Direct Telegram sending is disabled in release/profile builds.
+- Production monitoring will be routed through an on-prem relay in a follow-up rollout.
+
 ## 🚀 Getting Started
 
 ### Prerequisites

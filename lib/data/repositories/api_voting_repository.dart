@@ -123,7 +123,9 @@ class ApiVotingRepository implements VotingRepository {
     // ... (rest of method)
     try {
       final headers = await _headers;
-      final response = await _httpClient.get(url, headers: headers);
+      final response = await _httpClient
+          .get(url, headers: headers)
+          .timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);

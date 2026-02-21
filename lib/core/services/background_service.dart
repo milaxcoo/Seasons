@@ -224,10 +224,12 @@ void onStart(ServiceInstance service) async {
       if (kDebugMode) print("BackgroundService: Negotiating WS connection...");
 
       // Step 1: Get the actual WebSocket URL
-      final response = await http.get(
-        Uri.parse(BackgroundService._wsNegotiateUrl),
-        headers: headers,
-      );
+      final response = await http
+          .get(
+            Uri.parse(BackgroundService._wsNegotiateUrl),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
         throw Exception("Failed to negotiate WS URL: ${response.statusCode}");
@@ -420,6 +422,16 @@ Timer _scheduleReconnect(Timer? timer, Function() connect, {int attempts = 0}) {
         "BackgroundService: Scheduling reconnect in ${delaySec}s (attempt ${attempts + 1})...");
   }
   return Timer(Duration(seconds: delaySec), connect);
+}
+
+@visibleForTesting
+Future<http.Response> negotiateWsUrlWithTimeout({
+  required http.Client client,
+  required Uri uri,
+  required Map<String, String> headers,
+  Duration timeout = const Duration(seconds: 10),
+}) {
+  return client.get(uri, headers: headers).timeout(timeout);
 }
 
 @visibleForTesting

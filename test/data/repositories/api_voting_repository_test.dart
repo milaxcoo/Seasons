@@ -105,6 +105,25 @@ void main() {
       );
     });
 
+    test('getEventsByStatus wraps timeout exceptions', () async {
+      when(() => client.get(
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voters_page/finished_votings'),
+            headers: any(named: 'headers'),
+          )).thenThrow(TimeoutException('timeout'));
+
+      expect(
+        () => repository.getEventsByStatus(VotingStatus.completed),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Ошибка при получении событий'),
+          ),
+        ),
+      );
+    });
+
     test('registerForEvent succeeds on registered response', () async {
       when(() => client.post(
                 Uri.parse(

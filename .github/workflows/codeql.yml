@@ -27,10 +27,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4
+      uses: github/codeql-action/init@89a39a4e59826350b863aa6b6252a07ad50cf83e
       with:
         languages: ${{ matrix.language }}
         build-mode: manual
@@ -42,7 +42,7 @@ jobs:
         java-version: '17'
 
     - name: Setup Flutter
-      uses: subosito/flutter-action@v2
+      uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff
       with:
         channel: 'stable'
         cache: true
@@ -54,6 +54,6 @@ jobs:
       run: flutter build apk --debug
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4
+      uses: github/codeql-action/analyze@89a39a4e59826350b863aa6b6252a07ad50cf83e
       with:
         category: "/language:${{matrix.language}}"
