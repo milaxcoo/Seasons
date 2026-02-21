@@ -10,6 +10,7 @@ import 'package:seasons/data/models/question.dart';
 import 'package:seasons/data/models/subject.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/api_voting_repository.dart';
+import 'package:seasons/data/repositories/voting_repository.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
@@ -258,7 +259,8 @@ void main() {
       expect(login, 'Ivanov I.I.');
     });
 
-    test('getUserLogin rethrows timeout exceptions', () async {
+    test('getUserLogin classifies timeout as transient validation failure',
+        () async {
       when(() => client.get(
             Uri.parse('https://seasons.rudn.ru/'),
             headers: any(named: 'headers'),
@@ -266,7 +268,13 @@ void main() {
 
       expect(
         repository.getUserLogin,
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          isA<SessionValidationException>().having(
+            (e) => e.type,
+            'type',
+            SessionValidationFailureType.transientNetwork,
+          ),
+        ),
       );
     });
 
@@ -281,6 +289,35 @@ void main() {
 
       final login = await repository.getUserLogin();
       expect(login, isNull);
+    });
+
+    test('getUserLogin treats 401 as invalid session', () async {
+      when(() => client.get(
+            Uri.parse('https://seasons.rudn.ru/'),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('Unauthorized', 401));
+
+      final login = await repository.getUserLogin();
+      expect(login, isNull);
+    });
+
+    test('getUserLogin classifies 5xx responses as transient failures',
+        () async {
+      when(() => client.get(
+            Uri.parse('https://seasons.rudn.ru/'),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('Service unavailable', 503));
+
+      expect(
+        repository.getUserLogin,
+        throwsA(
+          isA<SessionValidationException>().having(
+            (e) => e.type,
+            'type',
+            SessionValidationFailureType.transientNetwork,
+          ),
+        ),
+      );
     });
 
     test('getUserProfile parses account page fields', () async {
