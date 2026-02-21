@@ -45,4 +45,18 @@ class DraftService {
     final key = '$_draftPrefix$votingId';
     await prefs.remove(key);
   }
+
+  /// Очищает все сохранённые черновики голосований.
+  Future<void> clearAllDrafts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final draftKeys = prefs
+        .getKeys()
+        .where((key) => key.startsWith(_draftPrefix))
+        .toList()
+      ..sort();
+
+    for (final key in draftKeys) {
+      await prefs.remove(key);
+    }
+  }
 }

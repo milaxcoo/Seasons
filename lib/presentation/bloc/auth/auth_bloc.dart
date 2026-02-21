@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
 import 'package:seasons/core/utils/safe_log.dart';
@@ -12,9 +13,13 @@ part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final VotingRepository _votingRepository;
+  final DraftService _draftService;
 
-  AuthBloc({required VotingRepository votingRepository})
-      : _votingRepository = votingRepository,
+  AuthBloc({
+    required VotingRepository votingRepository,
+    DraftService? draftService,
+  })  : _draftService = draftService ?? DraftService(),
+        _votingRepository = votingRepository,
         super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoggedIn>(_onLoggedIn);
@@ -58,6 +63,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (_) {
       // If backend/local logout cleanup fails, state must still be unauthenticated.
     }
+
+    try {
+      await _draftService.clearAllDrafts();
+    } catch (_) {
+      // Draft cleanup should not block logout/invalidation transitions.
+    }
+
     emit(AuthUnauthenticated());
   }
 
@@ -127,11 +139,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
-    try {
-      await _votingRepository.logout();
-    } catch (_) {
-      // Ignore logout errors - user should be logged out locally regardless
-    }
-    emit(AuthUnauthenticated());
+    await _clearSessionAndEmitUnauthenticated(emit);
   }
 }
