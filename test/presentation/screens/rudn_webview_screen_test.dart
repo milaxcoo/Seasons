@@ -3,7 +3,8 @@ import 'package:seasons/presentation/screens/rudn_webview_screen.dart';
 
 void main() {
   group('RudnWebview helpers', () {
-    test('extractSessionCookieValue returns session value from cookie string', () {
+    test('extractSessionCookieValue returns session value from cookie string',
+        () {
       final value = extractSessionCookieValue(
         '"_ga=123; session=abc123==; lang=ru"',
       );
@@ -18,7 +19,8 @@ void main() {
       expect(extractSessionCookieValue('""'), isNull);
     });
 
-    test('shouldUpgradeToHttps and upgradeToHttps handle insecure redirects', () {
+    test('shouldUpgradeToHttps and upgradeToHttps handle insecure redirects',
+        () {
       const insecure = 'http://seasons.rudn.ru/account';
 
       expect(shouldUpgradeToHttps(insecure), isTrue);

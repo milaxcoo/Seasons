@@ -64,10 +64,12 @@ void main() {
                 'https://seasons.rudn.ru/api/v1/voters_page/registration_votings'),
             headers: any(named: 'headers'),
           )).thenAnswer(
-        (_) async => http.Response(_fixture('events_registration_success.json'), 200),
+        (_) async =>
+            http.Response(_fixture('events_registration_success.json'), 200),
       );
 
-      final events = await repository.getEventsByStatus(VotingStatus.registration);
+      final events =
+          await repository.getEventsByStatus(VotingStatus.registration);
 
       expect(events, hasLength(1));
       expect(events.first.id, 'ev-1');
@@ -83,9 +85,11 @@ void main() {
       expect(captured['X-Requested-With'], 'XMLHttpRequest');
     });
 
-    test('getEventsByStatus wraps non-200 responses into repository error', () async {
+    test('getEventsByStatus wraps non-200 responses into repository error',
+        () async {
       when(() => client.get(
-            Uri.parse('https://seasons.rudn.ru/api/v1/voters_page/ongoing_votings'),
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voters_page/ongoing_votings'),
             headers: any(named: 'headers'),
           )).thenAnswer((_) async => http.Response('server error', 500));
 
@@ -103,15 +107,19 @@ void main() {
 
     test('registerForEvent succeeds on registered response', () async {
       when(() => client.post(
-            Uri.parse('https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          )).thenAnswer((_) async => http.Response('{"status":"registered"}', 200));
+                Uri.parse(
+                    'https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response('{"status":"registered"}', 200));
 
       await repository.registerForEvent('event-77');
 
       final capturedBody = verify(() => client.post(
-            Uri.parse('https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
             headers: any(named: 'headers'),
             body: captureAny(named: 'body'),
           )).captured.single as Map<String, String>;
@@ -120,7 +128,8 @@ void main() {
 
     test('registerForEvent wraps timeout exceptions', () async {
       when(() => client.post(
-            Uri.parse('https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           )).thenThrow(TimeoutException('timeout'));
@@ -137,7 +146,8 @@ void main() {
       );
     });
 
-    test('submitVote sends expected payload and returns true when voted', () async {
+    test('submitVote sends expected payload and returns true when voted',
+        () async {
       const event = VotingEvent(
         id: 'vote-1',
         title: 'Vote',

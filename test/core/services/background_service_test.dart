@@ -181,7 +181,8 @@ void main() {
     });
 
     test('showAlertNotificationForTest ignores unsupported actions', () async {
-      await showAlertNotificationForTest(mockNotifications, 'UNSUPPORTED_ACTION');
+      await showAlertNotificationForTest(
+          mockNotifications, 'UNSUPPORTED_ACTION');
 
       verifyNever(() => mockNotifications.show(
             any(),
