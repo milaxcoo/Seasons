@@ -258,7 +258,15 @@ void onStart(ServiceInstance service) async {
       // Listen to messages
       channel!.stream.listen(
         (message) {
-          if (kDebugMode) print("BackgroundService: WS Received: $message");
+          if (kDebugMode) {
+            final sanitized = sanitizeObjectForLog(message)
+                .replaceAll('\n', ' ')
+                .replaceAll('\r', ' ');
+            final preview = sanitized.length > 200
+                ? '${sanitized.substring(0, 200)}...'
+                : sanitized;
+            debugPrint("BackgroundService: WS Received (preview): $preview");
+          }
           _handleMessage(message, service, notificationsPlugin);
         },
         onDone: () {
@@ -269,7 +277,10 @@ void onStart(ServiceInstance service) async {
               attempts: reconnectAttempts++);
         },
         onError: (error) {
-          if (kDebugMode) print("BackgroundService: WS Error: $error");
+          if (kDebugMode) {
+            debugPrint(
+                "BackgroundService: WS Error: ${sanitizeObjectForLog(error)}");
+          }
           isConnected = false;
           channel = null;
           reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
@@ -277,7 +288,10 @@ void onStart(ServiceInstance service) async {
         },
       );
     } catch (e) {
-      if (kDebugMode) print("BackgroundService: Connection failed: $e");
+      if (kDebugMode) {
+        debugPrint(
+            "BackgroundService: Connection failed: ${sanitizeObjectForLog(e)}");
+      }
       reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
           attempts: reconnectAttempts++);
     }
@@ -325,7 +339,10 @@ Future<void> _handleMessage(
         await _showAlertNotification(notificationsPlugin, action);
       }
     } catch (e) {
-      if (kDebugMode) print("BackgroundService: Parse error: $e");
+      if (kDebugMode) {
+        debugPrint(
+            "BackgroundService: Parse error: ${sanitizeObjectForLog(e)}");
+      }
       // Still trigger refresh for unrecognized messages
       service.invoke('update', {'action': 'unknown', 'raw': message});
     }
