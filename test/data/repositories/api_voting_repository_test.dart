@@ -251,6 +251,19 @@ void main() {
       );
     });
 
+    test('getUserLogin treats redirect loops as invalid session (non-fatal)',
+        () async {
+      when(() => client.get(
+            Uri.parse('https://seasons.rudn.ru/'),
+            headers: any(named: 'headers'),
+          )).thenThrow(
+        http.ClientException('Redirect loop detected, uri=/', Uri.parse('/')),
+      );
+
+      final login = await repository.getUserLogin();
+      expect(login, isNull);
+    });
+
     test('getUserProfile parses account page fields', () async {
       when(() => client.get(
             Uri.parse('https://seasons.rudn.ru/account'),
@@ -267,6 +280,19 @@ void main() {
       expect(profile?.patronymic, 'Petrovich');
       expect(profile?.email, 'petrov@rudn.ru');
       expect(profile?.jobTitle, 'Engineer');
+    });
+
+    test('buildSeasonsUriForTest returns absolute https URI for callback path',
+        () {
+      final callbackUri = repository.buildSeasonsUriForTest(
+        '/oauth/login_callback',
+        {'code': 'sample'},
+      );
+
+      expect(callbackUri.isAbsolute, isTrue);
+      expect(callbackUri.scheme, 'https');
+      expect(callbackUri.host, 'seasons.rudn.ru');
+      expect(callbackUri.path, '/oauth/login_callback');
     });
   });
 }
