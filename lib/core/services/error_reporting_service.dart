@@ -268,10 +268,12 @@ class ErrorReportingService {
         sanitizeTelemetryText(message, maxLength: _kMaxTelemetryMessageLength);
     final sanitizedContext = context == null
         ? null
-        : sanitizeTelemetryText(context, maxLength: _kMaxTelemetryContextLength);
+        : sanitizeTelemetryText(context,
+            maxLength: _kMaxTelemetryContextLength);
     final sanitizedStack = stackTrace == null
         ? null
-        : sanitizeTelemetryText(stackTrace, maxLength: _kMaxTelemetryStackLength);
+        : sanitizeTelemetryText(stackTrace,
+            maxLength: _kMaxTelemetryStackLength);
     final sanitizedAppVersion =
         sanitizeTelemetryText(_appVersion, maxLength: 40);
     final sanitizedPlatform =

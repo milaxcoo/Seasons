@@ -37,7 +37,8 @@ void main() {
       expect(isAllowedWebViewUrl('https://seasons.rudn.ru/account'), isTrue);
       expect(isAllowedWebViewUrl('https://example.com/account'), isFalse);
       expect(isAllowedWebViewUrl('http://seasons.rudn.ru/account'), isFalse);
-      expect(isAllowedWebViewUrl('https://sub.seasons.rudn.ru/account'), isFalse);
+      expect(
+          isAllowedWebViewUrl('https://sub.seasons.rudn.ru/account'), isFalse);
     });
 
     test('isAllowedWebViewUrl blocks dangerous schemes', () {
@@ -50,7 +51,8 @@ void main() {
         'chrome://settings',
         'blob:https://seasons.rudn.ru/abc',
       ]) {
-        expect(isAllowedWebViewUrl(url), isFalse, reason: 'Expected deny: $url');
+        expect(isAllowedWebViewUrl(url), isFalse,
+            reason: 'Expected deny: $url');
       }
     });
   });
