@@ -14,6 +14,21 @@ class AppBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF101827),
+                  Color(0xFF0B1220),
+                  Color(0xFF04060A),
+                ],
+              ),
+            ),
+          ),
+        ),
         // Background layer - always full screen
         Positioned.fill(
           child: imagePath.isNotEmpty
