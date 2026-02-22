@@ -179,6 +179,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voteCount => 'Vote Count';
 
   @override
+  String get finishingLogin => 'Finishing login…';
+
+  @override
   String get languageRussian => 'Русский';
 
   @override

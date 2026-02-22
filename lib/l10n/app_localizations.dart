@@ -416,6 +416,12 @@ abstract class AppLocalizations {
   /// **'Количество голосов'**
   String get voteCount;
 
+  /// WebView overlay text while OAuth login finalizes
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершаем вход…'**
+  String get finishingLogin;
+
   /// Russian language option
   ///
   /// In ru, this message translates to:

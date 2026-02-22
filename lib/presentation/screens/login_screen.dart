@@ -56,6 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final currentMonth = DateTime.now().month;
     final theme = monthlyThemes[currentMonth] ??
         monthlyThemes[10]!; // Октябрь по умолчанию
+    final currentLanguageCode = Localizations.localeOf(context).languageCode;
 
     return AppBackground(
       imagePath: theme.imagePath, // FIXED: Используем динамический фон
@@ -169,13 +170,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: PopupMenuButton<Locale>(
+                    initialValue: Locale(
+                      currentLanguageCode == 'en' ? 'en' : 'ru',
+                    ),
                     icon: const Icon(Icons.language,
                         color: Colors.white, size: 28),
                     onSelected: (Locale locale) {
                       context.read<LocaleBloc>().add(ChangeLocale(locale));
                     },
                     itemBuilder: (BuildContext context) => [
-                      PopupMenuItem<Locale>(
+                      CheckedPopupMenuItem<Locale>(
+                        checked: currentLanguageCode == 'ru',
                         value: const Locale('ru'),
                         child: Row(
                           children: [
@@ -185,7 +190,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-                      PopupMenuItem<Locale>(
+                      CheckedPopupMenuItem<Locale>(
+                        checked: currentLanguageCode == 'en',
                         value: const Locale('en'),
                         child: Row(
                           children: [
