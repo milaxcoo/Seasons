@@ -29,9 +29,11 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   WebViewFinalizationState _finalizationState =
       const WebViewFinalizationState.initial();
   bool _isCallbackCompletionInProgress = false;
+  bool _isRetryInProgress = false;
   bool _callbackPageFinishedSeen = false;
   bool _hasAppliedCallbackLoadGraceTimeout = false;
   String? _lastCallbackUrl;
+  String? _lastForcedNavigationUrl;
   Timer? _cookieCheckTimer;
   Timer? _finishingTimeoutTimer;
   bool _hasPopped = false;
@@ -73,7 +75,10 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             }
 
             // Auto-click the login button when homepage loads
-            if (isAllowedWebViewUrl(url)) {
+            if (shouldAutoClickEntryButton(
+              url: url,
+              webViewHiddenAfterCallback: _webViewHiddenAfterCallback,
+            )) {
               // Efficiently poll for the login button
               await _controller.runJavaScript('''
                 (function() {
@@ -102,15 +107,22 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
           },
           onNavigationRequest: (NavigationRequest request) {
             final action = resolveWebViewNavigationAction(request.url);
+            _logNavigationDecision(
+              url: request.url,
+              action: action,
+            );
             switch (action) {
               case WebViewNavigationAction.preventAndUpgrade:
                 final secureUrl = upgradeToHttps(request.url);
-                if (kDebugMode) {
-                  debugPrint(
-                    'Upgrading insecure redirect to ${sanitizeUrlForLog(secureUrl)}',
-                  );
+                if (isExpectedAuthCallbackUrl(secureUrl)) {
+                  _startFinishingLogin(secureUrl);
                 }
-                _controller.loadRequest(Uri.parse(secureUrl));
+                unawaited(
+                  _forceLoadRequestOnce(
+                    secureUrl,
+                    reason: 'upgrade_to_https_callback',
+                  ),
+                );
                 return NavigationDecision.prevent;
               case WebViewNavigationAction.navigateAndFinishLogin:
                 final callbackUrl = shouldUpgradeToHttps(request.url)
@@ -149,6 +161,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
         "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
     await _controller.setUserAgent(userAgent);
 
+    _logForcedNavigation(
+      method: 'loadRequest',
+      url: 'https://seasons.rudn.ru?lang=${widget.languageCode}',
+      reason: 'initial_open',
+      skipped: false,
+    );
     _controller.loadRequest(
         Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
 
@@ -209,10 +227,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<void> _handleCallbackPageFinished(String callbackUrl) async {
-    if (!mounted ||
-        _hasPopped ||
-        !_isFinishingLogin ||
-        _isCallbackCompletionInProgress) {
+    if (!shouldStartCallbackCompletion(
+      isMounted: mounted,
+      hasPopped: _hasPopped,
+      isFinishing: _isFinishingLogin,
+      isCompletionInProgress: _isCallbackCompletionInProgress,
+    )) {
       return;
     }
 
@@ -323,13 +343,15 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<void> _retryLogin() async {
-    if (!mounted || _hasPopped) return;
+    if (!mounted || _hasPopped || _isRetryInProgress) return;
+    _isRetryInProgress = true;
 
     _cookieCheckTimer?.cancel();
     _finishingTimeoutTimer?.cancel();
     _isCallbackCompletionInProgress = false;
     _callbackPageFinishedSeen = false;
     _hasAppliedCallbackLoadGraceTimeout = false;
+    _lastForcedNavigationUrl = null;
 
     setState(() {
       _finalizationState = _finalizationState.onRetry();
@@ -341,23 +363,98 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     try {
       final callbackUrl = _lastCallbackUrl;
       if (callbackUrl != null) {
-        await _controller.loadRequest(Uri.parse(callbackUrl));
+        await _forceLoadRequestOnce(
+          callbackUrl,
+          reason: 'retry_callback',
+        );
       } else {
-        await _controller.reload();
+        await _forceReloadOnce(reason: 'retry_reload');
       }
     } catch (_) {
       _showFinishingError(
         'Could not complete login. Please retry or cancel.',
       );
+    } finally {
+      _isRetryInProgress = false;
     }
   }
 
   void _cancelLogin() {
     if (!mounted || _hasPopped) return;
     _hasPopped = true;
+    _isRetryInProgress = false;
     _cookieCheckTimer?.cancel();
     _finishingTimeoutTimer?.cancel();
     Navigator.of(context).pop(false);
+  }
+
+  Future<void> _forceLoadRequestOnce(
+    String url, {
+    required String reason,
+  }) async {
+    if (!mounted || _hasPopped) return;
+    if (!shouldForceNavigation(_lastForcedNavigationUrl, url)) {
+      _logForcedNavigation(
+        method: 'loadRequest',
+        url: url,
+        reason: reason,
+        skipped: true,
+      );
+      return;
+    }
+
+    _lastForcedNavigationUrl = url;
+    _logForcedNavigation(
+      method: 'loadRequest',
+      url: url,
+      reason: reason,
+      skipped: false,
+    );
+    await _controller.loadRequest(Uri.parse(url));
+  }
+
+  Future<void> _forceReloadOnce({required String reason}) async {
+    if (!mounted || _hasPopped) return;
+    const reloadMarker = '__reload__';
+    if (!shouldForceNavigation(_lastForcedNavigationUrl, reloadMarker)) {
+      _logForcedNavigation(
+        method: 'reload',
+        reason: reason,
+        skipped: true,
+      );
+      return;
+    }
+
+    _lastForcedNavigationUrl = reloadMarker;
+    _logForcedNavigation(
+      method: 'reload',
+      reason: reason,
+      skipped: false,
+    );
+    await _controller.reload();
+  }
+
+  void _logNavigationDecision({
+    required String url,
+    required WebViewNavigationAction action,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      'WebView.delegate navigation_request url=${sanitizeUrlForLog(url)} action=${navigationActionLabel(action)}',
+    );
+  }
+
+  void _logForcedNavigation({
+    required String method,
+    String? url,
+    required String reason,
+    required bool skipped,
+  }) {
+    if (!kDebugMode) return;
+    final sanitizedUrl = url == null ? 'n/a' : sanitizeUrlForLog(url);
+    debugPrint(
+      'WebView.delegate forced_$method reason=$reason skipped=$skipped url=$sanitizedUrl',
+    );
   }
 
   @override
@@ -525,7 +622,8 @@ bool shouldUpgradeToHttps(String url) {
   final uri = Uri.tryParse(url);
   if (uri == null || !uri.hasScheme) return false;
   return uri.scheme.toLowerCase() == 'http' &&
-      uri.host.toLowerCase() == _seasonsHost;
+      uri.host.toLowerCase() == _seasonsHost &&
+      uri.path == _authCallbackPath;
 }
 
 @visibleForTesting
@@ -577,6 +675,51 @@ WebViewNavigationAction resolveWebViewNavigationAction(String rawUrl) {
   }
 
   return WebViewNavigationAction.navigate;
+}
+
+@visibleForTesting
+String navigationActionLabel(WebViewNavigationAction action) {
+  switch (action) {
+    case WebViewNavigationAction.navigate:
+      return 'allow';
+    case WebViewNavigationAction.prevent:
+      return 'prevent';
+    case WebViewNavigationAction.preventAndUpgrade:
+      return 'upgrade';
+    case WebViewNavigationAction.navigateAndFinishLogin:
+      return 'callback-finalize';
+  }
+}
+
+@visibleForTesting
+bool shouldForceNavigation(String? lastForcedNavigationUrl, String nextUrl) {
+  return lastForcedNavigationUrl != nextUrl;
+}
+
+@visibleForTesting
+bool shouldStartCallbackCompletion({
+  required bool isMounted,
+  required bool hasPopped,
+  required bool isFinishing,
+  required bool isCompletionInProgress,
+}) {
+  if (!isMounted || hasPopped || !isFinishing || isCompletionInProgress) {
+    return false;
+  }
+  return true;
+}
+
+@visibleForTesting
+bool shouldAutoClickEntryButton({
+  required String url,
+  required bool webViewHiddenAfterCallback,
+}) {
+  if (webViewHiddenAfterCallback) return false;
+  final uri = Uri.tryParse(url);
+  if (uri == null || !uri.hasScheme) return false;
+  if (uri.scheme.toLowerCase() != 'https') return false;
+  if (uri.host.toLowerCase() != _seasonsHost) return false;
+  return uri.path.isEmpty || uri.path == '/';
 }
 
 @visibleForTesting
