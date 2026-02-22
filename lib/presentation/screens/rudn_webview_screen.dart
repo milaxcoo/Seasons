@@ -18,20 +18,29 @@ class RudnWebviewScreen extends StatefulWidget {
 
 class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   static const Duration _callbackCookiePollTimeout =
-      Duration(milliseconds: 2000);
+      Duration(milliseconds: 8000);
   static const Duration _callbackCookiePollStep = Duration(milliseconds: 100);
-  static const Duration _callbackOverallTimeout = Duration(seconds: 5);
+  static const Duration _callbackOverallTimeout = Duration(seconds: 15);
+  static const Duration _callbackPageLoadGraceTimeout = Duration(seconds: 8);
 
   late final WebViewController _controller;
   final WebViewCookieManager _cookieManager = WebViewCookieManager();
   bool _isLoading = true;
-  bool _isFinishingLogin = false;
+  WebViewFinalizationState _finalizationState =
+      const WebViewFinalizationState.initial();
   bool _isCallbackCompletionInProgress = false;
-  bool _hasFinishingError = false;
-  String _finishingErrorMessage = '';
+  bool _callbackPageFinishedSeen = false;
+  bool _hasAppliedCallbackLoadGraceTimeout = false;
+  String? _lastCallbackUrl;
   Timer? _cookieCheckTimer;
   Timer? _finishingTimeoutTimer;
   bool _hasPopped = false;
+
+  bool get _isFinishingLogin => _finalizationState.isFinishing;
+  bool get _hasFinishingError => _finalizationState.hasError;
+  String get _finishingErrorMessage => _finalizationState.errorMessage;
+  bool get _webViewHiddenAfterCallback =>
+      _finalizationState.webViewHiddenAfterCallback;
 
   @override
   void initState() {
@@ -42,7 +51,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
         NavigationDelegate(
           onPageStarted: (String url) {
             if (!mounted) return;
-            if (_isFinishingLogin) return;
+            if (_webViewHiddenAfterCallback) return;
             setState(() {
               _isLoading = true;
             });
@@ -54,7 +63,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             });
 
             if (isExpectedAuthCallbackUrl(url)) {
+              _callbackPageFinishedSeen = true;
               unawaited(_handleCallbackPageFinished(url));
+              return;
+            }
+
+            if (_webViewHiddenAfterCallback) {
               return;
             }
 
@@ -150,7 +164,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<void> _checkCookies() async {
-    if (!mounted || _hasPopped || _isFinishingLogin) return;
+    if (!mounted ||
+        _hasPopped ||
+        _isFinishingLogin ||
+        _webViewHiddenAfterCallback) {
+      return;
+    }
     try {
       final sessionCookie = await _readSessionCookieFromDocument();
       if (sessionCookie != null) {
@@ -163,6 +182,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
   void _startFinishingLogin(String callbackUrl) {
     if (!mounted || _hasPopped) return;
+    _lastCallbackUrl = callbackUrl;
     if (_isFinishingLogin) {
       if (kDebugMode) {
         debugPrint(
@@ -179,19 +199,13 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     }
 
     setState(() {
-      _isFinishingLogin = true;
+      _finalizationState = _finalizationState.onCallbackDetected();
       _isLoading = false;
-      _hasFinishingError = false;
-      _finishingErrorMessage = '';
     });
     _cookieCheckTimer?.cancel();
-    _finishingTimeoutTimer?.cancel();
-    _finishingTimeoutTimer = Timer(_callbackOverallTimeout, () {
-      if (!mounted || _hasPopped || !_isFinishingLogin) return;
-      _showFinishingError(
-        'Login is taking longer than expected. Please retry.',
-      );
-    });
+    _callbackPageFinishedSeen = false;
+    _hasAppliedCallbackLoadGraceTimeout = false;
+    _startFinalizationTimeout(_callbackOverallTimeout);
   }
 
   Future<void> _handleCallbackPageFinished(String callbackUrl) async {
@@ -230,6 +244,30 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     }
   }
 
+  void _startFinalizationTimeout(Duration timeout) {
+    _finishingTimeoutTimer?.cancel();
+    _finishingTimeoutTimer = Timer(timeout, _onFinalizationTimeoutFired);
+  }
+
+  void _onFinalizationTimeoutFired() {
+    if (!mounted || _hasPopped || !_isFinishingLogin) return;
+
+    if (!_callbackPageFinishedSeen && !_hasAppliedCallbackLoadGraceTimeout) {
+      _hasAppliedCallbackLoadGraceTimeout = true;
+      if (kDebugMode) {
+        debugPrint(
+          'OAuth callback page still loading at finalize timeout; applying bounded grace window',
+        );
+      }
+      _startFinalizationTimeout(_callbackPageLoadGraceTimeout);
+      return;
+    }
+
+    _showFinishingError(
+      'Login is taking longer than expected. Please retry.',
+    );
+  }
+
   void _startCookieCheckTimer() {
     _cookieCheckTimer?.cancel();
     _cookieCheckTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -245,19 +283,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<String?> _pollSessionCookieFromDocument() async {
-    final stopwatch = Stopwatch()..start();
-    while (stopwatch.elapsed < _callbackCookiePollTimeout) {
-      if (_hasPopped) return null;
-      try {
-        final cookie = await _readSessionCookieFromDocument();
-        if (cookie != null) {
-          return cookie;
-        }
-      } catch (_) {}
-
-      await Future<void>.delayed(_callbackCookiePollStep);
-    }
-    return null;
+    return pollForSessionCookie(
+      readCookie: _readSessionCookieFromDocument,
+      timeout: _callbackCookiePollTimeout,
+      step: _callbackCookiePollStep,
+      shouldStop: () => _hasPopped,
+    );
   }
 
   Future<void> _completeLoginAndPop(String sessionCookie) async {
@@ -286,10 +317,8 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     if (!mounted || _hasPopped) return;
     _finishingTimeoutTimer?.cancel();
     setState(() {
-      _isFinishingLogin = true;
+      _finalizationState = _finalizationState.onError(message);
       _isLoading = false;
-      _hasFinishingError = true;
-      _finishingErrorMessage = message;
     });
   }
 
@@ -299,17 +328,28 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     _cookieCheckTimer?.cancel();
     _finishingTimeoutTimer?.cancel();
     _isCallbackCompletionInProgress = false;
+    _callbackPageFinishedSeen = false;
+    _hasAppliedCallbackLoadGraceTimeout = false;
 
     setState(() {
-      _isFinishingLogin = false;
-      _hasFinishingError = false;
-      _finishingErrorMessage = '';
-      _isLoading = true;
+      _finalizationState = _finalizationState.onRetry();
+      _isLoading = false;
     });
 
-    _startCookieCheckTimer();
-    await _controller.loadRequest(
-        Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
+    _startFinalizationTimeout(_callbackOverallTimeout);
+
+    try {
+      final callbackUrl = _lastCallbackUrl;
+      if (callbackUrl != null) {
+        await _controller.loadRequest(Uri.parse(callbackUrl));
+      } else {
+        await _controller.reload();
+      }
+    } catch (_) {
+      _showFinishingError(
+        'Could not complete login. Please retry or cancel.',
+      );
+    }
   }
 
   void _cancelLogin() {
@@ -328,10 +368,10 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       ),
       body: Stack(
         children: [
-          Opacity(
-            opacity: _isFinishingLogin ? 0 : 1,
+          Offstage(
+            offstage: _webViewHiddenAfterCallback,
             child: IgnorePointer(
-              ignoring: _isFinishingLogin,
+              ignoring: _webViewHiddenAfterCallback,
               child: WebViewWidget(controller: _controller),
             ),
           ),
@@ -408,6 +448,59 @@ enum WebViewNavigationAction {
   prevent,
   preventAndUpgrade,
   navigateAndFinishLogin,
+}
+
+typedef DelayCallback = Future<void> Function(Duration duration);
+typedef NowProvider = DateTime Function();
+
+@visibleForTesting
+class WebViewFinalizationState {
+  final bool webViewHiddenAfterCallback;
+  final bool isFinishing;
+  final bool hasError;
+  final String errorMessage;
+
+  const WebViewFinalizationState._({
+    required this.webViewHiddenAfterCallback,
+    required this.isFinishing,
+    required this.hasError,
+    required this.errorMessage,
+  });
+
+  const WebViewFinalizationState.initial()
+      : this._(
+          webViewHiddenAfterCallback: false,
+          isFinishing: false,
+          hasError: false,
+          errorMessage: '',
+        );
+
+  WebViewFinalizationState onCallbackDetected() {
+    return const WebViewFinalizationState._(
+      webViewHiddenAfterCallback: true,
+      isFinishing: true,
+      hasError: false,
+      errorMessage: '',
+    );
+  }
+
+  WebViewFinalizationState onError(String message) {
+    return WebViewFinalizationState._(
+      webViewHiddenAfterCallback: true,
+      isFinishing: true,
+      hasError: true,
+      errorMessage: message,
+    );
+  }
+
+  WebViewFinalizationState onRetry() {
+    return const WebViewFinalizationState._(
+      webViewHiddenAfterCallback: true,
+      isFinishing: true,
+      hasError: false,
+      errorMessage: '',
+    );
+  }
 }
 
 const Set<String> _allowedWebViewHosts = {
@@ -505,5 +598,44 @@ String? extractSessionCookieValue(String rawCookieString) {
     }
   }
 
+  return null;
+}
+
+Future<void> _defaultDelay(Duration duration) {
+  return Future<void>.delayed(duration);
+}
+
+DateTime _defaultNow() {
+  return DateTime.now();
+}
+
+@visibleForTesting
+Future<String?> pollForSessionCookie({
+  required Future<String?> Function() readCookie,
+  required Duration timeout,
+  required Duration step,
+  DelayCallback delay = _defaultDelay,
+  NowProvider now = _defaultNow,
+  bool Function()? shouldStop,
+}) async {
+  final deadline = now().add(timeout);
+  while (now().isBefore(deadline)) {
+    if (shouldStop?.call() == true) {
+      return null;
+    }
+
+    try {
+      final cookie = await readCookie();
+      if (cookie != null) {
+        return cookie;
+      }
+    } catch (_) {}
+
+    if (!now().isBefore(deadline)) {
+      break;
+    }
+
+    await delay(step);
+  }
   return null;
 }
