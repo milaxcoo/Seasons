@@ -290,6 +290,11 @@
   "@voteCount": {
     "description": "Vote count column header"
   },
+
+  "finishingLogin": "Завершаем вход…",
+  "@finishingLogin": {
+    "description": "WebView overlay text while OAuth login finalizes"
+  },
   
   "languageRussian": "Русский",
   "@languageRussian": {

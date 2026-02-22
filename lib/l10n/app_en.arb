@@ -54,6 +54,7 @@
   "resultsUnavailable": "Results for this voting are not available.",
   "votingResults": "Voting results",
   "voteCount": "Vote Count",
+  "finishingLogin": "Finishing login…",
   "languageRussian": "Русский",
   "languageEnglish": "English",
   "connectionError": "Could not load votings",
