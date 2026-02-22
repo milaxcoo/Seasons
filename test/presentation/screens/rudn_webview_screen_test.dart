@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seasons/presentation/screens/rudn_webview_screen.dart';
 
@@ -86,6 +87,47 @@ void main() {
       expect(readAttempts, 0);
     });
 
+    test(
+        'shouldStartCallbackCompletion is idempotent when completion in progress',
+        () {
+      expect(
+        shouldStartCallbackCompletion(
+          isMounted: true,
+          hasPopped: false,
+          isFinishing: true,
+          isCompletionInProgress: false,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldStartCallbackCompletion(
+          isMounted: true,
+          hasPopped: false,
+          isFinishing: true,
+          isCompletionInProgress: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('shouldForceNavigation prevents duplicate forced load/reload actions',
+        () {
+      expect(
+        shouldForceNavigation(
+          'https://seasons.rudn.ru/oauth/login_callback',
+          'https://seasons.rudn.ru/oauth/login_callback',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldForceNavigation(
+          'https://seasons.rudn.ru/oauth/login_callback',
+          '__reload__',
+        ),
+        isTrue,
+      );
+    });
+
     test('extractSessionCookieValue returns session value from cookie string',
         () {
       final value = extractSessionCookieValue(
@@ -102,13 +144,20 @@ void main() {
       expect(extractSessionCookieValue('""'), isNull);
     });
 
-    test('shouldUpgradeToHttps and upgradeToHttps handle insecure redirects',
-        () {
-      const insecure = 'http://seasons.rudn.ru/account';
+    test('shouldUpgradeToHttps upgrades only insecure callback URL', () {
+      const insecureCallback =
+          'http://seasons.rudn.ru/oauth/login_callback?code=abc';
 
-      expect(shouldUpgradeToHttps(insecure), isTrue);
-      expect(upgradeToHttps(insecure), 'https://seasons.rudn.ru/account');
-      expect(shouldUpgradeToHttps('https://seasons.rudn.ru/account'), isFalse);
+      expect(shouldUpgradeToHttps(insecureCallback), isTrue);
+      expect(
+        upgradeToHttps(insecureCallback),
+        'https://seasons.rudn.ru/oauth/login_callback?code=abc',
+      );
+      expect(shouldUpgradeToHttps('http://seasons.rudn.ru/account'), isFalse);
+      expect(
+        shouldUpgradeToHttps('https://seasons.rudn.ru/oauth/login_callback'),
+        isFalse,
+      );
     });
 
     test('isAllowedWebViewUrl allows required https auth hosts', () {
@@ -133,7 +182,7 @@ void main() {
 
       expect(isAllowedWebViewUrl(insecureSeasons), isFalse);
       expect(isAllowedWebViewUrl(insecureId), isFalse);
-      expect(shouldUpgradeToHttps(insecureSeasons), isTrue);
+      expect(shouldUpgradeToHttps(insecureSeasons), isFalse);
       expect(shouldUpgradeToHttps(insecureId), isFalse);
     });
 
@@ -182,6 +231,19 @@ void main() {
       );
     });
 
+    test(
+        'id sign-in URL with redirect_uri remains allowed and does not trigger upgrade',
+        () {
+      const idSignIn =
+          'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback';
+
+      expect(shouldUpgradeToHttps(idSignIn), isFalse);
+      expect(
+        resolveWebViewNavigationAction(idSignIn),
+        WebViewNavigationAction.navigate,
+      );
+    });
+
     test('resolveWebViewNavigationAction allows only safe host navigations',
         () {
       expect(
@@ -217,5 +279,102 @@ void main() {
             reason: 'Expected deny: $url');
       }
     });
+
+    test('shouldAutoClickEntryButton only applies to seasons root page', () {
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://seasons.rudn.ru/?lang=ru',
+          webViewHiddenAfterCallback: false,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://id.rudn.ru/sign-in',
+          webViewHiddenAfterCallback: false,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://seasons.rudn.ru/account',
+          webViewHiddenAfterCallback: false,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://seasons.rudn.ru/?lang=ru',
+          webViewHiddenAfterCallback: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('navigation replay shows callback-only upgrade avoids reload loops',
+        () {
+      const sequence = <String>[
+        'https://seasons.rudn.ru/?lang=ru',
+        'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback',
+        'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback',
+        'https://seasons.rudn.ru/oauth/login_callback?code=abc',
+      ];
+
+      bool oldShouldUpgrade(String url) {
+        final uri = Uri.tryParse(url);
+        if (uri == null || !uri.hasScheme) return false;
+        return uri.scheme.toLowerCase() == 'http' &&
+            uri.host.toLowerCase() == 'seasons.rudn.ru';
+      }
+
+      var oldForcedLoads = 0;
+      var newForcedLoads = 0;
+      String? lastForcedUrl;
+
+      for (final url in sequence) {
+        final sanitized = _sanitizeForReplay(url);
+        final oldAction = oldShouldUpgrade(url) ? 'upgrade' : 'non-upgrade';
+        final newAction = navigationActionLabel(
+          resolveWebViewNavigationAction(url),
+        );
+        debugPrint('replay nav=$sanitized old=$oldAction new=$newAction');
+
+        if (oldShouldUpgrade(url)) {
+          oldForcedLoads += 1;
+          debugPrint(
+            'replay old_forced_load=${_sanitizeForReplay(upgradeToHttps(url))}',
+          );
+        }
+
+        if (resolveWebViewNavigationAction(url) ==
+                WebViewNavigationAction.preventAndUpgrade &&
+            shouldForceNavigation(lastForcedUrl, upgradeToHttps(url))) {
+          lastForcedUrl = upgradeToHttps(url);
+          newForcedLoads += 1;
+          debugPrint(
+            'replay new_forced_load=${_sanitizeForReplay(lastForcedUrl)}',
+          );
+        }
+      }
+
+      expect(oldForcedLoads, greaterThan(newForcedLoads));
+      expect(newForcedLoads, 1);
+    });
   });
+}
+
+String _sanitizeForReplay(String? rawUrl) {
+  if (rawUrl == null) return 'n/a';
+  final uri = Uri.tryParse(rawUrl);
+  if (uri == null) return rawUrl;
+  return uri.replace(query: '', fragment: '').toString();
 }
