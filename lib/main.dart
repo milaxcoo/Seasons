@@ -126,6 +126,17 @@ void _handleNotificationPayload(String payload) {
   }
 }
 
+@visibleForTesting
+String authScreenKeyForState(AuthState state) {
+  if (state is AuthInitial || state is AuthChecking) {
+    return 'auth-checking';
+  }
+  if (state is AuthAuthenticated) {
+    return 'auth-home';
+  }
+  return 'auth-login';
+}
+
 class SeasonsApp extends StatelessWidget {
   const SeasonsApp({super.key});
 
@@ -195,14 +206,45 @@ class SeasonsApp extends StatelessWidget {
                 },
                 child: BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
+                    final authScreenKey =
+                        ValueKey(authScreenKeyForState(state));
+                    final Widget targetScreen;
                     if (state is AuthInitial || state is AuthChecking) {
-                      return const Scaffold(
-                          body: Center(child: SeasonsLoader()));
+                      targetScreen = Scaffold(
+                        key: authScreenKey,
+                        body: Center(child: SeasonsLoader()),
+                      );
+                    } else if (state is AuthAuthenticated) {
+                      targetScreen = HomeScreen(key: authScreenKey);
+                    } else {
+                      targetScreen = LoginScreen(key: authScreenKey);
                     }
-                    if (state is AuthAuthenticated) {
-                      return const HomeScreen();
-                    }
-                    return const LoginScreen();
+
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final curvedAnimation = CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                          reverseCurve: Curves.easeInCubic,
+                        );
+                        final slideAnimation = Tween<Offset>(
+                          begin: const Offset(0.03, 0),
+                          end: Offset.zero,
+                        ).animate(curvedAnimation);
+
+                        return FadeTransition(
+                          opacity: curvedAnimation,
+                          child: SlideTransition(
+                            position: slideAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: targetScreen,
+                    );
                   },
                 ),
               ),

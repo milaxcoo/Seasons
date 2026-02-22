@@ -1,8 +1,361 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seasons/presentation/screens/rudn_webview_screen.dart';
 
 void main() {
   group('RudnWebview helpers', () {
+    test(
+        'WebViewFinalizationState keeps WebView hidden after callback across error and retry',
+        () {
+      const initial = WebViewFinalizationState.initial();
+      final callbackDetected = initial.onCallbackDetected();
+      final failed = callbackDetected.onError('temporary failure');
+      final retried = failed.onRetry();
+
+      expect(initial.webViewHiddenAfterCallback, isFalse);
+      expect(initial.phase, WebViewFinalizationPhase.idle);
+      expect(callbackDetected.webViewHiddenAfterCallback, isTrue);
+      expect(
+        callbackDetected.phase,
+        WebViewFinalizationPhase.waitingCallbackLoad,
+      );
+      expect(failed.webViewHiddenAfterCallback, isTrue);
+      expect(failed.phase, WebViewFinalizationPhase.error);
+      expect(retried.webViewHiddenAfterCallback, isTrue);
+      expect(retried.isFinishing, isTrue);
+      expect(retried.hasError, isFalse);
+      expect(retried.errorMessage, isEmpty);
+      expect(retried.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+    });
+
+    test('callback onPageFinished transitions from phase A to phase B', () {
+      const initial = WebViewFinalizationState.initial();
+      final waiting = initial.onCallbackDetected();
+      final polling = waiting.onCallbackPageFinished();
+
+      expect(waiting.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+      expect(waiting.hasError, isFalse);
+      expect(polling.phase, WebViewFinalizationPhase.pollingCookie);
+      expect(polling.hasError, isFalse);
+    });
+
+    test(
+        'phase A keeps waiting without error until timeout, then shows timeout error',
+        () {
+      final waiting =
+          const WebViewFinalizationState.initial().onCallbackDetected();
+      final timedOut = waiting.onPhaseATimeout();
+
+      expect(waiting.hasError, isFalse);
+      expect(waiting.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+      expect(timedOut.hasError, isTrue);
+      expect(timedOut.phase, WebViewFinalizationPhase.error);
+      expect(
+        timedOut.errorMessage,
+        WebViewFinalizationState.phaseATimeoutMessage,
+      );
+    });
+
+    test(
+        'phase B keeps polling without error until timeout, then shows cookie timeout error',
+        () {
+      final polling = const WebViewFinalizationState.initial()
+          .onCallbackDetected()
+          .onCallbackPageFinished();
+      final timedOut = polling.onPhaseBTimeout();
+
+      expect(polling.hasError, isFalse);
+      expect(polling.phase, WebViewFinalizationPhase.pollingCookie);
+      expect(timedOut.hasError, isTrue);
+      expect(timedOut.phase, WebViewFinalizationPhase.error);
+      expect(
+        timedOut.errorMessage,
+        WebViewFinalizationState.phaseBTimeoutMessage,
+      );
+    });
+
+    test(
+        'retry keeps WebView hidden and restarts at phase A from any failure state',
+        () {
+      final failedInPhaseB = const WebViewFinalizationState.initial()
+          .onCallbackDetected()
+          .onCallbackPageFinished()
+          .onPhaseBTimeout();
+      final retried = failedInPhaseB.onRetry();
+
+      expect(failedInPhaseB.webViewHiddenAfterCallback, isTrue);
+      expect(retried.webViewHiddenAfterCallback, isTrue);
+      expect(retried.hasError, isFalse);
+      expect(retried.errorMessage, isEmpty);
+      expect(retried.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+    });
+
+    test('pollForSessionCookie supports injected clock/delay for slow networks',
+        () async {
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          if (readAttempts >= 6) {
+            return 'vpn-session-cookie';
+          }
+          return null;
+        },
+        timeout: const Duration(seconds: 8),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(cookie, 'vpn-session-cookie');
+      expect(readAttempts, 6);
+    });
+
+    test('phase B cookie polling succeeds within timeout without needing retry',
+        () async {
+      final pollingState = const WebViewFinalizationState.initial()
+          .onCallbackDetected()
+          .onCallbackPageFinished();
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          if (readAttempts == 4) return 'session-first-try';
+          return null;
+        },
+        timeout: const Duration(seconds: 8),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(pollingState.phase, WebViewFinalizationPhase.pollingCookie);
+      expect(cookie, 'session-first-try');
+      expect(readAttempts, 4);
+    });
+
+    test(
+        'cookie polling can succeed before callback onPageFinished is observed',
+        () async {
+      final waitingState =
+          const WebViewFinalizationState.initial().onCallbackDetected();
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          if (readAttempts == 3) return 'session-before-finished';
+          return null;
+        },
+        timeout: const Duration(seconds: 10),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(waitingState.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+      expect(waitingState.hasError, isFalse);
+      expect(cookie, 'session-before-finished');
+      expect(readAttempts, 3);
+    });
+
+    test('cookie polling can succeed after callback page finished', () async {
+      final pollingState = const WebViewFinalizationState.initial()
+          .onCallbackDetected()
+          .onCallbackPageFinished();
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          if (readAttempts == 5) return 'session-after-finished';
+          return null;
+        },
+        timeout: const Duration(seconds: 10),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(pollingState.phase, WebViewFinalizationPhase.pollingCookie);
+      expect(cookie, 'session-after-finished');
+      expect(readAttempts, 5);
+    });
+
+    test(
+        'pollForSessionCookie returns null when timeout is reached with injected clock',
+        () async {
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          return null;
+        },
+        timeout: const Duration(milliseconds: 300),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(cookie, isNull);
+      expect(readAttempts, 3);
+    });
+
+    test('pollForSessionCookie stops early when stop guard is true', () async {
+      var readAttempts = 0;
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          return null;
+        },
+        timeout: const Duration(seconds: 8),
+        step: const Duration(milliseconds: 100),
+        shouldStop: () => true,
+        delay: (_) async {},
+      );
+
+      expect(cookie, isNull);
+      expect(readAttempts, 0);
+    });
+
+    test('failure is emitted only after overall timeout elapses', () async {
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+      var readAttempts = 0;
+      final waiting =
+          const WebViewFinalizationState.initial().onCallbackDetected();
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          return null;
+        },
+        timeout: const Duration(seconds: 20),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(cookie, isNull);
+      expect(waiting.hasError, isFalse);
+      expect(waiting.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+      expect(readAttempts, greaterThan(100));
+
+      final timedOut = waiting.onPhaseATimeout();
+      expect(timedOut.hasError, isTrue);
+    });
+
+    test(
+        'shouldStartCallbackCompletion is idempotent when completion in progress',
+        () {
+      expect(
+        shouldStartCallbackCompletion(
+          isMounted: true,
+          hasPopped: false,
+          isFinishing: true,
+          isCompletionInProgress: false,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldStartCallbackCompletion(
+          isMounted: true,
+          hasPopped: false,
+          isFinishing: true,
+          isCompletionInProgress: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('shouldForceNavigation prevents duplicate forced load/reload actions',
+        () {
+      expect(
+        shouldForceNavigation(
+          'https://seasons.rudn.ru/oauth/login_callback',
+          'https://seasons.rudn.ru/oauth/login_callback',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldForceNavigation(
+          'https://seasons.rudn.ru/oauth/login_callback',
+          '__reload__',
+        ),
+        isTrue,
+      );
+    });
+
+    test('retry callback force-load is user initiated only', () {
+      const callbackUrl = 'https://seasons.rudn.ru/oauth/login_callback';
+
+      expect(
+        shouldForceRetryCallbackLoad(
+          userInitiated: false,
+          callbackUrl: callbackUrl,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldForceRetryCallbackLoad(
+          userInitiated: true,
+          callbackUrl: null,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldForceRetryCallbackLoad(
+          userInitiated: true,
+          callbackUrl: callbackUrl,
+        ),
+        isTrue,
+      );
+    });
+
+    test('retry reload is user initiated only when callback URL missing', () {
+      expect(
+        shouldForceRetryReload(
+          userInitiated: false,
+          callbackUrl: null,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldForceRetryReload(
+          userInitiated: true,
+          callbackUrl: 'https://seasons.rudn.ru/oauth/login_callback',
+        ),
+        isFalse,
+      );
+      expect(
+        shouldForceRetryReload(
+          userInitiated: true,
+          callbackUrl: null,
+        ),
+        isTrue,
+      );
+    });
+
     test('extractSessionCookieValue returns session value from cookie string',
         () {
       final value = extractSessionCookieValue(
@@ -19,13 +372,20 @@ void main() {
       expect(extractSessionCookieValue('""'), isNull);
     });
 
-    test('shouldUpgradeToHttps and upgradeToHttps handle insecure redirects',
-        () {
-      const insecure = 'http://seasons.rudn.ru/account';
+    test('shouldUpgradeToHttps upgrades only insecure callback URL', () {
+      const insecureCallback =
+          'http://seasons.rudn.ru/oauth/login_callback?code=abc';
 
-      expect(shouldUpgradeToHttps(insecure), isTrue);
-      expect(upgradeToHttps(insecure), 'https://seasons.rudn.ru/account');
-      expect(shouldUpgradeToHttps('https://seasons.rudn.ru/account'), isFalse);
+      expect(shouldUpgradeToHttps(insecureCallback), isTrue);
+      expect(
+        upgradeToHttps(insecureCallback),
+        'https://seasons.rudn.ru/oauth/login_callback?code=abc',
+      );
+      expect(shouldUpgradeToHttps('http://seasons.rudn.ru/account'), isFalse);
+      expect(
+        shouldUpgradeToHttps('https://seasons.rudn.ru/oauth/login_callback'),
+        isFalse,
+      );
     });
 
     test('isAllowedWebViewUrl allows required https auth hosts', () {
@@ -50,7 +410,7 @@ void main() {
 
       expect(isAllowedWebViewUrl(insecureSeasons), isFalse);
       expect(isAllowedWebViewUrl(insecureId), isFalse);
-      expect(shouldUpgradeToHttps(insecureSeasons), isTrue);
+      expect(shouldUpgradeToHttps(insecureSeasons), isFalse);
       expect(shouldUpgradeToHttps(insecureId), isFalse);
     });
 
@@ -77,6 +437,53 @@ void main() {
       );
     });
 
+    test(
+        'resolveWebViewNavigationAction marks callback as finish-login and allows navigation',
+        () {
+      expect(
+        resolveWebViewNavigationAction(
+          'https://seasons.rudn.ru/oauth/login_callback?code=abc',
+        ),
+        WebViewNavigationAction.navigateAndFinishLogin,
+      );
+    });
+
+    test(
+        'resolveWebViewNavigationAction upgrades insecure callback redirect first',
+        () {
+      expect(
+        resolveWebViewNavigationAction(
+          'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        ),
+        WebViewNavigationAction.preventAndUpgrade,
+      );
+    });
+
+    test(
+        'id sign-in URL with redirect_uri remains allowed and does not trigger upgrade',
+        () {
+      const idSignIn =
+          'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback';
+
+      expect(shouldUpgradeToHttps(idSignIn), isFalse);
+      expect(
+        resolveWebViewNavigationAction(idSignIn),
+        WebViewNavigationAction.navigate,
+      );
+    });
+
+    test('resolveWebViewNavigationAction allows only safe host navigations',
+        () {
+      expect(
+        resolveWebViewNavigationAction('https://id.rudn.ru/sign-in'),
+        WebViewNavigationAction.navigate,
+      );
+      expect(
+        resolveWebViewNavigationAction('https://example.com'),
+        WebViewNavigationAction.prevent,
+      );
+    });
+
     test('isAllowedWebViewUrl allows internal about:blank and about:srcdoc',
         () {
       expect(isAllowedWebViewUrl('about:blank'), isTrue);
@@ -100,5 +507,102 @@ void main() {
             reason: 'Expected deny: $url');
       }
     });
+
+    test('shouldAutoClickEntryButton only applies to seasons root page', () {
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://seasons.rudn.ru/?lang=ru',
+          webViewHiddenAfterCallback: false,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://id.rudn.ru/sign-in',
+          webViewHiddenAfterCallback: false,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://seasons.rudn.ru/account',
+          webViewHiddenAfterCallback: false,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldAutoClickEntryButton(
+          url: 'https://seasons.rudn.ru/?lang=ru',
+          webViewHiddenAfterCallback: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('navigation replay shows callback-only upgrade avoids reload loops',
+        () {
+      const sequence = <String>[
+        'https://seasons.rudn.ru/?lang=ru',
+        'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/account',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback',
+        'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback',
+        'https://seasons.rudn.ru/oauth/login_callback?code=abc',
+      ];
+
+      bool oldShouldUpgrade(String url) {
+        final uri = Uri.tryParse(url);
+        if (uri == null || !uri.hasScheme) return false;
+        return uri.scheme.toLowerCase() == 'http' &&
+            uri.host.toLowerCase() == 'seasons.rudn.ru';
+      }
+
+      var oldForcedLoads = 0;
+      var newForcedLoads = 0;
+      String? lastForcedUrl;
+
+      for (final url in sequence) {
+        final sanitized = _sanitizeForReplay(url);
+        final oldAction = oldShouldUpgrade(url) ? 'upgrade' : 'non-upgrade';
+        final newAction = navigationActionLabel(
+          resolveWebViewNavigationAction(url),
+        );
+        debugPrint('replay nav=$sanitized old=$oldAction new=$newAction');
+
+        if (oldShouldUpgrade(url)) {
+          oldForcedLoads += 1;
+          debugPrint(
+            'replay old_forced_load=${_sanitizeForReplay(upgradeToHttps(url))}',
+          );
+        }
+
+        if (resolveWebViewNavigationAction(url) ==
+                WebViewNavigationAction.preventAndUpgrade &&
+            shouldForceNavigation(lastForcedUrl, upgradeToHttps(url))) {
+          lastForcedUrl = upgradeToHttps(url);
+          newForcedLoads += 1;
+          debugPrint(
+            'replay new_forced_load=${_sanitizeForReplay(lastForcedUrl)}',
+          );
+        }
+      }
+
+      expect(oldForcedLoads, greaterThan(newForcedLoads));
+      expect(newForcedLoads, 1);
+    });
   });
+}
+
+String _sanitizeForReplay(String? rawUrl) {
+  if (rawUrl == null) return 'n/a';
+  final uri = Uri.tryParse(rawUrl);
+  if (uri == null) return rawUrl;
+  return uri.replace(query: '', fragment: '').toString();
 }
