@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,7 @@ import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/bloc/home_tab/home_tab_cubit.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
@@ -178,8 +180,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedPanelIndex = 0;
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
   final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(0);
 
@@ -191,7 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
     model.VotingStatus.completed: 0,
   };
 
-  late PageController _pageController;
+  late final PageController _pageController;
+  int? _pendingNavigationIndex;
+  Orientation? _lastLoggedOrientation;
+  Size? _lastLoggedSize;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -199,21 +203,141 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _fetchEventsForPanel(int index) {
-    // Animate to the page. This will trigger onPageChanged which handles fetching.
-    _pageController.animateToPage(
+  void _debugLog(String message, [Map<String, Object?> details = const {}]) {
+    if (!kDebugMode) return;
+    final detailsString = details.entries
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join(', ');
+    debugPrint(
+      detailsString.isEmpty
+          ? 'HomeScreen.debug $message'
+          : 'HomeScreen.debug $message {$detailsString}',
+    );
+  }
+
+  int _normalizePanelIndex(int index) {
+    if (index < 0) return 0;
+    if (index > 2) return 2;
+    return index;
+  }
+
+  void _navigateToPanel(
+    int index, {
+    required String source,
+    bool animate = true,
+  }) {
+    final normalizedIndex = _normalizePanelIndex(index);
+    context.read<HomeTabCubit>().setIndex(
+          normalizedIndex,
+          source: source,
+        );
+    _movePageToIndex(
+      normalizedIndex,
+      source: source,
+      animate: animate,
+    );
+  }
+
+  void _movePageToIndex(
+    int index, {
+    required String source,
+    bool animate = true,
+  }) {
+    if (!_pageController.hasClients) {
+      _pendingNavigationIndex = index;
+      _debugLog(
+        'panel_navigation_queued',
+        {
+          'source': source,
+          'index': index,
+          'reason': 'no_page_controller_clients',
+        },
+      );
+      return;
+    }
+
+    final currentPage =
+        (_pageController.page ?? _pageController.initialPage).round();
+    if (currentPage == index) {
+      if (source == 'user_tap') {
+        _refreshCurrentPage(index);
+      }
+      _debugLog(
+        'panel_navigation_skipped_same_page',
+        {
+          'source': source,
+          'index': index,
+        },
+      );
+      return;
+    }
+
+    _pendingNavigationIndex = null;
+    _debugLog(
+      'panel_navigation_execute',
+      {
+        'source': source,
+        'index': index,
+        'animate': animate,
+      },
+    );
+
+    if (animate) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutQuart,
+      );
+      return;
+    }
+    _pageController.jumpToPage(index);
+  }
+
+  void _flushPendingNavigationIfNeeded({
+    required String source,
+  }) {
+    final pendingIndex = _pendingNavigationIndex;
+    if (pendingIndex == null) return;
+    _debugLog(
+      'panel_navigation_flush_pending',
+      {
+        'source': source,
+        'index': pendingIndex,
+      },
+    );
+    _movePageToIndex(
+      pendingIndex,
+      source: '$source.pending_flush',
+      animate: false,
+    );
+  }
+
+  void _onPanelSelected(int index) {
+    _debugLog(
+      'panel_tap',
+      {
+        'index': index,
+      },
+    );
+    _navigateToPanel(
       index,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutQuart, // Smoother curve
+      source: 'user_tap',
     );
   }
 
   Timer? _sectionDebounce;
 
   void _onPageChanged(int index) {
-    setState(() {
-      _selectedPanelIndex = index;
-    });
+    _debugLog(
+      'page_changed',
+      {
+        'index': index,
+      },
+    );
+    context.read<HomeTabCubit>().setIndex(
+          index,
+          source: 'page_swipe',
+        );
     // Debounce API calls — if user swipes rapidly, only fetch for the final section
     _sectionDebounce?.cancel();
     _sectionDebounce = Timer(const Duration(milliseconds: 300), () {
@@ -237,21 +361,39 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: _selectedPanelIndex);
+    WidgetsBinding.instance.addObserver(this);
+    final initialIndex = context.read<HomeTabCubit>().state.index;
+    _pageController = PageController(initialPage: initialIndex);
+    _debugLog(
+      'init_state',
+      {
+        'initial_index': initialIndex,
+      },
+    );
 
     // Listen for notification navigation events
     _navigationSubscription =
         NotificationNavigationService().onNavigate.listen((event) {
       if (mounted) {
+        _debugLog(
+          'notification_navigation_received',
+          {
+            'tab_index': event.tabIndex,
+            'should_refresh': event.shouldRefresh,
+          },
+        );
         // Smoothly animate to the requested tab
-        _fetchEventsForPanel(event.tabIndex);
+        _navigateToPanel(
+          event.tabIndex,
+          source: 'notification',
+        );
 
         // Trigger data refresh if requested (onPageChanged will do it, but force if needed)
         if (event.shouldRefresh) {
           // Wait a bit for animation or just trigger
           // Actually _onPageChanged will trigger fetch.
           // If we are ALREADY on that page, onPageChanged won't fire for animateToPage(sameIndex).
-          if (_selectedPanelIndex == event.tabIndex) {
+          if (context.read<HomeTabCubit>().state.index == event.tabIndex) {
             _refreshCurrentPage(event.tabIndex);
           }
         }
@@ -292,10 +434,47 @@ class _HomeScreenState extends State<HomeScreen> {
     context
         .read<VotingBloc>()
         .add(RefreshEventsSilent(status: model.VotingStatus.completed));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _flushPendingNavigationIfNeeded(source: 'post_frame_init');
+    });
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    if (!mounted) return;
+
+    final view = View.of(context);
+    final logicalSize = view.physicalSize / view.devicePixelRatio;
+    final orientation = logicalSize.width >= logicalSize.height
+        ? Orientation.landscape
+        : Orientation.portrait;
+    _debugLog(
+      'metrics_changed',
+      {
+        'orientation': orientation.name,
+        'size': '${logicalSize.width.toStringAsFixed(1)}x'
+            '${logicalSize.height.toStringAsFixed(1)}',
+      },
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final targetIndex = context.read<HomeTabCubit>().state.index;
+      _movePageToIndex(
+        targetIndex,
+        source: 'metrics_sync',
+        animate: false,
+      );
+      _flushPendingNavigationIfNeeded(source: 'metrics_sync');
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _uiTicker?.cancel();
     _dataTicker?.cancel();
@@ -308,9 +487,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.read<MonthlyThemeService>().theme;
+    final selectedPanelIndex =
+        context.select((HomeTabCubit cubit) => cubit.state.index);
 
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+
+    if (kDebugMode &&
+        (_lastLoggedOrientation != mediaQuery.orientation ||
+            _lastLoggedSize != mediaQuery.size)) {
+      _lastLoggedOrientation = mediaQuery.orientation;
+      _lastLoggedSize = mediaQuery.size;
+      _debugLog(
+        'build_orientation_snapshot',
+        {
+          'orientation': mediaQuery.orientation.name,
+          'size': '${mediaQuery.size.width.toStringAsFixed(1)}x'
+              '${mediaQuery.size.height.toStringAsFixed(1)}',
+          'selected_index': selectedPanelIndex,
+          'tap_blocking_overlay': false,
+        },
+      );
+    }
 
     // --- UI COMPONENTS ---
 
@@ -402,8 +600,8 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: AnimatedPanelSelector(
-        selectedIndex: _selectedPanelIndex,
-        onPanelSelected: _fetchEventsForPanel,
+        selectedIndex: selectedPanelIndex,
+        onPanelSelected: _onPanelSelected,
         hasEvents: _actionableCount,
         // Compact landscape navbar as requested to save space for poem
         totalHeight: isLandscape ? 80.0 : 110.0,
@@ -462,107 +660,124 @@ class _HomeScreenState extends State<HomeScreen> {
     // Actually, we will just use the footer widget and rely on layout constraints
     final footer = _Footer(poem: theme.poem, author: theme.author);
 
+    Widget content = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.35),
+                  Colors.black.withValues(alpha: 0.25),
+                  Colors.black.withValues(alpha: 0.35),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              bottom:
+                  true, // Enable bottom safe area for Galaxy Fold / Android Gestures
+              left: false,
+              right: false,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: isLandscape
+                      // LANDSCAPE: Split Layout (50/50 Split)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Left: Voting List (The "Detailed" content)
+                            Expanded(
+                              flex: 1, // 50% width
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: votingListContent,
+                              ),
+                            ),
+
+                            // Right: Sidebar (Header, Controls, Poem)
+                            Expanded(
+                              flex: 1, // 50% width
+                              child: Column(
+                                children: [
+                                  topBar,
+                                  Expanded(
+                                    // Distribute space
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        header,
+                                        const SizedBox(
+                                            height: 4), // Ultra compact spacing
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6.0),
+                                          child: navbar,
+                                        ),
+                                        const SizedBox(
+                                            height: 4), // Ultra compact spacing
+                                        Expanded(
+                                            child:
+                                                footer), // Force footer to fit in remaining space
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      // PORTRAIT: Stacked Layout (Original)
+                      : Column(
+                          children: [
+                            topBar,
+                            header,
+                            navbar,
+                            Expanded(
+                                child:
+                                    votingListContent), // Correctly applied Expanded inside Column
+                            footer,
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (kDebugMode) {
+      content = Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (event) {
+          _debugLog(
+            'pointer_down',
+            {
+              'x': event.position.dx.toStringAsFixed(1),
+              'y': event.position.dy.toStringAsFixed(1),
+              'selected_index': selectedPanelIndex,
+            },
+          );
+        },
+        child: content,
+      );
+    }
+
     return AppBackground(
       imagePath: theme.imagePath,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.35),
-                    Colors.black.withValues(alpha: 0.25),
-                    Colors.black.withValues(alpha: 0.35),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: SafeArea(
-                bottom:
-                    true, // Enable bottom safe area for Galaxy Fold / Android Gestures
-                left: false,
-                right: false,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: isLandscape
-                        // LANDSCAPE: Split Layout (50/50 Split)
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Left: Voting List (The "Detailed" content)
-                              Expanded(
-                                flex: 1, // 50% width
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8.0),
-                                  child: votingListContent,
-                                ),
-                              ),
-
-                              // Right: Sidebar (Header, Controls, Poem)
-                              Expanded(
-                                flex: 1, // 50% width
-                                child: Column(
-                                  children: [
-                                    topBar,
-                                    Expanded(
-                                      // Distribute space
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          header,
-                                          const SizedBox(
-                                              height:
-                                                  4), // Ultra compact spacing
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6.0),
-                                            child: navbar,
-                                          ),
-                                          const SizedBox(
-                                              height:
-                                                  4), // Ultra compact spacing
-                                          Expanded(
-                                              child:
-                                                  footer), // Force footer to fit in remaining space
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        // PORTRAIT: Stacked Layout (Original)
-                        : Column(
-                            children: [
-                              topBar,
-                              header,
-                              navbar,
-                              Expanded(
-                                  child:
-                                      votingListContent), // Correctly applied Expanded inside Column
-                              footer,
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 }

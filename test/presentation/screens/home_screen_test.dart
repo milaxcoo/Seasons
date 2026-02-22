@@ -8,6 +8,7 @@ import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/bloc/home_tab/home_tab_cubit.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
@@ -34,6 +35,7 @@ void main() {
   late MockVotingBloc mockVotingBloc;
   late MockLocaleBloc mockLocaleBloc;
   late MockNotificationNavigationService mockNavigationService;
+  late HomeTabCubit homeTabCubit;
 
   setUpAll(() async {
     await initializeDateFormatting('ru_RU', null);
@@ -48,6 +50,7 @@ void main() {
     mockVotingBloc = MockVotingBloc();
     mockLocaleBloc = MockLocaleBloc();
     mockNavigationService = MockNotificationNavigationService();
+    homeTabCubit = HomeTabCubit();
 
     NotificationNavigationService.setMockInstance(mockNavigationService);
 
@@ -64,6 +67,7 @@ void main() {
   });
 
   tearDown(() {
+    homeTabCubit.close();
     // Reset singleton? No easy way unless we add a clearMockInstance or just rely on setUp overwriting it.
     // Ideally NotificationNavigationService._instance = null; but we can't access private.
     // Overwriting in next setUp is sufficient.
@@ -83,6 +87,7 @@ void main() {
           BlocProvider<AuthBloc>.value(value: mockAuthBloc),
           BlocProvider<VotingBloc>.value(value: mockVotingBloc),
           BlocProvider<LocaleBloc>.value(value: mockLocaleBloc),
+          BlocProvider<HomeTabCubit>.value(value: homeTabCubit),
         ],
         child: const MaterialApp(
           localizationsDelegates: [
@@ -299,6 +304,65 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Verify that FetchEventsByStatus was called with active status
+      verify(() => mockVotingBloc.add(
+              const FetchEventsByStatus(status: model.VotingStatus.active)))
+          .called(greaterThan(0));
+      expect(homeTabCubit.state.index, 1);
+    });
+
+    testWidgets('keeps selected panel after orientation change',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ResultsIcon).first);
+      await tester.pumpAndSettle(const Duration(milliseconds: 900));
+      expect(homeTabCubit.state.index, 2);
+
+      tester.view.physicalSize = const Size(1920, 1080);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(homeTabCubit.state.index, 2);
+    });
+
+    testWidgets('panel selector remains tappable after orientation change',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      tester.view.physicalSize = const Size(1920, 1080);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ActiveVotingIcon).first);
+      await tester.pumpAndSettle(const Duration(milliseconds: 900));
+
+      expect(homeTabCubit.state.index, 1);
       verify(() => mockVotingBloc.add(
               const FetchEventsByStatus(status: model.VotingStatus.active)))
           .called(greaterThan(0));
