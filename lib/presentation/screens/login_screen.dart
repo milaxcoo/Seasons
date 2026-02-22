@@ -28,6 +28,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   late final AnimationController _entryAnimationController;
   late final Animation<double> _blurSigmaAnimation;
+  late final Animation<double> _scrimOpacityAnimation;
   late final Animation<double> _contentOpacityAnimation;
   late final Animation<Offset> _contentSlideAnimation;
   bool _didPrecacheBackground = false;
@@ -39,14 +40,19 @@ class _LoginScreenState extends State<LoginScreen>
       vsync: this,
       duration: _entryAnimationDuration,
     );
+    final entryCurve = CurvedAnimation(
+      parent: _entryAnimationController,
+      curve: Curves.easeOutCubic,
+    );
     _blurSigmaAnimation = Tween<double>(
       begin: _initialBlurSigma,
       end: 0,
+    ).animate(entryCurve);
+    _scrimOpacityAnimation = Tween<double>(
+      begin: 0.12,
+      end: 0,
     ).animate(
-      CurvedAnimation(
-        parent: _entryAnimationController,
-        curve: Curves.easeOutCubic,
-      ),
+      entryCurve,
     );
     _contentOpacityAnimation = CurvedAnimation(
       parent: _entryAnimationController,
@@ -123,19 +129,19 @@ class _LoginScreenState extends State<LoginScreen>
         children: [
           Positioned.fill(
             child: AnimatedBuilder(
-              animation: _blurSigmaAnimation,
+              animation: _entryAnimationController,
               builder: (context, child) {
                 final sigma = _blurSigmaAnimation.value;
-                if (sigma <= 0.01) {
-                  return const SizedBox.shrink();
-                }
                 return BackdropFilter(
                   filter: ImageFilter.blur(
                     sigmaX: sigma,
                     sigmaY: sigma,
                   ),
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.12),
+                  child: ColoredBox(
+                    color: Colors.black.withValues(
+                      alpha: _scrimOpacityAnimation.value,
+                    ),
+                    child: const SizedBox.expand(),
                   ),
                 );
               },
