@@ -77,6 +77,38 @@ void main() {
       );
     });
 
+    test('resolveWebViewNavigationAction prevents callback before render', () {
+      expect(
+        resolveWebViewNavigationAction(
+          'https://seasons.rudn.ru/oauth/login_callback?code=abc',
+        ),
+        WebViewNavigationAction.preventAndFinishLogin,
+      );
+    });
+
+    test(
+        'resolveWebViewNavigationAction prevents and finishes login for insecure callback redirect',
+        () {
+      expect(
+        resolveWebViewNavigationAction(
+          'http://seasons.rudn.ru/oauth/login_callback?code=abc',
+        ),
+        WebViewNavigationAction.preventAndFinishLogin,
+      );
+    });
+
+    test('resolveWebViewNavigationAction allows only safe host navigations',
+        () {
+      expect(
+        resolveWebViewNavigationAction('https://id.rudn.ru/sign-in'),
+        WebViewNavigationAction.navigate,
+      );
+      expect(
+        resolveWebViewNavigationAction('https://example.com'),
+        WebViewNavigationAction.prevent,
+      );
+    });
+
     test('isAllowedWebViewUrl allows internal about:blank and about:srcdoc',
         () {
       expect(isAllowedWebViewUrl('about:blank'), isTrue);
