@@ -48,14 +48,10 @@ void main() async {
       await initializeDateFormatting('ru_RU', null);
       await initializeDateFormatting('en_US', null);
 
-      // Initialize background service for WebSocket
-      // Moved AFTER runApp to prevent black screen on Android (waiting for permissions/init)
-
       runApp(const SeasonsApp());
 
       // Post-launch initialization
       await _initializeNotifications();
-      await BackgroundService().initialize();
     } catch (e, stackTrace) {
       debugPrint('Не удалось инициализировать приложение: $e');
       ErrorReportingService().reportCrash(e, stackTrace);

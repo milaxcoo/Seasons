@@ -75,6 +75,28 @@ void main() {
       verify(() => mockService.startService()).called(1);
     });
 
+    test('startService lazily initializes when needed', () async {
+      when(() => mockService.configure(
+            androidConfiguration: any(named: 'androidConfiguration'),
+            iosConfiguration: any(named: 'iosConfiguration'),
+          )).thenAnswer((_) async => true);
+      when(() => mockService.isRunning()).thenAnswer((_) async => false);
+      when(() => mockService.startService()).thenAnswer((_) async => true);
+
+      final service = BackgroundService.forTesting(
+        service: mockService,
+        notificationsInitializer: (_) async {},
+      );
+
+      await service.startService();
+
+      verify(() => mockService.configure(
+            androidConfiguration: any(named: 'androidConfiguration'),
+            iosConfiguration: any(named: 'iosConfiguration'),
+          )).called(1);
+      verify(() => mockService.startService()).called(1);
+    });
+
     test('startService does not start when already running', () async {
       when(() => mockService.configure(
             androidConfiguration: any(named: 'androidConfiguration'),
@@ -93,7 +115,8 @@ void main() {
       verifyNever(() => mockService.startService());
     });
 
-    test('stopService invokes stop command', () async {
+    test('stopService invokes stop command when running', () async {
+      when(() => mockService.isRunning()).thenAnswer((_) async => true);
       when(() => mockService.invoke(any(), any())).thenReturn(null);
 
       final service = BackgroundService.forTesting(
@@ -104,6 +127,19 @@ void main() {
       await service.stopService();
 
       verify(() => mockService.invoke('stopService', any())).called(1);
+    });
+
+    test('stopService does not invoke stop command when not running', () async {
+      when(() => mockService.isRunning()).thenAnswer((_) async => false);
+
+      final service = BackgroundService.forTesting(
+        service: mockService,
+        notificationsInitializer: (_) async {},
+      );
+
+      await service.stopService();
+
+      verifyNever(() => mockService.invoke(any(), any()));
     });
 
     test('on getter proxies update stream', () async {

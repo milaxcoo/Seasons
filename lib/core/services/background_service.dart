@@ -134,9 +134,9 @@ class BackgroundService {
 
   /// Start the background service (call after user logs in)
   Future<void> startService() async {
-    // Wait for initialization if needed
+    // Lazily initialize to avoid app-start work before authentication.
     if (!_initCompleter.isCompleted) {
-      await _initCompleter.future;
+      await initialize();
     }
 
     final isRunning = await _service.isRunning();
@@ -148,6 +148,9 @@ class BackgroundService {
 
   /// Stop the background service (call on logout)
   Future<void> stopService() async {
+    final isRunning = await _service.isRunning();
+    if (!isRunning) return;
+
     _service.invoke('stopService');
     if (kDebugMode) print("BackgroundService: Service stopped");
   }
