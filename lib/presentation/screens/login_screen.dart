@@ -1,6 +1,8 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:seasons/core/monthly_theme_data.dart';
+import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
 import 'package:seasons/presentation/bloc/locale/locale_event.dart';
@@ -19,7 +21,67 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  static const Duration _entryAnimationDuration = Duration(milliseconds: 700);
+  static const double _initialBlurSigma = 22;
+
+  late final AnimationController _entryAnimationController;
+  late final Animation<double> _blurSigmaAnimation;
+  late final Animation<double> _contentOpacityAnimation;
+  late final Animation<Offset> _contentSlideAnimation;
+  bool _didPrecacheBackground = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryAnimationController = AnimationController(
+      vsync: this,
+      duration: _entryAnimationDuration,
+    );
+    _blurSigmaAnimation = Tween<double>(
+      begin: _initialBlurSigma,
+      end: 0,
+    ).animate(
+      CurvedAnimation(
+        parent: _entryAnimationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    _contentOpacityAnimation = CurvedAnimation(
+      parent: _entryAnimationController,
+      curve: const Interval(0.18, 1, curve: Curves.easeOutCubic),
+    );
+    _contentSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.02),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _entryAnimationController,
+        curve: const Interval(0.12, 1, curve: Curves.easeOutCubic),
+      ),
+    );
+    _entryAnimationController.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didPrecacheBackground) return;
+    final monthlyThemeService = context.read<MonthlyThemeService>();
+    precacheImage(
+      AssetImage(monthlyThemeService.backgroundAssetPath),
+      context,
+    );
+    _didPrecacheBackground = true;
+  }
+
+  @override
+  void dispose() {
+    _entryAnimationController.dispose();
+    super.dispose();
+  }
+
   // Эта функция запускает процесс авторизации через WebView
   void _startRudnAuth(BuildContext context) async {
     ErrorReportingService().reportEvent('login_started');
@@ -52,177 +114,211 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // FIXED: Получаем тему из централизованного файла
-    final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ??
-        monthlyThemes[10]!; // Октябрь по умолчанию
+    final theme = context.read<MonthlyThemeService>().theme;
     final currentLanguageCode = Localizations.localeOf(context).languageCode;
 
     return AppBackground(
-      imagePath: theme.imagePath, // FIXED: Используем динамический фон
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
-          children: [
-            // Main Scrollable Content with Sticky Footer
-            CustomScrollView(
-              slivers: [
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: SafeArea(
-                    child: Column(
-                      children: [
-                        const Spacer(),
-                        // Main Content (Logo + Button)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _SkewedContainer(
-                                reverse: true,
-                                color: const Color(0xFFD9D9D9),
-                                child: Text(
-                                  'Seasons',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .displaySmall
-                                      ?.copyWith(
-                                        color: const Color(0xFF42445A),
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 40,
+      imagePath: theme.imagePath,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _blurSigmaAnimation,
+              builder: (context, child) {
+                final sigma = _blurSigmaAnimation.value;
+                if (sigma <= 0.01) {
+                  return const SizedBox.shrink();
+                }
+                return BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: sigma,
+                    sigmaY: sigma,
+                  ),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.12),
+                  ),
+                );
+              },
+            ),
+          ),
+          FadeTransition(
+            opacity: _contentOpacityAnimation,
+            child: SlideTransition(
+              position: _contentSlideAnimation,
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Stack(
+                  children: [
+                    // Main Scrollable Content with Sticky Footer
+                    CustomScrollView(
+                      slivers: [
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: SafeArea(
+                            child: Column(
+                              children: [
+                                const Spacer(),
+                                // Main Content (Logo + Button)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24.0),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _SkewedContainer(
+                                        reverse: true,
+                                        color: const Color(0xFFD9D9D9),
+                                        child: Text(
+                                          'Seasons',
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .displaySmall
+                                              ?.copyWith(
+                                                color: const Color(0xFF42445A),
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 40,
+                                              ),
+                                        ),
                                       ),
+                                      const SizedBox(height: 10),
+                                      _SkewedContainer(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10, horizontal: 30),
+                                        color: const Color(0xFF4A5C7A),
+                                        onTap: () => _startRudnAuth(context),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              AppLocalizations.of(context)!
+                                                  .login,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontFamily: GoogleFonts
+                                                        .gentiumBookPlus()
+                                                    .fontFamily,
+                                                fontStyle: FontStyle.normal,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 26,
+                                                color: Colors.white,
+                                                shadows: [],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Icon(
+                                              Icons.arrow_forward_ios,
+                                              color: Colors.white,
+                                              size: 24,
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                // Footer (Copyright + Email)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 24.0),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        AppLocalizations.of(context)!.copyright,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge
+                                            ?.copyWith(color: Colors.white),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        AppLocalizations.of(context)!.helpEmail,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge
+                                            ?.copyWith(color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Language switcher at top-right (must be last to render on top)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: PopupMenuButton<Locale>(
+                            initialValue: Locale(
+                              currentLanguageCode == 'en' ? 'en' : 'ru',
+                            ),
+                            icon: const Icon(Icons.language,
+                                color: Colors.white, size: 28),
+                            onSelected: (Locale locale) {
+                              context
+                                  .read<LocaleBloc>()
+                                  .add(ChangeLocale(locale));
+                            },
+                            itemBuilder: (BuildContext context) => [
+                              CheckedPopupMenuItem<Locale>(
+                                checked: currentLanguageCode == 'ru',
+                                value: const Locale('ru'),
+                                child: Row(
+                                  children: [
+                                    const Text('🇷🇺'),
+                                    const SizedBox(width: 8),
+                                    Text(AppLocalizations.of(context)!
+                                        .languageRussian),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              _SkewedContainer(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 10, horizontal: 30),
-                                color: const Color(0xFF4A5C7A),
-                                onTap: () => _startRudnAuth(context),
+                              CheckedPopupMenuItem<Locale>(
+                                checked: currentLanguageCode == 'en',
+                                value: const Locale('en'),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      AppLocalizations.of(context)!.login,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontFamily:
-                                            GoogleFonts.gentiumBookPlus()
-                                                .fontFamily,
-                                        fontStyle: FontStyle.normal,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 26,
-                                        color: Colors.white,
-                                        shadows: [],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Icon(
-                                      Icons.arrow_forward_ios,
-                                      color: Colors.white,
-                                      size: 24,
-                                    )
+                                    const Text('🇬🇧'),
+                                    const SizedBox(width: 8),
+                                    Text(AppLocalizations.of(context)!
+                                        .languageEnglish),
                                   ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Spacer(),
-                        // Footer (Copyright + Email)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 24.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.copyright,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge
-                                    ?.copyWith(color: Colors.white),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                AppLocalizations.of(context)!.helpEmail,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge
-                                    ?.copyWith(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            // Language switcher at top-right (must be last to render on top)
-            Positioned(
-              top: 0,
-              right: 0,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: PopupMenuButton<Locale>(
-                    initialValue: Locale(
-                      currentLanguageCode == 'en' ? 'en' : 'ru',
-                    ),
-                    icon: const Icon(Icons.language,
-                        color: Colors.white, size: 28),
-                    onSelected: (Locale locale) {
-                      context.read<LocaleBloc>().add(ChangeLocale(locale));
-                    },
-                    itemBuilder: (BuildContext context) => [
-                      CheckedPopupMenuItem<Locale>(
-                        checked: currentLanguageCode == 'ru',
-                        value: const Locale('ru'),
-                        child: Row(
-                          children: [
-                            const Text('🇷🇺'),
-                            const SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!.languageRussian),
-                          ],
-                        ),
                       ),
-                      CheckedPopupMenuItem<Locale>(
-                        checked: currentLanguageCode == 'en',
-                        value: const Locale('en'),
-                        child: Row(
-                          children: [
-                            const Text('🇬🇧'),
-                            const SizedBox(width: 8),
-                            Text(AppLocalizations.of(context)!.languageEnglish),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+
+                    // Loading Overlay
+                    BlocBuilder<AuthBloc, AuthState>(
+                      builder: (context, state) {
+                        if (state is AuthLoading) {
+                          return Container(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            child: const Center(
+                              child: SeasonsLoader(),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
-
-            // Loading Overlay
-            BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthLoading) {
-                  return Container(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    child: const Center(
-                      child: SeasonsLoader(),
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

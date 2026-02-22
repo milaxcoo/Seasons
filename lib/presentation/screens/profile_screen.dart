@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:seasons/core/monthly_theme_data.dart';
+import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/data/models/user_profile.dart';
@@ -26,8 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentMonth = DateTime.now().month;
-    final theme = monthlyThemes[currentMonth] ?? monthlyThemes[10]!;
+    final theme = context.read<MonthlyThemeService>().theme;
 
     return AppBackground(
         imagePath: theme.imagePath,
