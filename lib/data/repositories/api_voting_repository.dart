@@ -269,10 +269,30 @@ class ApiVotingRepository implements VotingRepository {
   Future<String?> getUserLogin() async {
     final url = _buildSeasonsUri('/');
     try {
-      final headers = await _headers;
+      final cookie = await _authService.getCookie();
+      if (cookie == null || cookie.isEmpty) {
+        // Explicit invalid-session signal: no auth cookie present.
+        return null;
+      }
+
+      final headers = {
+        'Cookie': 'session=$cookie',
+        'X-Requested-With': 'XMLHttpRequest',
+      };
       final response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        // Explicit invalid-session signal from server.
+        return null;
+      }
+
+      if (response.statusCode != 200) {
+        throw SessionValidationException.transientNetwork(
+          'Session validation failed with status ${response.statusCode}',
+        );
+      }
 
       if (response.statusCode == 200) {
         // Regex to find <a href="/account">Name</a>
@@ -291,9 +311,14 @@ class ApiVotingRepository implements VotingRepository {
           }
         }
       }
-    } on TimeoutException {
-      // Temporary network issue - do not force logout, propagate to caller
-      rethrow;
+    } on TimeoutException catch (e) {
+      throw SessionValidationException.transientNetwork(
+        sanitizeObjectForLog(e),
+      );
+    } on SocketException catch (e) {
+      throw SessionValidationException.transientNetwork(
+        sanitizeObjectForLog(e),
+      );
     } on http.ClientException catch (e) {
       final isRedirectLoop = e.message.toLowerCase().contains('redirect loop');
       if (isRedirectLoop) {
@@ -307,10 +332,18 @@ class ApiVotingRepository implements VotingRepository {
       if (kDebugMode) {
         debugPrint('Error fetching user login: ${sanitizeObjectForLog(e)}');
       }
+      throw SessionValidationException.transientNetwork(
+        sanitizeObjectForLog(e),
+      );
+    } on SessionValidationException {
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error fetching user login: ${sanitizeObjectForLog(e)}');
       }
+      throw SessionValidationException.transientNetwork(
+        sanitizeObjectForLog(e),
+      );
     }
     return null; // No valid session
   }
@@ -444,7 +477,9 @@ class ApiVotingRepository implements VotingRepository {
       // Silently accept any response - backend may not have endpoint yet
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Failed to register device token: $e');
+        debugPrint(
+          'Failed to register device token: ${sanitizeObjectForLog(e)}',
+        );
       }
       // Silently fail - push notifications are optional
     }

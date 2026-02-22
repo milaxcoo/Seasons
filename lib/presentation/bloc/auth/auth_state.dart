@@ -18,6 +18,9 @@ class AuthInitial extends AuthState {}
 // is currently in progress. The UI should show a loading indicator.
 class AuthLoading extends AuthState {}
 
+// Represents startup session validation before auth state is resolved.
+class AuthChecking extends AuthState {}
+
 // Represents a successfully authenticated user.
 // It carries the user's login name to be displayed in the UI (e.g., ProfileScreen).
 class AuthAuthenticated extends AuthState {

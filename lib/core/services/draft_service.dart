@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DraftService {
@@ -22,10 +23,16 @@ class DraftService {
     final jsonString = prefs.getString(key);
 
     if (jsonString != null) {
-      // Конвертируем JSON-строку обратно в Map
-      final decodedMap = json.decode(jsonString) as Map<String, dynamic>;
-      // Убедимся, что все ключи и значения - это строки
-      return decodedMap.map((key, value) => MapEntry(key, value.toString()));
+      try {
+        // Конвертируем JSON-строку обратно в Map
+        final decodedMap = json.decode(jsonString) as Map<String, dynamic>;
+        // Убедимся, что все ключи и значения - это строки
+        return decodedMap.map((key, value) => MapEntry(key, value.toString()));
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Draft decode failed: $e');
+        }
+      }
     }
 
     // Если черновика нет, возвращаем пустую карту
@@ -37,5 +44,19 @@ class DraftService {
     final prefs = await SharedPreferences.getInstance();
     final key = '$_draftPrefix$votingId';
     await prefs.remove(key);
+  }
+
+  /// Очищает все сохранённые черновики голосований.
+  Future<void> clearAllDrafts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final draftKeys = prefs
+        .getKeys()
+        .where((key) => key.startsWith(_draftPrefix))
+        .toList()
+      ..sort();
+
+    for (final key in draftKeys) {
+      await prefs.remove(key);
+    }
   }
 }

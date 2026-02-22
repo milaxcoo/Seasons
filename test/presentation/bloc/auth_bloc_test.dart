@@ -2,19 +2,28 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 
 class MockVotingRepository extends Mock implements VotingRepository {}
 
+class MockDraftService extends Mock implements DraftService {}
+
 void main() {
   group('AuthBloc', () {
     late VotingRepository mockVotingRepository;
+    late DraftService mockDraftService;
     late AuthBloc authBloc;
 
     setUp(() {
       mockVotingRepository = MockVotingRepository();
-      authBloc = AuthBloc(votingRepository: mockVotingRepository);
+      mockDraftService = MockDraftService();
+      when(() => mockDraftService.clearAllDrafts()).thenAnswer((_) async {});
+      authBloc = AuthBloc(
+        votingRepository: mockVotingRepository,
+        draftService: mockDraftService,
+      );
     });
 
     tearDown(() {
@@ -27,7 +36,7 @@ void main() {
 
     group('AppStarted', () {
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthAuthenticated] when token and userLogin are found',
+        'emits [AuthChecking, AuthAuthenticated] when token and userLogin are found',
         build: () {
           when(() => mockVotingRepository.getAuthToken())
               .thenAnswer((_) async => 'some_token');
@@ -36,22 +45,25 @@ void main() {
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
-        expect: () => [const AuthAuthenticated(userLogin: 'testuser')],
+        expect: () => [
+          AuthChecking(),
+          const AuthAuthenticated(userLogin: 'testuser'),
+        ],
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthUnauthenticated] when token is not found',
+        'emits [AuthChecking, AuthUnauthenticated] when token is not found',
         build: () {
           when(() => mockVotingRepository.getAuthToken())
               .thenAnswer((_) async => null);
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
-        expect: () => [AuthUnauthenticated()],
+        expect: () => [AuthChecking(), AuthUnauthenticated()],
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthUnauthenticated] and clears stale session when userLogin is null',
+        'emits [AuthChecking, AuthUnauthenticated] and clears stale session when userLogin is null',
         build: () {
           when(() => mockVotingRepository.getAuthToken())
               .thenAnswer((_) async => 'some_token');
@@ -61,31 +73,55 @@ void main() {
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
-        expect: () => [AuthUnauthenticated()],
+        expect: () => [AuthChecking(), AuthUnauthenticated()],
         verify: (_) {
           verify(() => mockVotingRepository.logout()).called(1);
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
         },
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthAuthenticated] with placeholder when getUserLogin times out and does not call logout',
+        'emits [AuthChecking, AuthUnauthenticated] when getUserLogin times out and does not call logout',
         build: () {
           when(() => mockVotingRepository.getAuthToken())
               .thenAnswer((_) async => 'some_token');
-          // Both the initial and the non-blocking retry throw TimeoutException
+          // Both startup validation attempts time out.
           when(() => mockVotingRepository.getUserLogin())
               .thenThrow(TimeoutException('timed out'));
           return authBloc;
         },
         act: (bloc) => bloc.add(AppStarted()),
-        expect: () => [const AuthAuthenticated(userLogin: 'RUDN User')],
+        wait: const Duration(milliseconds: 300),
+        expect: () => [AuthChecking(), AuthUnauthenticated()],
         verify: (_) {
           verifyNever(() => mockVotingRepository.logout());
+          verifyNever(() => mockDraftService.clearAllDrafts());
+          verify(() => mockVotingRepository.getUserLogin()).called(2);
         },
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits placeholder then resolved name when getUserLogin times out then succeeds',
+        'emits [AuthChecking, AuthUnauthenticated] when transient validation fails repeatedly',
+        build: () {
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'some_token');
+          when(() => mockVotingRepository.getUserLogin()).thenThrow(
+            const SessionValidationException.transientNetwork(),
+          );
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(AppStarted()),
+        wait: const Duration(milliseconds: 300),
+        expect: () => [AuthChecking(), AuthUnauthenticated()],
+        verify: (_) {
+          verifyNever(() => mockVotingRepository.logout());
+          verifyNever(() => mockDraftService.clearAllDrafts());
+          verify(() => mockVotingRepository.getUserLogin()).called(2);
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'retries once and emits authenticated when getUserLogin times out then succeeds',
         build: () {
           when(() => mockVotingRepository.getAuthToken())
               .thenAnswer((_) async => 'some_token');
@@ -97,17 +133,15 @@ void main() {
           });
           return authBloc;
         },
-        act: (bloc) async {
-          bloc.add(AppStarted());
-          // Wait for the non-blocking name-fetch future to complete
-          await Future<void>.delayed(const Duration(milliseconds: 20));
-        },
+        act: (bloc) => bloc.add(AppStarted()),
+        wait: const Duration(milliseconds: 300),
         expect: () => [
-          const AuthAuthenticated(userLogin: 'RUDN User'),
+          AuthChecking(),
           const AuthAuthenticated(userLogin: 'actual_user'),
         ],
         verify: (_) {
           verifyNever(() => mockVotingRepository.logout());
+          verify(() => mockVotingRepository.getUserLogin()).called(2);
         },
       );
     });
@@ -167,6 +201,9 @@ void main() {
         },
         act: (bloc) => bloc.add(LoggedOut()),
         expect: () => [AuthUnauthenticated()],
+        verify: (_) {
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
+        },
       );
 
       blocTest<AuthBloc, AuthState>(
@@ -178,6 +215,9 @@ void main() {
         },
         act: (bloc) => bloc.add(LoggedOut()),
         expect: () => [AuthUnauthenticated()],
+        verify: (_) {
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
+        },
       );
     });
 

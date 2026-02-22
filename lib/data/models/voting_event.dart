@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:seasons/core/utils/safe_log.dart';
 import 'package:seasons/data/models/question.dart';
 import 'package:seasons/data/models/vote_result.dart'; // Импортируем нашу модель результатов
 
@@ -80,7 +81,7 @@ class VotingEvent extends Equatable {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Ошибка парсинга вопросов: $e');
+        debugPrint('Ошибка парсинга вопросов: ${sanitizeObjectForLog(e)}');
       }
     }
 
@@ -132,7 +133,7 @@ class VotingEvent extends Equatable {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Ошибка парсинга результатов: $e');
+        debugPrint('Ошибка парсинга результатов: ${sanitizeObjectForLog(e)}');
       }
     }
 

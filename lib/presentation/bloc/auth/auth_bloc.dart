@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
 import 'package:seasons/core/utils/safe_log.dart';
@@ -10,10 +12,18 @@ part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final VotingRepository _votingRepository;
+  static const int _maxStartupValidationAttempts = 2;
+  static const Duration _startupValidationRetryDelay =
+      Duration(milliseconds: 250);
 
-  AuthBloc({required VotingRepository votingRepository})
-      : _votingRepository = votingRepository,
+  final VotingRepository _votingRepository;
+  final DraftService _draftService;
+
+  AuthBloc({
+    required VotingRepository votingRepository,
+    DraftService? draftService,
+  })  : _draftService = draftService ?? DraftService(),
+        _votingRepository = votingRepository,
         super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoggedIn>(_onLoggedIn);
@@ -22,65 +32,107 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
-    final bool hasToken = await _votingRepository.getAuthToken() != null;
-    if (hasToken) {
-      // Validate the stored cookie by checking with the server
+    emit(AuthChecking());
+
+    final token = await _votingRepository.getAuthToken();
+    final bool hasToken = token != null && token.isNotEmpty;
+    if (!hasToken) {
+      emit(AuthUnauthenticated());
+      return;
+    }
+
+    for (var attempt = 1; attempt <= _maxStartupValidationAttempts; attempt++) {
       try {
         final userLogin = await _votingRepository.getUserLogin();
         if (userLogin != null) {
           // Session is valid — user is authenticated
           emit(AuthAuthenticated(userLogin: userLogin));
           ErrorReportingService().reportEvent('app_start_session_valid');
-        } else {
-          // Server didn't confirm the session — cookie is stale
-          try {
-            await _votingRepository.logout(); // Clear the stale cookie
-          } catch (_) {
-            // If backend logout fails, we still clear local auth state.
-          }
-          emit(AuthUnauthenticated());
-          ErrorReportingService().reportEvent('app_start_session_stale');
+          return;
         }
-      } on TimeoutException {
-        // Temporary network timeout — assume session may still be valid,
-        // do not force logout to avoid unnecessary re-authentication.
-        emit(const AuthAuthenticated(userLogin: 'RUDN User'));
-        ErrorReportingService().reportEvent('app_start_validation_timeout');
 
-        // Fetch real name asynchronously (non-blocking), similar to _onLoggedIn
-        Future<String?>.sync(_votingRepository.getUserLogin).then((name) {
-          if (name != null) {
-            add(_UpdateUserLogin(name));
-            ErrorReportingService()
-                .reportEvent('app_start_name_fetched_after_timeout');
-          }
-        }).catchError((e) {
-          debugPrint(
-            'Failed to fetch user login after timeout: ${sanitizeObjectForLog(e)}',
-          );
-          ErrorReportingService().reportEvent(
-            'app_start_name_fetch_failed_after_timeout',
-            details: {
-              'exception_type': e.runtimeType.toString(),
-            },
-          );
-        });
-      } catch (e) {
-        // Network error — can't validate, clear cookie to be safe
-        try {
-          await _votingRepository.logout();
-        } catch (_) {
-          // Local state should still move to unauthenticated.
+        await _clearSessionAndEmitUnauthenticated(emit);
+        ErrorReportingService().reportEvent('app_start_session_invalid');
+        return;
+      } on SessionValidationException catch (e) {
+        final shouldRetry = attempt < _maxStartupValidationAttempts;
+        ErrorReportingService().reportEvent(
+          'app_start_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'will_retry': '$shouldRetry',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        if (shouldRetry) {
+          await Future<void>.delayed(_startupValidationRetryDelay);
+          continue;
         }
-        emit(AuthUnauthenticated());
-        ErrorReportingService()
-            .reportEvent('app_start_validation_failed', details: {
-          'exception_type': e.runtimeType.toString(),
-        });
+      } on TimeoutException catch (e) {
+        final shouldRetry = attempt < _maxStartupValidationAttempts;
+        ErrorReportingService().reportEvent(
+          'app_start_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'will_retry': '$shouldRetry',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        if (shouldRetry) {
+          await Future<void>.delayed(_startupValidationRetryDelay);
+          continue;
+        }
+      } on SocketException catch (e) {
+        final shouldRetry = attempt < _maxStartupValidationAttempts;
+        ErrorReportingService().reportEvent(
+          'app_start_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'will_retry': '$shouldRetry',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        if (shouldRetry) {
+          await Future<void>.delayed(_startupValidationRetryDelay);
+          continue;
+        }
+      } catch (e) {
+        final shouldRetry = attempt < _maxStartupValidationAttempts;
+        ErrorReportingService().reportEvent(
+          'app_start_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'will_retry': '$shouldRetry',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        if (shouldRetry) {
+          await Future<void>.delayed(_startupValidationRetryDelay);
+          continue;
+        }
       }
-    } else {
-      emit(AuthUnauthenticated());
     }
+
+    // On repeated transient failures, keep cookie untouched but require explicit login.
+    emit(AuthUnauthenticated());
+    ErrorReportingService().reportEvent('app_start_validation_fallback_unauth');
+  }
+
+  Future<void> _clearSessionAndEmitUnauthenticated(
+      Emitter<AuthState> emit) async {
+    try {
+      await _votingRepository.logout();
+    } catch (_) {
+      // If backend/local logout cleanup fails, state must still be unauthenticated.
+    }
+
+    try {
+      await _draftService.clearAllDrafts();
+    } catch (_) {
+      // Draft cleanup should not block logout/invalidation transitions.
+    }
+
+    emit(AuthUnauthenticated());
   }
 
   Future<void> _onLoggedIn(LoggedIn event, Emitter<AuthState> emit) async {
@@ -113,11 +165,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
-    try {
-      await _votingRepository.logout();
-    } catch (_) {
-      // Ignore logout errors - user should be logged out locally regardless
-    }
-    emit(AuthUnauthenticated());
+    await _clearSessionAndEmitUnauthenticated(emit);
   }
 }

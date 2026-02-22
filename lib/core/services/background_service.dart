@@ -56,6 +56,20 @@ class BackgroundService {
   // Completer to ensure config is done before starting
   final Completer<void> _initCompleter = Completer<void>();
 
+  void _logLifecycle(
+    String event, {
+    required String reason,
+    bool? isRunning,
+  }) {
+    if (!kDebugMode) return;
+    final payload = <String, Object?>{
+      'event': event,
+      'reason': reason,
+      if (isRunning != null) 'isRunning': isRunning,
+    };
+    debugPrint('BackgroundService.lifecycle ${jsonEncode(payload)}');
+  }
+
   /// Initialize the background service
   Future<void> initialize() async {
     if (_initCompleter.isCompleted) return;
@@ -133,23 +147,42 @@ class BackgroundService {
   }
 
   /// Start the background service (call after user logs in)
-  Future<void> startService() async {
-    // Wait for initialization if needed
+  Future<void> startService({
+    String reason = 'unspecified',
+  }) async {
+    _logLifecycle('start.requested', reason: reason);
+
+    // Lazily initialize to avoid app-start work before authentication.
     if (!_initCompleter.isCompleted) {
-      await _initCompleter.future;
+      await initialize();
     }
 
     final isRunning = await _service.isRunning();
-    if (!isRunning) {
-      await _service.startService();
-      if (kDebugMode) print("BackgroundService: Service started");
+    if (isRunning) {
+      _logLifecycle('start.skipped_already_running',
+          reason: reason, isRunning: true);
+      return;
     }
+
+    await _service.startService();
+    _logLifecycle('start.completed', reason: reason, isRunning: true);
   }
 
   /// Stop the background service (call on logout)
-  Future<void> stopService() async {
-    _service.invoke('stopService');
-    if (kDebugMode) print("BackgroundService: Service stopped");
+  Future<void> stopService({
+    String reason = 'unspecified',
+  }) async {
+    _logLifecycle('stop.requested', reason: reason);
+
+    final isRunning = await _service.isRunning();
+    if (!isRunning) {
+      _logLifecycle('stop.skipped_not_running',
+          reason: reason, isRunning: false);
+      return;
+    }
+
+    _service.invoke('stopService', {'reason': reason});
+    _logLifecycle('stop.signal_sent', reason: reason, isRunning: true);
   }
 
   /// Get the service stream for UI updates
@@ -178,9 +211,47 @@ void onStart(ServiceInstance service) async {
 
   if (kDebugMode) print("BackgroundService: onStart called");
 
+  // WebSocket connection state
+  IOWebSocketChannel? channel;
+  StreamSubscription<dynamic>? websocketSubscription;
+  StreamSubscription<Map<String, dynamic>?>? stopSubscription;
+  Timer? reconnectTimer;
+  Timer? foregroundNotificationTimer;
+  bool isConnected = false;
+  int reconnectAttempts = 0;
+  bool isStopped = false;
+
+  void cancelRuntimeResources() {
+    reconnectTimer?.cancel();
+    reconnectTimer = null;
+    foregroundNotificationTimer?.cancel();
+    foregroundNotificationTimer = null;
+    unawaited(websocketSubscription?.cancel());
+    websocketSubscription = null;
+
+    try {
+      channel?.sink.close();
+    } catch (_) {}
+    channel = null;
+    isConnected = false;
+  }
+
   // Handle stop request
-  service.on('stopService').listen((event) {
+  stopSubscription = service.on('stopService').listen((event) async {
+    if (isStopped) return;
+    isStopped = true;
+
+    final reason = event is Map<String, dynamic>
+        ? (event['reason'] as String? ?? 'unknown')
+        : 'unknown';
+    if (kDebugMode) {
+      debugPrint("BackgroundService: Stop requested from UI (reason: $reason)");
+    }
+
+    cancelRuntimeResources();
+    await stopSubscription?.cancel();
     service.stopSelf();
+
     if (kDebugMode) print("BackgroundService: Stopped by request");
   });
 
@@ -193,25 +264,23 @@ void onStart(ServiceInstance service) async {
     ),
   );
 
-  // WebSocket connection state
-  IOWebSocketChannel? channel;
-  Timer? reconnectTimer;
-  bool isConnected = false;
-  int reconnectAttempts = 0;
-
   // Connect to WebSocket
   Future<void> connect() async {
-    if (isConnected) return;
+    if (isStopped || isConnected) return;
 
     try {
       // Get auth cookie from secure storage (need to access it differently in isolate)
       final cookie = await RudnAuthService().getCookie();
+      if (isStopped) return;
+
       if (cookie == null || cookie.isEmpty) {
         if (kDebugMode) {
           print("BackgroundService: No auth cookie, scheduling reconnect");
         }
-        reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
-            attempts: reconnectAttempts++);
+        reconnectTimer = _scheduleReconnect(reconnectTimer, () {
+          if (isStopped) return;
+          unawaited(connect());
+        }, attempts: reconnectAttempts++);
         return;
       }
 
@@ -252,14 +321,19 @@ void onStart(ServiceInstance service) async {
           'Origin': 'https://seasons.rudn.ru',
         },
       );
+      if (isStopped) {
+        cancelRuntimeResources();
+        return;
+      }
 
       isConnected = true;
       reconnectTimer?.cancel();
       reconnectAttempts = 0; // Reset backoff on successful connection
 
       // Listen to messages
-      channel!.stream.listen(
+      websocketSubscription = channel!.stream.listen(
         (message) {
+          if (isStopped) return;
           if (kDebugMode) {
             final sanitized = sanitizeObjectForLog(message)
                 .replaceAll('\n', ' ')
@@ -269,33 +343,47 @@ void onStart(ServiceInstance service) async {
                 : sanitized;
             debugPrint("BackgroundService: WS Received (preview): $preview");
           }
-          _handleMessage(message, service, notificationsPlugin);
+          _handleMessage(
+            message,
+            service,
+            notificationsPlugin,
+            isStopped: () => isStopped,
+          );
         },
         onDone: () {
+          if (isStopped) return;
           if (kDebugMode) print("BackgroundService: WS Connection closed");
           isConnected = false;
           channel = null;
-          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
-              attempts: reconnectAttempts++);
+          reconnectTimer = _scheduleReconnect(reconnectTimer, () {
+            if (isStopped) return;
+            unawaited(connect());
+          }, attempts: reconnectAttempts++);
         },
         onError: (error) {
+          if (isStopped) return;
           if (kDebugMode) {
             debugPrint(
                 "BackgroundService: WS Error: ${sanitizeObjectForLog(error)}");
           }
           isConnected = false;
           channel = null;
-          reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
-              attempts: reconnectAttempts++);
+          reconnectTimer = _scheduleReconnect(reconnectTimer, () {
+            if (isStopped) return;
+            unawaited(connect());
+          }, attempts: reconnectAttempts++);
         },
       );
     } catch (e) {
+      if (isStopped) return;
       if (kDebugMode) {
         debugPrint(
             "BackgroundService: Connection failed: ${sanitizeObjectForLog(e)}");
       }
-      reconnectTimer = _scheduleReconnect(reconnectTimer, () => connect(),
-          attempts: reconnectAttempts++);
+      reconnectTimer = _scheduleReconnect(reconnectTimer, () {
+        if (isStopped) return;
+        unawaited(connect());
+      }, attempts: reconnectAttempts++);
     }
   }
 
@@ -304,25 +392,39 @@ void onStart(ServiceInstance service) async {
 
   // Keep service alive with periodic updates (Android foreground requirement)
   if (service is AndroidServiceInstance) {
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
-      if (await service.isForegroundService()) {
-        service.setForegroundNotificationInfo(
-          title: 'Seasons',
-          content: isConnected
-              ? 'Подключено к серверу уведомлений'
-              : 'Переподключение...',
-        );
+    foregroundNotificationTimer =
+        Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (isStopped) {
+        timer.cancel();
+        return;
+      }
+      try {
+        if (await service.isForegroundService()) {
+          if (isStopped) return;
+          service.setForegroundNotificationInfo(
+            title: 'Seasons',
+            content: isConnected
+                ? 'Подключено к серверу уведомлений'
+                : 'Переподключение...',
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            "BackgroundService: Foreground notification update skipped: "
+            "${sanitizeObjectForLog(e)}",
+          );
+        }
+        timer.cancel();
       }
     });
   }
 }
 
 /// Handle incoming WebSocket message
-Future<void> _handleMessage(
-  dynamic message,
-  ServiceInstance service,
-  FlutterLocalNotificationsPlugin notificationsPlugin,
-) async {
+Future<void> _handleMessage(dynamic message, ServiceInstance service,
+    FlutterLocalNotificationsPlugin notificationsPlugin,
+    {bool Function()? isStopped}) async {
   if (message is String) {
     // Skip control messages
     if (message.startsWith('Connection') || message.startsWith('Ping')) {
@@ -335,9 +437,21 @@ Future<void> _handleMessage(
         final action = json['action'] as String?;
 
         // Notify UI to refresh (if app is open)
-        service.invoke('update', {'action': action, 'data': json['data']});
+        if (isStopped?.call() ?? false) return;
+        try {
+          service.invoke('update', {'action': action, 'data': json['data']});
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              "BackgroundService: update invoke skipped: "
+              "${sanitizeObjectForLog(e)}",
+            );
+          }
+          return;
+        }
 
         // Show local notification
+        if (isStopped?.call() ?? false) return;
         await _showAlertNotification(notificationsPlugin, action);
       }
     } catch (e) {
@@ -346,7 +460,12 @@ Future<void> _handleMessage(
             "BackgroundService: Parse error: ${sanitizeObjectForLog(e)}");
       }
       // Still trigger refresh for unrecognized messages
-      service.invoke('update', {'action': 'unknown', 'raw': message});
+      if (isStopped?.call() ?? false) return;
+      try {
+        service.invoke('update', {'action': 'unknown', 'raw': message});
+      } catch (_) {
+        // Ignore channel errors when isolate/service is already stopping.
+      }
     }
   }
 }
@@ -435,12 +554,15 @@ Future<http.Response> negotiateWsUrlWithTimeout({
 }
 
 @visibleForTesting
-Future<void> handleMessageForTest(
-  dynamic message,
-  ServiceInstance service,
-  FlutterLocalNotificationsPlugin notificationsPlugin,
-) {
-  return _handleMessage(message, service, notificationsPlugin);
+Future<void> handleMessageForTest(dynamic message, ServiceInstance service,
+    FlutterLocalNotificationsPlugin notificationsPlugin,
+    {bool Function()? isStopped}) {
+  return _handleMessage(
+    message,
+    service,
+    notificationsPlugin,
+    isStopped: isStopped,
+  );
 }
 
 @visibleForTesting

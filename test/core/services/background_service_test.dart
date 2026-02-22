@@ -75,6 +75,28 @@ void main() {
       verify(() => mockService.startService()).called(1);
     });
 
+    test('startService lazily initializes when needed', () async {
+      when(() => mockService.configure(
+            androidConfiguration: any(named: 'androidConfiguration'),
+            iosConfiguration: any(named: 'iosConfiguration'),
+          )).thenAnswer((_) async => true);
+      when(() => mockService.isRunning()).thenAnswer((_) async => false);
+      when(() => mockService.startService()).thenAnswer((_) async => true);
+
+      final service = BackgroundService.forTesting(
+        service: mockService,
+        notificationsInitializer: (_) async {},
+      );
+
+      await service.startService();
+
+      verify(() => mockService.configure(
+            androidConfiguration: any(named: 'androidConfiguration'),
+            iosConfiguration: any(named: 'iosConfiguration'),
+          )).called(1);
+      verify(() => mockService.startService()).called(1);
+    });
+
     test('startService does not start when already running', () async {
       when(() => mockService.configure(
             androidConfiguration: any(named: 'androidConfiguration'),
@@ -93,8 +115,24 @@ void main() {
       verifyNever(() => mockService.startService());
     });
 
-    test('stopService invokes stop command', () async {
+    test('stopService invokes stop command with reason when running', () async {
+      when(() => mockService.isRunning()).thenAnswer((_) async => true);
       when(() => mockService.invoke(any(), any())).thenReturn(null);
+
+      final service = BackgroundService.forTesting(
+        service: mockService,
+        notificationsInitializer: (_) async {},
+      );
+
+      await service.stopService(reason: 'test:logout');
+
+      verify(() => mockService.invoke('stopService', {
+            'reason': 'test:logout',
+          })).called(1);
+    });
+
+    test('stopService does not invoke stop command when not running', () async {
+      when(() => mockService.isRunning()).thenAnswer((_) async => false);
 
       final service = BackgroundService.forTesting(
         service: mockService,
@@ -103,7 +141,7 @@ void main() {
 
       await service.stopService();
 
-      verify(() => mockService.invoke('stopService', any())).called(1);
+      verifyNever(() => mockService.invoke(any(), any()));
     });
 
     test('on getter proxies update stream', () async {
@@ -176,6 +214,25 @@ void main() {
             'action': 'unknown',
             'raw': 'not a json',
           })).called(1);
+      verifyNever(() => mockNotifications.show(
+            any(),
+            any(),
+            any(),
+            any(),
+            payload: any(named: 'payload'),
+          ));
+    });
+
+    test('handleMessageForTest skips invoke when service is stopping',
+        () async {
+      await handleMessageForTest(
+        '{"action":"VotingStarted","data":{"id":1}}',
+        mockInstance,
+        mockNotifications,
+        isStopped: () => true,
+      );
+
+      verifyNever(() => mockInstance.invoke(any(), any()));
       verifyNever(() => mockNotifications.show(
             any(),
             any(),
