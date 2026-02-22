@@ -36,6 +36,19 @@ class AppBackground extends StatelessWidget {
                   imagePath,
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
+                  gaplessPlayback: true,
+                  frameBuilder:
+                      (context, child, frame, wasSynchronouslyLoaded) {
+                    if (wasSynchronouslyLoaded) {
+                      return child;
+                    }
+                    return AnimatedOpacity(
+                      opacity: frame == null ? 0 : 1,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                      child: child,
+                    );
+                  },
                 )
               : const SizedBox.expand(),
         ),
