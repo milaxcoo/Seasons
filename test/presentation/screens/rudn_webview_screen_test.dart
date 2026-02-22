@@ -3,6 +3,89 @@ import 'package:seasons/presentation/screens/rudn_webview_screen.dart';
 
 void main() {
   group('RudnWebview helpers', () {
+    test(
+        'WebViewFinalizationState keeps WebView hidden after callback across error and retry',
+        () {
+      const initial = WebViewFinalizationState.initial();
+      final callbackDetected = initial.onCallbackDetected();
+      final failed = callbackDetected.onError('temporary failure');
+      final retried = failed.onRetry();
+
+      expect(initial.webViewHiddenAfterCallback, isFalse);
+      expect(callbackDetected.webViewHiddenAfterCallback, isTrue);
+      expect(failed.webViewHiddenAfterCallback, isTrue);
+      expect(retried.webViewHiddenAfterCallback, isTrue);
+      expect(retried.isFinishing, isTrue);
+      expect(retried.hasError, isFalse);
+      expect(retried.errorMessage, isEmpty);
+    });
+
+    test('pollForSessionCookie supports injected clock/delay for slow networks',
+        () async {
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          if (readAttempts >= 6) {
+            return 'vpn-session-cookie';
+          }
+          return null;
+        },
+        timeout: const Duration(seconds: 8),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(cookie, 'vpn-session-cookie');
+      expect(readAttempts, 6);
+    });
+
+    test(
+        'pollForSessionCookie returns null when timeout is reached with injected clock',
+        () async {
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          return null;
+        },
+        timeout: const Duration(milliseconds: 300),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(cookie, isNull);
+      expect(readAttempts, 3);
+    });
+
+    test('pollForSessionCookie stops early when stop guard is true', () async {
+      var readAttempts = 0;
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          return null;
+        },
+        timeout: const Duration(seconds: 8),
+        step: const Duration(milliseconds: 100),
+        shouldStop: () => true,
+        delay: (_) async {},
+      );
+
+      expect(cookie, isNull);
+      expect(readAttempts, 0);
+    });
+
     test('extractSessionCookieValue returns session value from cookie string',
         () {
       final value = extractSessionCookieValue(
