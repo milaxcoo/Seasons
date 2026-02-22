@@ -181,6 +181,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get voteCount => 'Количество голосов';
 
   @override
+  String get finishingLogin => 'Завершаем вход…';
+
+  @override
   String get languageRussian => 'Русский';
 
   @override

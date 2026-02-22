@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
 import 'package:seasons/core/utils/safe_log.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class RudnWebviewScreen extends StatefulWidget {
@@ -554,8 +555,10 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                     if (!_hasFinishingError) ...[
                       const SeasonsLoader(),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Finishing login...',
+                      Text(
+                        finishingLoginOverlayText(
+                          AppLocalizations.of(context)!,
+                        ),
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -800,6 +803,11 @@ String navigationActionLabel(WebViewNavigationAction action) {
 @visibleForTesting
 bool shouldForceNavigation(String? lastForcedNavigationUrl, String nextUrl) {
   return lastForcedNavigationUrl != nextUrl;
+}
+
+@visibleForTesting
+String finishingLoginOverlayText(AppLocalizations l10n) {
+  return l10n.finishingLogin;
 }
 
 @visibleForTesting

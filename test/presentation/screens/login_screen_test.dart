@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
+import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
@@ -48,38 +49,56 @@ void main() {
   });
 
   Widget createTestWidget() {
-    return BlocProvider<AuthBloc>.value(
-      value: mockAuthBloc,
-      child: const MaterialApp(
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: [Locale('ru'), Locale('en')],
-        locale: Locale('ru'),
-        home: LoginScreen(),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<MonthlyThemeService>(
+          create: (_) => MonthlyThemeService(
+            currentDateProvider: () => DateTime(2026, 2, 22),
+          ),
+        ),
+      ],
+      child: BlocProvider<AuthBloc>.value(
+        value: mockAuthBloc,
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [Locale('ru'), Locale('en')],
+          locale: Locale('ru'),
+          home: LoginScreen(),
+        ),
       ),
     );
   }
 
   Widget createTestWidgetWithNavigation() {
-    return MultiBlocProvider(
+    return MultiRepositoryProvider(
       providers: [
-        BlocProvider<AuthBloc>.value(value: mockAuthBloc),
-        BlocProvider<VotingBloc>.value(value: MockVotingBloc()),
+        RepositoryProvider<MonthlyThemeService>(
+          create: (_) => MonthlyThemeService(
+            currentDateProvider: () => DateTime(2026, 2, 22),
+          ),
+        ),
       ],
-      child: const MaterialApp(
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          BlocProvider<VotingBloc>.value(value: MockVotingBloc()),
         ],
-        supportedLocales: [Locale('ru'), Locale('en')],
-        locale: Locale('ru'),
-        home: LoginScreen(),
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [Locale('ru'), Locale('en')],
+          locale: Locale('ru'),
+          home: LoginScreen(),
+        ),
       ),
     );
   }
@@ -205,6 +224,40 @@ void main() {
 
       // Assert: Verify that the arrow icon is present
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+    });
+
+    testWidgets(
+        'keeps blur layer mounted and fades scrim smoothly to zero at animation end',
+        (tester) async {
+      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
+      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(createTestWidget());
+
+      final backdropFinder = find.byType(BackdropFilter);
+      final scrimFinder = find.descendant(
+        of: backdropFinder,
+        matching: find.byType(ColoredBox),
+      );
+
+      expect(backdropFinder, findsOneWidget);
+      final initialScrim = tester.widget<ColoredBox>(scrimFinder);
+      expect(initialScrim.color.a, greaterThan(0));
+
+      final sampledOpacities = <double>[initialScrim.color.a];
+      for (var i = 0; i < 7; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(backdropFinder, findsOneWidget);
+        sampledOpacities.add(tester.widget<ColoredBox>(scrimFinder).color.a);
+      }
+
+      for (var i = 1; i < sampledOpacities.length; i++) {
+        expect(sampledOpacities[i], lessThanOrEqualTo(sampledOpacities[i - 1]));
+      }
+
+      expect(backdropFinder, findsOneWidget);
+      final finalScrim = tester.widget<ColoredBox>(scrimFinder);
+      expect(finalScrim.color.a, closeTo(0, 0.01));
     });
   });
 }

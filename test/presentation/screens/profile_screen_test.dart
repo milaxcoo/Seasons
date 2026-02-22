@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/data/models/user_profile.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/screens/profile_screen.dart';
@@ -19,8 +20,17 @@ void main() {
   });
 
   Widget createTestWidget() {
-    return RepositoryProvider<VotingRepository>.value(
-      value: mockRepository,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<VotingRepository>.value(
+          value: mockRepository,
+        ),
+        RepositoryProvider<MonthlyThemeService>(
+          create: (_) => MonthlyThemeService(
+            currentDateProvider: () => DateTime(2026, 2, 22),
+          ),
+        ),
+      ],
       child: const MaterialApp(
         localizationsDelegates: [
           AppLocalizations.delegate,
@@ -87,8 +97,17 @@ void main() {
       final navigatorKey = GlobalKey<NavigatorState>();
 
       await tester.pumpWidget(
-        RepositoryProvider<VotingRepository>.value(
-          value: mockRepository,
+        MultiRepositoryProvider(
+          providers: [
+            RepositoryProvider<VotingRepository>.value(
+              value: mockRepository,
+            ),
+            RepositoryProvider<MonthlyThemeService>(
+              create: (_) => MonthlyThemeService(
+                currentDateProvider: () => DateTime(2026, 2, 22),
+              ),
+            ),
+          ],
           child: MaterialApp(
             navigatorKey: navigatorKey,
             localizationsDelegates: const [

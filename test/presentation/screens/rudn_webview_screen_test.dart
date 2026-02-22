@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/presentation/screens/rudn_webview_screen.dart';
 
 void main() {
@@ -363,6 +364,14 @@ void main() {
       );
 
       expect(value, 'abc123==');
+    });
+
+    test('finishing overlay text is localized for ru and en', () {
+      final ru = lookupAppLocalizations(const Locale('ru'));
+      final en = lookupAppLocalizations(const Locale('en'));
+
+      expect(finishingLoginOverlayText(ru), 'Завершаем вход…');
+      expect(finishingLoginOverlayText(en), 'Finishing login…');
     });
 
     test('extractSessionCookieValue returns null for empty or null-like values',
