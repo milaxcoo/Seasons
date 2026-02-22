@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:seasons/core/services/app_install_service.dart';
 import 'package:seasons/core/services/background_service.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
@@ -48,6 +49,7 @@ void main() async {
 
       await initializeDateFormatting('ru_RU', null);
       await initializeDateFormatting('en_US', null);
+      await AppInstallService().ensureInstallConsistency();
 
       runApp(const SeasonsApp());
 
@@ -193,7 +195,7 @@ class SeasonsApp extends StatelessWidget {
                 },
                 child: BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    if (state is AuthInitial) {
+                    if (state is AuthInitial || state is AuthChecking) {
                       return const Scaffold(
                           body: Center(child: SeasonsLoader()));
                     }

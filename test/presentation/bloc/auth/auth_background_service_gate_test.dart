@@ -31,6 +31,24 @@ void main() {
       expect(action, AuthBackgroundServiceAction.none);
     });
 
+    test('returns none on checking to unauthenticated transition', () {
+      final action = backgroundServiceActionForAuthTransition(
+        previous: AuthChecking(),
+        current: AuthUnauthenticated(),
+      );
+
+      expect(action, AuthBackgroundServiceAction.none);
+    });
+
+    test('returns start on checking to authenticated transition', () {
+      final action = backgroundServiceActionForAuthTransition(
+        previous: AuthChecking(),
+        current: const AuthAuthenticated(userLogin: 'actual'),
+      );
+
+      expect(action, AuthBackgroundServiceAction.start);
+    });
+
     test('returns none on authenticated to authenticated transition', () {
       final action = backgroundServiceActionForAuthTransition(
         previous: const AuthAuthenticated(userLogin: 'placeholder'),
