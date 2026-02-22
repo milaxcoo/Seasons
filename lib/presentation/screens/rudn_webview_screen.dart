@@ -227,7 +227,10 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<void> _onCallbackPageFinished(String callbackUrl) async {
-    if (!mounted || _hasPopped || !_isWaitingCallbackLoad || !_isFinishingLogin) {
+    if (!mounted ||
+        _hasPopped ||
+        !_isWaitingCallbackLoad ||
+        !_isFinishingLogin) {
       return;
     }
 
@@ -281,8 +284,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
       await _completeLoginAndPop(sessionCookie);
     } catch (_) {
-      if (runId == _finalizationRunId &&
-          _isFinishingLogin) {
+      if (runId == _finalizationRunId && _isFinishingLogin) {
         _showFinishingError(WebViewFinalizationState.phaseATimeoutMessage);
       }
     } finally {
