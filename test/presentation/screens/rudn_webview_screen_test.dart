@@ -77,23 +77,25 @@ void main() {
       );
     });
 
-    test('resolveWebViewNavigationAction prevents callback before render', () {
+    test(
+        'resolveWebViewNavigationAction marks callback as finish-login and allows navigation',
+        () {
       expect(
         resolveWebViewNavigationAction(
           'https://seasons.rudn.ru/oauth/login_callback?code=abc',
         ),
-        WebViewNavigationAction.preventAndFinishLogin,
+        WebViewNavigationAction.navigateAndFinishLogin,
       );
     });
 
     test(
-        'resolveWebViewNavigationAction prevents and finishes login for insecure callback redirect',
+        'resolveWebViewNavigationAction upgrades insecure callback redirect first',
         () {
       expect(
         resolveWebViewNavigationAction(
           'http://seasons.rudn.ru/oauth/login_callback?code=abc',
         ),
-        WebViewNavigationAction.preventAndFinishLogin,
+        WebViewNavigationAction.preventAndUpgrade,
       );
     });
 

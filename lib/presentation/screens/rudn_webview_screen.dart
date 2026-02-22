@@ -18,14 +18,19 @@ class RudnWebviewScreen extends StatefulWidget {
 
 class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   static const Duration _callbackCookiePollTimeout =
-      Duration(milliseconds: 500);
-  static const Duration _callbackCookiePollStep = Duration(milliseconds: 50);
+      Duration(milliseconds: 2000);
+  static const Duration _callbackCookiePollStep = Duration(milliseconds: 100);
+  static const Duration _callbackOverallTimeout = Duration(seconds: 5);
 
   late final WebViewController _controller;
   final WebViewCookieManager _cookieManager = WebViewCookieManager();
   bool _isLoading = true;
   bool _isFinishingLogin = false;
+  bool _isCallbackCompletionInProgress = false;
+  bool _hasFinishingError = false;
+  String _finishingErrorMessage = '';
   Timer? _cookieCheckTimer;
+  Timer? _finishingTimeoutTimer;
   bool _hasPopped = false;
 
   @override
@@ -37,6 +42,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
         NavigationDelegate(
           onPageStarted: (String url) {
             if (!mounted) return;
+            if (_isFinishingLogin) return;
             setState(() {
               _isLoading = true;
             });
@@ -46,6 +52,11 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             setState(() {
               _isLoading = false;
             });
+
+            if (isExpectedAuthCallbackUrl(url)) {
+              unawaited(_handleCallbackPageFinished(url));
+              return;
+            }
 
             // Auto-click the login button when homepage loads
             if (isAllowedWebViewUrl(url)) {
@@ -87,12 +98,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                 }
                 _controller.loadRequest(Uri.parse(secureUrl));
                 return NavigationDecision.prevent;
-              case WebViewNavigationAction.preventAndFinishLogin:
+              case WebViewNavigationAction.navigateAndFinishLogin:
                 final callbackUrl = shouldUpgradeToHttps(request.url)
                     ? upgradeToHttps(request.url)
                     : request.url;
-                unawaited(_handleAuthCallbackIntercepted(callbackUrl));
-                return NavigationDecision.prevent;
+                _startFinishingLogin(callbackUrl);
+                return NavigationDecision.navigate;
               case WebViewNavigationAction.prevent:
                 if (kDebugMode) {
                   debugPrint(
@@ -134,6 +145,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   @override
   void dispose() {
     _cookieCheckTimer?.cancel();
+    _finishingTimeoutTimer?.cancel();
     super.dispose();
   }
 
@@ -149,8 +161,16 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     }
   }
 
-  Future<void> _handleAuthCallbackIntercepted(String callbackUrl) async {
-    if (!mounted || _hasPopped || _isFinishingLogin) return;
+  void _startFinishingLogin(String callbackUrl) {
+    if (!mounted || _hasPopped) return;
+    if (_isFinishingLogin) {
+      if (kDebugMode) {
+        debugPrint(
+          'Ignoring duplicate oauth callback while finishing: ${sanitizeUrlForLog(callbackUrl)}',
+        );
+      }
+      return;
+    }
 
     if (kDebugMode) {
       debugPrint(
@@ -161,22 +181,53 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     setState(() {
       _isFinishingLogin = true;
       _isLoading = false;
+      _hasFinishingError = false;
+      _finishingErrorMessage = '';
     });
     _cookieCheckTimer?.cancel();
+    _finishingTimeoutTimer?.cancel();
+    _finishingTimeoutTimer = Timer(_callbackOverallTimeout, () {
+      if (!mounted || _hasPopped || !_isFinishingLogin) return;
+      _showFinishingError(
+        'Login is taking longer than expected. Please retry.',
+      );
+    });
+  }
 
-    final sessionCookie = await _pollSessionCookieFromDocument();
-    if (sessionCookie == null) {
-      ErrorReportingService().reportEvent('webview_callback_cookie_missing');
-
-      if (!mounted || _hasPopped) return;
-      setState(() {
-        _isFinishingLogin = false;
-      });
-      _startCookieCheckTimer();
+  Future<void> _handleCallbackPageFinished(String callbackUrl) async {
+    if (!mounted ||
+        _hasPopped ||
+        !_isFinishingLogin ||
+        _isCallbackCompletionInProgress) {
       return;
     }
 
-    await _completeLoginAndPop(sessionCookie);
+    if (kDebugMode) {
+      debugPrint(
+        'OAuth callback finished loading: ${sanitizeUrlForLog(callbackUrl)}',
+      );
+    }
+
+    _isCallbackCompletionInProgress = true;
+    try {
+      final sessionCookie = await _pollSessionCookieFromDocument();
+      if (sessionCookie == null) {
+        ErrorReportingService().reportEvent('webview_callback_cookie_missing');
+
+        _showFinishingError(
+          'Could not complete login. Please retry or cancel.',
+        );
+        return;
+      }
+
+      await _completeLoginAndPop(sessionCookie);
+    } catch (_) {
+      _showFinishingError(
+        'Could not complete login. Please retry or cancel.',
+      );
+    } finally {
+      _isCallbackCompletionInProgress = false;
+    }
   }
 
   void _startCookieCheckTimer() {
@@ -218,6 +269,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     if (mounted && !_hasPopped) {
       _hasPopped = true;
       _cookieCheckTimer?.cancel();
+      _finishingTimeoutTimer?.cancel();
       ErrorReportingService().reportEvent('webview_popping');
       Navigator.of(context).pop(true);
       return;
@@ -228,6 +280,44 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       'mounted': '$mounted',
       'hasPopped': '$_hasPopped',
     });
+  }
+
+  void _showFinishingError(String message) {
+    if (!mounted || _hasPopped) return;
+    _finishingTimeoutTimer?.cancel();
+    setState(() {
+      _isFinishingLogin = true;
+      _isLoading = false;
+      _hasFinishingError = true;
+      _finishingErrorMessage = message;
+    });
+  }
+
+  Future<void> _retryLogin() async {
+    if (!mounted || _hasPopped) return;
+
+    _cookieCheckTimer?.cancel();
+    _finishingTimeoutTimer?.cancel();
+    _isCallbackCompletionInProgress = false;
+
+    setState(() {
+      _isFinishingLogin = false;
+      _hasFinishingError = false;
+      _finishingErrorMessage = '';
+      _isLoading = true;
+    });
+
+    _startCookieCheckTimer();
+    await _controller.loadRequest(
+        Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
+  }
+
+  void _cancelLogin() {
+    if (!mounted || _hasPopped) return;
+    _hasPopped = true;
+    _cookieCheckTimer?.cancel();
+    _finishingTimeoutTimer?.cancel();
+    Navigator.of(context).pop(false);
   }
 
   @override
@@ -252,20 +342,57 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
           if (_isFinishingLogin)
             Container(
               color: Colors.black.withValues(alpha: 0.72),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SeasonsLoader(),
-                    SizedBox(height: 20),
-                    Text(
-                      'Finishing login...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                    if (!_hasFinishingError) ...[
+                      const SeasonsLoader(),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Finishing login...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
+                    ] else ...[
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 34,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _finishingErrorMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FilledButton(
+                            onPressed: _retryLogin,
+                            child: const Text('Retry'),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton(
+                            onPressed: _cancelLogin,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.white54),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -280,7 +407,7 @@ enum WebViewNavigationAction {
   navigate,
   prevent,
   preventAndUpgrade,
-  preventAndFinishLogin,
+  navigateAndFinishLogin,
 }
 
 const Set<String> _allowedWebViewHosts = {
@@ -345,15 +472,11 @@ bool isAllowedWebViewUrl(String rawUrl) {
 @visibleForTesting
 WebViewNavigationAction resolveWebViewNavigationAction(String rawUrl) {
   if (shouldUpgradeToHttps(rawUrl)) {
-    final upgradedUrl = upgradeToHttps(rawUrl);
-    if (isExpectedAuthCallbackUrl(upgradedUrl)) {
-      return WebViewNavigationAction.preventAndFinishLogin;
-    }
     return WebViewNavigationAction.preventAndUpgrade;
   }
 
   if (isExpectedAuthCallbackUrl(rawUrl)) {
-    return WebViewNavigationAction.preventAndFinishLogin;
+    return WebViewNavigationAction.navigateAndFinishLogin;
   }
 
   if (!isAllowedWebViewUrl(rawUrl)) {
