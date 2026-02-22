@@ -115,7 +115,7 @@ void main() {
       verifyNever(() => mockService.startService());
     });
 
-    test('stopService invokes stop command when running', () async {
+    test('stopService invokes stop command with reason when running', () async {
       when(() => mockService.isRunning()).thenAnswer((_) async => true);
       when(() => mockService.invoke(any(), any())).thenReturn(null);
 
@@ -124,9 +124,11 @@ void main() {
         notificationsInitializer: (_) async {},
       );
 
-      await service.stopService();
+      await service.stopService(reason: 'test:logout');
 
-      verify(() => mockService.invoke('stopService', any())).called(1);
+      verify(() => mockService.invoke('stopService', {
+            'reason': 'test:logout',
+          })).called(1);
     });
 
     test('stopService does not invoke stop command when not running', () async {
@@ -212,6 +214,25 @@ void main() {
             'action': 'unknown',
             'raw': 'not a json',
           })).called(1);
+      verifyNever(() => mockNotifications.show(
+            any(),
+            any(),
+            any(),
+            any(),
+            payload: any(named: 'payload'),
+          ));
+    });
+
+    test('handleMessageForTest skips invoke when service is stopping',
+        () async {
+      await handleMessageForTest(
+        '{"action":"VotingStarted","data":{"id":1}}',
+        mockInstance,
+        mockNotifications,
+        isStopped: () => true,
+      );
+
+      verifyNever(() => mockInstance.invoke(any(), any()));
       verifyNever(() => mockNotifications.show(
             any(),
             any(),

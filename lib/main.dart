@@ -12,6 +12,7 @@ import 'package:seasons/core/theme.dart';
 import 'package:seasons/data/repositories/api_voting_repository.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/bloc/auth/auth_background_service_gate.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
@@ -166,13 +167,28 @@ class SeasonsApp extends StatelessWidget {
                 GlobalCupertinoLocalizations.delegate,
               ],
               home: BlocListener<AuthBloc, AuthState>(
-                listenWhen: (previous, current) =>
-                    previous.runtimeType != current.runtimeType,
+                listenWhen: (previous, current) {
+                  final action = backgroundServiceActionForAuthTransition(
+                    previous: previous,
+                    current: current,
+                  );
+                  return action != AuthBackgroundServiceAction.none;
+                },
                 listener: (context, state) {
                   if (state is AuthAuthenticated) {
-                    BackgroundService().startService();
+                    unawaited(
+                      BackgroundService().startService(
+                        reason:
+                            'auth_transition:not_authenticated->authenticated',
+                      ),
+                    );
                   } else if (state is AuthUnauthenticated) {
-                    BackgroundService().stopService();
+                    unawaited(
+                      BackgroundService().stopService(
+                        reason:
+                            'auth_transition:authenticated->unauthenticated',
+                      ),
+                    );
                   }
                 },
                 child: BlocBuilder<AuthBloc, AuthState>(
