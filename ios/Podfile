@@ -43,4 +43,24 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
     end
   end
+
+  generated_xcconfig_include = '#include? "../../../Flutter/Generated.xcconfig"'
+  runner_xcconfig_paths = Dir.glob(
+    File.join(
+      installer.sandbox.root.to_s,
+      'Target Support Files',
+      'Pods-Runner',
+      'Pods-Runner.*.xcconfig',
+    ),
+  )
+
+  runner_xcconfig_paths.each do |xcconfig_path|
+    xcconfig_contents = File.read(xcconfig_path)
+    next if xcconfig_contents.include?(generated_xcconfig_include)
+
+    File.write(
+      xcconfig_path,
+      "#{generated_xcconfig_include}\n#{xcconfig_contents}",
+    )
+  end
 end
