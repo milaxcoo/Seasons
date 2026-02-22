@@ -7,6 +7,7 @@ abstract class SecureStorageInterface {
   Future<void> write({required String key, required String? value});
   Future<String?> read({required String key});
   Future<void> delete({required String key});
+  Future<void> deleteAll();
 }
 
 /// Default implementation using FlutterSecureStorage
@@ -29,6 +30,11 @@ class FlutterSecureStorageAdapter implements SecureStorageInterface {
   @override
   Future<void> delete({required String key}) async {
     await _storage.delete(key: key);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    await _storage.deleteAll();
   }
 }
 
@@ -97,5 +103,14 @@ class RudnAuthService {
   Future<bool> isAuthenticated() async {
     final cookie = await getCookie();
     return cookie != null && cookie.isNotEmpty;
+  }
+
+  /// Removes all secure auth/session data.
+  Future<void> clearSecureData() async {
+    try {
+      await _storage.deleteAll();
+    } catch (e) {
+      debugPrint('Error clearing secure data: $e');
+    }
   }
 }

@@ -17,6 +17,13 @@ class MockSlowStorage implements SecureStorageInterface {
   }
 
   @override
+  Future<void> deleteAll() async {
+    if (delay != null) await Future.delayed(delay!);
+    if (throwError) throw Exception('Storage error');
+    _data.clear();
+  }
+
+  @override
   Future<String?> read({required String key}) async {
     if (delay != null) await Future.delayed(delay!);
     if (throwError) throw Exception('Storage error');
@@ -131,6 +138,18 @@ void main() {
       final service = RudnAuthService.withStorage(errorStorage);
 
       await expectLater(service.logout(), completes);
+    });
+
+    test('clearSecureData removes all stored values', () async {
+      final storage = MockSlowStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      await service.saveCookie('some_cookie');
+      expect(await service.isAuthenticated(), isTrue);
+
+      await service.clearSecureData();
+
+      expect(await service.isAuthenticated(), isFalse);
     });
   });
 }
