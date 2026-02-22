@@ -13,12 +13,81 @@ void main() {
       final retried = failed.onRetry();
 
       expect(initial.webViewHiddenAfterCallback, isFalse);
+      expect(initial.phase, WebViewFinalizationPhase.idle);
       expect(callbackDetected.webViewHiddenAfterCallback, isTrue);
+      expect(
+        callbackDetected.phase,
+        WebViewFinalizationPhase.waitingCallbackLoad,
+      );
       expect(failed.webViewHiddenAfterCallback, isTrue);
+      expect(failed.phase, WebViewFinalizationPhase.error);
       expect(retried.webViewHiddenAfterCallback, isTrue);
       expect(retried.isFinishing, isTrue);
       expect(retried.hasError, isFalse);
       expect(retried.errorMessage, isEmpty);
+      expect(retried.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+    });
+
+    test('callback onPageFinished transitions from phase A to phase B', () {
+      const initial = WebViewFinalizationState.initial();
+      final waiting = initial.onCallbackDetected();
+      final polling = waiting.onCallbackPageFinished();
+
+      expect(waiting.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+      expect(waiting.hasError, isFalse);
+      expect(polling.phase, WebViewFinalizationPhase.pollingCookie);
+      expect(polling.hasError, isFalse);
+    });
+
+    test(
+        'phase A keeps waiting without error until timeout, then shows timeout error',
+        () {
+      final waiting =
+          const WebViewFinalizationState.initial().onCallbackDetected();
+      final timedOut = waiting.onPhaseATimeout();
+
+      expect(waiting.hasError, isFalse);
+      expect(waiting.phase, WebViewFinalizationPhase.waitingCallbackLoad);
+      expect(timedOut.hasError, isTrue);
+      expect(timedOut.phase, WebViewFinalizationPhase.error);
+      expect(
+        timedOut.errorMessage,
+        WebViewFinalizationState.phaseATimeoutMessage,
+      );
+    });
+
+    test(
+        'phase B keeps polling without error until timeout, then shows cookie timeout error',
+        () {
+      final polling = const WebViewFinalizationState.initial()
+          .onCallbackDetected()
+          .onCallbackPageFinished();
+      final timedOut = polling.onPhaseBTimeout();
+
+      expect(polling.hasError, isFalse);
+      expect(polling.phase, WebViewFinalizationPhase.pollingCookie);
+      expect(timedOut.hasError, isTrue);
+      expect(timedOut.phase, WebViewFinalizationPhase.error);
+      expect(
+        timedOut.errorMessage,
+        WebViewFinalizationState.phaseBTimeoutMessage,
+      );
+    });
+
+    test(
+        'retry keeps WebView hidden and restarts at phase A from any failure state',
+        () {
+      final failedInPhaseB = const WebViewFinalizationState.initial()
+          .onCallbackDetected()
+          .onCallbackPageFinished()
+          .onPhaseBTimeout();
+      final retried = failedInPhaseB.onRetry();
+
+      expect(failedInPhaseB.webViewHiddenAfterCallback, isTrue);
+      expect(retried.webViewHiddenAfterCallback, isTrue);
+      expect(retried.hasError, isFalse);
+      expect(retried.errorMessage, isEmpty);
+      expect(retried.phase, WebViewFinalizationPhase.waitingCallbackLoad);
     });
 
     test('pollForSessionCookie supports injected clock/delay for slow networks',
@@ -44,6 +113,33 @@ void main() {
 
       expect(cookie, 'vpn-session-cookie');
       expect(readAttempts, 6);
+    });
+
+    test('phase B cookie polling succeeds within timeout without needing retry',
+        () async {
+      final pollingState = const WebViewFinalizationState.initial()
+          .onCallbackDetected()
+          .onCallbackPageFinished();
+      var readAttempts = 0;
+      var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
+
+      final cookie = await pollForSessionCookie(
+        readCookie: () async {
+          readAttempts += 1;
+          if (readAttempts == 4) return 'session-first-try';
+          return null;
+        },
+        timeout: const Duration(seconds: 8),
+        step: const Duration(milliseconds: 100),
+        now: () => now,
+        delay: (duration) async {
+          now = now.add(duration);
+        },
+      );
+
+      expect(pollingState.phase, WebViewFinalizationPhase.pollingCookie);
+      expect(cookie, 'session-first-try');
+      expect(readAttempts, 4);
     });
 
     test(
