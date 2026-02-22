@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:seasons/core/services/app_install_service.dart';
 import 'package:seasons/core/services/background_service.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
+import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'dart:async';
@@ -142,8 +143,15 @@ class SeasonsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider<VotingRepository>(
-      create: (context) => ApiVotingRepository(),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<VotingRepository>(
+          create: (context) => ApiVotingRepository(),
+        ),
+        RepositoryProvider<MonthlyThemeService>(
+          create: (context) => MonthlyThemeService(),
+        ),
+      ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider<LocaleBloc>(

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
+import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
@@ -69,22 +70,31 @@ void main() {
   });
 
   Widget createTestWidget() {
-    return MultiBlocProvider(
+    return MultiRepositoryProvider(
       providers: [
-        BlocProvider<AuthBloc>.value(value: mockAuthBloc),
-        BlocProvider<VotingBloc>.value(value: mockVotingBloc),
-        BlocProvider<LocaleBloc>.value(value: mockLocaleBloc),
+        RepositoryProvider<MonthlyThemeService>(
+          create: (_) => MonthlyThemeService(
+            currentDateProvider: () => DateTime(2026, 2, 22),
+          ),
+        ),
       ],
-      child: const MaterialApp(
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: mockAuthBloc),
+          BlocProvider<VotingBloc>.value(value: mockVotingBloc),
+          BlocProvider<LocaleBloc>.value(value: mockLocaleBloc),
         ],
-        supportedLocales: [Locale('ru'), Locale('en')],
-        locale: Locale('ru'),
-        home: HomeScreen(),
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [Locale('ru'), Locale('en')],
+          locale: Locale('ru'),
+          home: HomeScreen(),
+        ),
       ),
     );
   }

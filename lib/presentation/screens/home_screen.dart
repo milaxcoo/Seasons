@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:seasons/core/monthly_theme_data.dart';
+import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
@@ -306,15 +305,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  int _debugThemeOffset = 0;
-
   @override
   Widget build(BuildContext context) {
-    // Calculate current month with debug offset
-    // (month - 1 + offset) % 12 + 1 ensures 1-12 range
-    final realMonth = DateTime.now().month;
-    final debugMonth = ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
-    final theme = monthlyThemes[debugMonth] ?? monthlyThemes[1]!;
+    final theme = context.read<MonthlyThemeService>().theme;
 
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
@@ -324,8 +317,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // 1. Top Bar (Profile / Lang)
     final topBar = _TopBar();
 
-    // 2. Header (Seasons Title) with optional tap-to-test
-    Widget header = isLandscape
+    // 2. Header (Seasons Title)
+    final Widget header = isLandscape
         ? Stack(
             alignment: Alignment.center,
             children: [
@@ -380,27 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           )
-        : kDebugMode
-            ? GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _debugThemeOffset++;
-                  });
-                  final nextMonth =
-                      ((realMonth - 1 + _debugThemeOffset) % 12) + 1;
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Testing Month: $nextMonth'),
-                      duration: const Duration(milliseconds: 500),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: Colors.black87,
-                    ),
-                  );
-                },
-                child: _Header(),
-              )
-            : _Header();
+        : _Header();
 
     // 3. Navbar (Panel Selector)
     final navbar = BlocListener<VotingBloc, VotingState>(
