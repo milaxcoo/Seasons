@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:seasons/core/monthly_theme_data.dart';
 import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -111,12 +113,16 @@ class _TopBar extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
+  final VoidCallback? onDebugTap;
+
+  const _Header({this.onDebugTap});
+
   @override
   Widget build(BuildContext context) {
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
-    return Padding(
+    final headerContent = Padding(
       padding: EdgeInsets.symmetric(
           vertical: isLandscape ? 2.0 : 4.0), // Reduced from 10.0
       child: Column(
@@ -177,6 +183,16 @@ class _Header extends StatelessWidget {
         ],
       ),
     );
+
+    if (!kDebugMode || onDebugTap == null) {
+      return headerContent;
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: onDebugTap,
+      child: headerContent,
+    );
   }
 }
 
@@ -216,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _sectionTransitionToken = 0;
   Timer? _sectionTransitionTimeoutTimer;
   double _horizontalDragDx = 0;
+  int? _debugThemeMonth;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -443,6 +460,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  void _cycleDebugThemeMonth() {
+    if (!kDebugMode) return;
+    final themeService = context.read<MonthlyThemeService>();
+    final currentMonth = _debugThemeMonth ?? themeService.currentMonth;
+    final nextMonth = currentMonth == 12 ? 1 : currentMonth + 1;
+    if (!mounted) return;
+    setState(() {
+      _debugThemeMonth = nextMonth;
+    });
+    _debugLog(
+      'debug_theme_cycle',
+      {'month': nextMonth},
+    );
+  }
+
   void _onPageChanged(int index) {
     _debugLog(
       'page_changed',
@@ -628,7 +660,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.read<MonthlyThemeService>().theme;
+    final themeService = context.read<MonthlyThemeService>();
+    final theme = (kDebugMode && _debugThemeMonth != null)
+        ? (monthlyThemes[_debugThemeMonth!] ?? themeService.theme)
+        : themeService.theme;
+    final VoidCallback? debugThemeTapHandler =
+        kDebugMode ? _cycleDebugThemeMonth : null;
     final selectedPanelIndex =
         context.select((HomeTabCubit cubit) => cubit.state.index);
 
@@ -658,62 +695,64 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final topBar = _TopBar();
 
     // 2. Header (Seasons Title)
-    final Widget header = isLandscape
-        ? Stack(
-            alignment: Alignment.center,
-            children: [
-              IgnorePointer(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Seasons',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontSize:
-                                      32, // Restored to much larger size for visibility (Original was ~34 in portrait)
-                                  height: 1.0,
-                                  color: Colors.white,
-                                  shadows: [
-                                    const Shadow(
-                                        blurRadius: 10, color: Colors.black54),
-                                    const Shadow(
-                                        blurRadius: 2, color: Colors.black87)
-                                  ],
-                                  fontWeight: FontWeight.w900,
-                                ),
-                        textAlign: TextAlign.center,
+    final Widget landscapeHeader = Stack(
+      alignment: Alignment.center,
+      children: [
+        IgnorePointer(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Seasons',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontSize:
+                            32, // Restored to much larger size for visibility (Original was ~34 in portrait)
+                        height: 1.0,
+                        color: Colors.white,
+                        shadows: [
+                          const Shadow(blurRadius: 10, color: Colors.black54),
+                          const Shadow(blurRadius: 2, color: Colors.black87)
+                        ],
+                        fontWeight: FontWeight.w900,
                       ),
-                      Transform.translate(
-                        offset: const Offset(0, 0),
-                        child: Text(
-                          'времена года',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontFamily: 'HemiHead',
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    shadows: [
-                                      const Shadow(
-                                          blurRadius: 4, color: Colors.black87),
-                                    ],
-                                    fontStyle: FontStyle.normal,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 12, // Larger subtext
-                                    letterSpacing: 2,
-                                    height: 1.0,
-                                  ),
-                          textAlign: TextAlign.center,
+                  textAlign: TextAlign.center,
+                ),
+                Transform.translate(
+                  offset: const Offset(0, 0),
+                  child: Text(
+                    'времена года',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontFamily: 'HemiHead',
+                          color: Colors.white.withValues(alpha: 0.9),
+                          shadows: [
+                            const Shadow(blurRadius: 4, color: Colors.black87),
+                          ],
+                          fontStyle: FontStyle.normal,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12, // Larger subtext
+                          letterSpacing: 2,
+                          height: 1.0,
                         ),
-                      ),
-                    ],
+                    textAlign: TextAlign.center,
                   ),
                 ),
-              ),
-            ],
-          )
-        : _Header();
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+    final Widget header = isLandscape
+        ? (debugThemeTapHandler == null
+            ? landscapeHeader
+            : GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: debugThemeTapHandler,
+                child: landscapeHeader,
+              ))
+        : _Header(onDebugTap: debugThemeTapHandler);
 
     // 3. Navbar (Panel Selector)
     final navbar = BlocListener<VotingBloc, VotingState>(
@@ -981,21 +1020,33 @@ class _Footer extends StatefulWidget {
 class _FooterState extends State<_Footer> {
   final ScrollController _scrollController = ScrollController();
   bool _isUserScrolling = false;
+  bool _isAutoScrollAnimating = false;
+  bool _showTopFade = false;
+  bool _showBottomFade = false;
   Timer? _resumeTimer;
+  Timer? _autoScrollWatchdog;
   int _scrollGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScrollMetricsChanged);
     // Start rolling after a short delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleScrollMetricsChanged();
       _resumeAutoScroll(delay: const Duration(seconds: 3));
     });
+    _autoScrollWatchdog = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _ensureAutoScrollRunning(),
+    );
   }
 
   @override
   void dispose() {
     _resumeTimer?.cancel();
+    _autoScrollWatchdog?.cancel();
+    _scrollController.removeListener(_handleScrollMetricsChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -1007,12 +1058,34 @@ class _FooterState extends State<_Footer> {
     // any in-flight animateTo callbacks by bumping the generation.
     if (oldWidget.poem != widget.poem) {
       _scrollGeneration++;
+      _isAutoScrollAnimating = false;
       _resumeTimer?.cancel();
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(0);
       }
+      _handleScrollMetricsChanged();
       _resumeAutoScroll(delay: const Duration(seconds: 3));
     }
+  }
+
+  void _handleScrollMetricsChanged() {
+    if (!mounted || !_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final showTop = position.pixels > 1;
+    final showBottom = position.pixels < (position.maxScrollExtent - 1);
+    if (showTop == _showTopFade && showBottom == _showBottomFade) return;
+    setState(() {
+      _showTopFade = showTop;
+      _showBottomFade = showBottom;
+    });
+  }
+
+  void _ensureAutoScrollRunning() {
+    if (!mounted || _isUserScrolling || _isAutoScrollAnimating) return;
+    if (_resumeTimer?.isActive ?? false) return;
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.maxScrollExtent <= 0) return;
+    _resumeAutoScroll(delay: const Duration(milliseconds: 250));
   }
 
   void _resumeAutoScroll({Duration delay = const Duration(seconds: 2)}) {
@@ -1045,14 +1118,15 @@ class _FooterState extends State<_Footer> {
       final duration =
           Duration(milliseconds: (remainingScroll / 10 * 1000).toInt());
 
+      _isAutoScrollAnimating = true;
       _scrollController
           .animateTo(
-        maxScroll,
-        duration: duration,
-        curve: Curves.linear,
-      )
+            maxScroll,
+            duration: duration,
+            curve: Curves.linear,
+          )
+          .catchError((_) {})
           .then((_) {
-        // Stale callback guard: discard if poem changed while animating.
         if (!mounted ||
             _isUserScrolling ||
             !_scrollController.hasClients ||
@@ -1061,7 +1135,6 @@ class _FooterState extends State<_Footer> {
         }
         if (_scrollController.offset >=
             _scrollController.position.maxScrollExtent) {
-          // Reset to top after a delay if at the bottom
           _resumeTimer?.cancel();
           _resumeTimer = Timer(const Duration(seconds: 5), () {
             if (mounted &&
@@ -1073,10 +1146,11 @@ class _FooterState extends State<_Footer> {
             }
           });
         }
+      }).whenComplete(() {
+        _isAutoScrollAnimating = false;
+        _ensureAutoScrollRunning();
       });
     } else {
-      // We are already at the bottom (e.g., user scrolled here manually).
-      // Wait a bit and reset to top.
       _resumeTimer?.cancel();
       _resumeTimer = Timer(const Duration(seconds: 5), () {
         if (mounted &&
@@ -1120,65 +1194,86 @@ class _FooterState extends State<_Footer> {
         ),
         clipBehavior: Clip.antiAlias,
         child: Padding(
-          padding: const EdgeInsets.all(20.0), // Internal padding for the frame
+          padding: const EdgeInsets.all(20.0),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                // In landscape, limit footer to 80% of screen height (plenty of room in sidebar)
-                // In portrait, set a strict hard limit so it doesn't squish the voting list
                 maxHeight: isLandscape
                     ? MediaQuery.of(context).size.height * 0.80
                     : 140.0,
               ),
               child: NotificationListener<ScrollNotification>(
                 onNotification: (ScrollNotification notification) {
-                  // Only react to user-driven scroll events (dragDetails != null),
-                  // not programmatic scrolls like animateTo.
                   if (notification is ScrollStartNotification &&
                       notification.dragDetails != null) {
                     _isUserScrolling = true;
+                    _isAutoScrollAnimating = false;
                     _resumeTimer?.cancel();
-                  } else if (notification is ScrollEndNotification &&
-                      notification.dragDetails != null) {
+                  } else if (notification is UserScrollNotification &&
+                      notification.direction != ScrollDirection.idle) {
+                    _isUserScrolling = true;
+                    _resumeTimer?.cancel();
+                  } else if (notification is UserScrollNotification &&
+                      notification.direction == ScrollDirection.idle) {
+                    _isUserScrolling = false;
+                    _resumeAutoScroll(delay: const Duration(seconds: 3));
+                  } else if (notification is ScrollEndNotification) {
                     _isUserScrolling = false;
                     _resumeAutoScroll(delay: const Duration(seconds: 3));
                   }
                   return false;
                 },
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min, // Tightly wrap content
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start, // Align all text to left edge
-                    children: [
-                      Text(
-                        widget.poem,
-                        textAlign: TextAlign.left, // Explicitly left align
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          height: 1.5,
-                          fontSize: 15,
-                          shadows: [
-                            const Shadow(blurRadius: 6, color: Colors.black87)
-                          ],
+                child: ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (Rect bounds) {
+                    return LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        _showTopFade ? Colors.transparent : Colors.white,
+                        Colors.white,
+                        Colors.white,
+                        _showBottomFade ? Colors.transparent : Colors.white,
+                      ],
+                      stops: const [0.0, 0.10, 0.90, 1.0],
+                    ).createShader(bounds);
+                  },
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.poem,
+                          textAlign: TextAlign.left,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                            height: 1.5,
+                            fontSize: 15,
+                            shadows: [
+                              const Shadow(blurRadius: 6, color: Colors.black87)
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.author,
-                        textAlign: TextAlign.left, // Explicitly left align
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          fontStyle: FontStyle.italic,
-                          fontSize: 13,
-                          shadows: [
-                            const Shadow(blurRadius: 6, color: Colors.black87)
-                          ],
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.author,
+                          textAlign: TextAlign.left,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 13,
+                            shadows: [
+                              const Shadow(blurRadius: 6, color: Colors.black87)
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
