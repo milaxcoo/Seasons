@@ -356,23 +356,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  void _navigateToPanel(
-    int index, {
-    required String source,
-    bool animate = true,
-  }) {
-    final normalizedIndex = _normalizePanelIndex(index);
-    context.read<HomeTabCubit>().setIndex(
-          normalizedIndex,
-          source: source,
-        );
-    _movePageToIndex(
-      normalizedIndex,
-      source: source,
-      animate: animate,
-    );
-  }
-
   void _movePageToIndex(
     int index, {
     required String source,
@@ -819,6 +802,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           imagePath: theme.imagePath,
                           onRefresh: () => _refreshCurrentPage(index),
                           timeNotifier: _timeNotifier,
+                          suppressTransitions: _transitionTargetIndex != null ||
+                              _showSectionLoader,
                         );
                       },
                     ),
@@ -1211,12 +1196,14 @@ class _EventListPage extends StatelessWidget {
   final String imagePath;
   final VoidCallback onRefresh;
   final ValueNotifier<int> timeNotifier; // Use ValueNotifier
+  final bool suppressTransitions;
 
   const _EventListPage({
     required this.status,
     required this.imagePath,
     required this.onRefresh,
     required this.timeNotifier,
+    this.suppressTransitions = false,
   });
 
   @override
@@ -1235,10 +1222,16 @@ class _EventListPage extends StatelessWidget {
         Widget content;
 
         if (state is VotingLoadInProgress) {
-          content = const Center(
-            key: ValueKey('loader'),
-            child: SeasonsLoader(),
-          );
+          if (suppressTransitions) {
+            content = const SizedBox.shrink(
+              key: ValueKey('loader_suppressed'),
+            );
+          } else {
+            content = const Center(
+              key: ValueKey('loader'),
+              child: SeasonsLoader(),
+            );
+          }
         } else if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             content = Container(
@@ -1275,37 +1268,14 @@ class _EventListPage extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
               itemCount: state.events.length,
               itemBuilder: (context, index) {
-                final clampedIndex = index > 6 ? 6 : index;
-                final duration = Duration(
-                  milliseconds: 220 + (clampedIndex * 30),
-                );
-                return TweenAnimationBuilder<double>(
+                return _VotingEventCard(
                   key: ValueKey(
                     'event_card_${state.events[index].id}_${state.timestamp}_$index',
                   ),
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: duration,
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) {
-                    final slide = (1 - value) * 14;
-                    final scale = 0.985 + (value * 0.015);
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, slide),
-                        child: Transform.scale(
-                          scale: scale,
-                          child: child,
-                        ),
-                      ),
-                    );
-                  },
-                  child: _VotingEventCard(
-                    event: state.events[index],
-                    imagePath: imagePath,
-                    onActionComplete: onRefresh,
-                    timeNotifier: timeNotifier,
-                  ),
+                  event: state.events[index],
+                  imagePath: imagePath,
+                  onActionComplete: onRefresh,
+                  timeNotifier: timeNotifier,
                 );
               },
             );
@@ -1363,6 +1333,10 @@ class _EventListPage extends StatelessWidget {
           content = const SizedBox.shrink(key: ValueKey('shrink'));
         }
 
+        if (suppressTransitions) {
+          return content;
+        }
+
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 600),
           switchInCurve: Curves.easeOut,
@@ -1390,6 +1364,7 @@ class _VotingEventCard extends StatelessWidget {
   final ValueNotifier<int> timeNotifier;
 
   const _VotingEventCard({
+    super.key,
     required this.event,
     required this.imagePath,
     required this.onActionComplete,
