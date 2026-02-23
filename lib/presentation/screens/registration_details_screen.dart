@@ -107,7 +107,7 @@ class _RegistrationDetailsView extends StatelessWidget {
             // Responsive padding: Smaller margins in landscape to maximize card size
             padding: isLandscape
                 ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
-                : const EdgeInsets.all(24.0),
+                : const EdgeInsets.symmetric(horizontal: 12.0, vertical: 24.0),
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),

@@ -15,6 +15,7 @@ import 'package:seasons/data/repositories/api_voting_repository.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/auth/auth_background_service_gate.dart';
+import 'package:seasons/presentation/bloc/home_tab/home_tab_cubit.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
@@ -168,6 +169,9 @@ class SeasonsApp extends StatelessWidget {
               votingRepository:
                   RepositoryProvider.of<VotingRepository>(context),
             ),
+          ),
+          BlocProvider<HomeTabCubit>(
+            create: (_) => HomeTabCubit(),
           ),
         ],
         child: BlocBuilder<LocaleBloc, LocaleState>(

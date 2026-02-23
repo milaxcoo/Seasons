@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,7 @@ import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/bloc/home_tab/home_tab_cubit.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
@@ -27,6 +29,7 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
+    final currentLanguageCode = Localizations.localeOf(context).languageCode;
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -45,12 +48,16 @@ class _TopBar extends StatelessWidget {
         children: [
           // Language switcher button (moved to left)
           PopupMenuButton<Locale>(
+            initialValue: Locale(
+              currentLanguageCode == 'en' ? 'en' : 'ru',
+            ),
             icon: const Icon(Icons.language, color: Colors.white),
             onSelected: (Locale locale) {
               context.read<LocaleBloc>().add(ChangeLocale(locale));
             },
             itemBuilder: (BuildContext context) => [
-              PopupMenuItem<Locale>(
+              CheckedPopupMenuItem<Locale>(
+                checked: currentLanguageCode == 'ru',
                 value: const Locale('ru'),
                 child: Row(
                   children: [
@@ -60,7 +67,8 @@ class _TopBar extends StatelessWidget {
                   ],
                 ),
               ),
-              PopupMenuItem<Locale>(
+              CheckedPopupMenuItem<Locale>(
+                checked: currentLanguageCode == 'en',
                 value: const Locale('en'),
                 child: Row(
                   children: [
@@ -178,8 +186,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedPanelIndex = 0;
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  static const Duration _sectionFadeDuration = Duration(milliseconds: 180);
+  static const Duration _loaderFadeDuration = Duration(milliseconds: 120);
+  static const Duration _minLoaderVisibleDuration = Duration(milliseconds: 180);
+  static const Duration _sectionTransitionTimeout = Duration(seconds: 4);
+  static const double _sectionSqueezedScale = 0.92;
+
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
   final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(0);
 
@@ -191,7 +204,18 @@ class _HomeScreenState extends State<HomeScreen> {
     model.VotingStatus.completed: 0,
   };
 
-  late PageController _pageController;
+  late final PageController _pageController;
+  int? _pendingNavigationIndex;
+  Orientation? _lastLoggedOrientation;
+  Size? _lastLoggedSize;
+  bool _showSectionLoader = false;
+  double _sectionContentOpacity = 1.0;
+  double _sectionContentScale = 1.0;
+  int? _transitionTargetIndex;
+  DateTime? _loaderShownAt;
+  int _sectionTransitionToken = 0;
+  Timer? _sectionTransitionTimeoutTimer;
+  double _horizontalDragDx = 0;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -199,34 +223,280 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _fetchEventsForPanel(int index) {
-    // Animate to the page. This will trigger onPageChanged which handles fetching.
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutQuart, // Smoother curve
+  void _debugLog(String message, [Map<String, Object?> details = const {}]) {
+    if (!kDebugMode) return;
+    final detailsString = details.entries
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join(', ');
+    debugPrint(
+      detailsString.isEmpty
+          ? 'HomeScreen.debug $message'
+          : 'HomeScreen.debug $message {$detailsString}',
     );
   }
 
-  Timer? _sectionDebounce;
-
-  void _onPageChanged(int index) {
-    setState(() {
-      _selectedPanelIndex = index;
-    });
-    // Debounce API calls — if user swipes rapidly, only fetch for the final section
-    _sectionDebounce?.cancel();
-    _sectionDebounce = Timer(const Duration(milliseconds: 300), () {
-      _refreshCurrentPage(index);
-    });
+  int _normalizePanelIndex(int index) {
+    if (index < 0) return 0;
+    if (index > 2) return 2;
+    return index;
   }
 
-  void _refreshCurrentPage(int index) {
-    final status = [
+  model.VotingStatus _statusForIndex(int index) {
+    return [
       model.VotingStatus.registration,
       model.VotingStatus.active,
       model.VotingStatus.completed,
-    ][index];
+    ][_normalizePanelIndex(index)];
+  }
+
+  Future<void> _switchSectionWithTransition(
+    int index, {
+    required String source,
+  }) async {
+    final normalizedIndex = _normalizePanelIndex(index);
+    final currentIndex = context.read<HomeTabCubit>().state.index;
+    if (normalizedIndex == currentIndex) {
+      _refreshCurrentPage(normalizedIndex);
+      return;
+    }
+
+    final alreadyRunningForTarget = _transitionTargetIndex == normalizedIndex;
+    if (alreadyRunningForTarget) return;
+
+    _sectionTransitionToken++;
+    final token = _sectionTransitionToken;
+    _sectionTransitionTimeoutTimer?.cancel();
+    _sectionTransitionTimeoutTimer = Timer(_sectionTransitionTimeout, () {
+      if (!mounted || _transitionTargetIndex == null) return;
+      setState(() {
+        _showSectionLoader = false;
+        _sectionContentOpacity = 1.0;
+        _sectionContentScale = 1.0;
+        _transitionTargetIndex = null;
+        _loaderShownAt = null;
+      });
+    });
+
+    context.read<HomeTabCubit>().setIndex(
+          normalizedIndex,
+          source: source,
+        );
+    _transitionTargetIndex = normalizedIndex;
+    _loaderShownAt = null;
+    if (!mounted) return;
+    setState(() {
+      _showSectionLoader = false;
+      _sectionContentOpacity = 0.0;
+      _sectionContentScale = _sectionSqueezedScale;
+    });
+
+    await Future.delayed(_sectionFadeDuration);
+    if (!mounted || token != _sectionTransitionToken) return;
+    _movePageToIndex(
+      normalizedIndex,
+      source: '$source.hidden_switch',
+      animate: false,
+    );
+
+    setState(() {
+      _showSectionLoader = true;
+      _loaderShownAt = DateTime.now();
+    });
+    _refreshCurrentPage(normalizedIndex);
+  }
+
+  Future<void> _completeSectionContentTransition({required int index}) async {
+    if (_transitionTargetIndex != index) return;
+
+    final token = _sectionTransitionToken;
+    if (!_showSectionLoader) {
+      if (!mounted || token != _sectionTransitionToken) return;
+      setState(() {
+        _showSectionLoader = true;
+        _loaderShownAt = DateTime.now();
+      });
+      await Future.delayed(_loaderFadeDuration);
+      if (!mounted || token != _sectionTransitionToken) return;
+    }
+
+    final shownAt = _loaderShownAt ?? DateTime.now();
+    final elapsed = DateTime.now().difference(shownAt);
+    final remaining = _minLoaderVisibleDuration - elapsed;
+    if (remaining > Duration.zero) {
+      await Future.delayed(remaining);
+      if (!mounted || token != _sectionTransitionToken) return;
+    }
+
+    setState(() {
+      _showSectionLoader = false;
+    });
+    await Future.delayed(_loaderFadeDuration);
+    if (!mounted || token != _sectionTransitionToken) return;
+
+    _sectionTransitionTimeoutTimer?.cancel();
+    setState(() {
+      _sectionContentOpacity = 1.0;
+      _sectionContentScale = 1.0;
+      _transitionTargetIndex = null;
+      _loaderShownAt = null;
+    });
+  }
+
+  void _handleSectionTransitionState(VotingState state) {
+    final targetIndex = _transitionTargetIndex;
+    if (targetIndex == null) return;
+
+    final targetStatus = _statusForIndex(targetIndex);
+    if (state is VotingEventsLoadSuccess && state.status == targetStatus) {
+      _completeSectionContentTransition(index: targetIndex);
+      return;
+    }
+    if (state is VotingFailure) {
+      _completeSectionContentTransition(index: targetIndex);
+    }
+  }
+
+  void _movePageToIndex(
+    int index, {
+    required String source,
+    bool animate = true,
+  }) {
+    if (!_pageController.hasClients) {
+      _pendingNavigationIndex = index;
+      _debugLog(
+        'panel_navigation_queued',
+        {
+          'source': source,
+          'index': index,
+          'reason': 'no_page_controller_clients',
+        },
+      );
+      return;
+    }
+
+    final currentPage =
+        (_pageController.page ?? _pageController.initialPage).round();
+    if (currentPage == index) {
+      if (source == 'user_tap') {
+        _refreshCurrentPage(index);
+      }
+      _debugLog(
+        'panel_navigation_skipped_same_page',
+        {
+          'source': source,
+          'index': index,
+        },
+      );
+      return;
+    }
+
+    _pendingNavigationIndex = null;
+    _debugLog(
+      'panel_navigation_execute',
+      {
+        'source': source,
+        'index': index,
+        'animate': animate,
+      },
+    );
+
+    if (animate) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutQuart,
+      );
+      return;
+    }
+    _pageController.jumpToPage(index);
+  }
+
+  void _flushPendingNavigationIfNeeded({
+    required String source,
+  }) {
+    final pendingIndex = _pendingNavigationIndex;
+    if (pendingIndex == null) return;
+    _debugLog(
+      'panel_navigation_flush_pending',
+      {
+        'source': source,
+        'index': pendingIndex,
+      },
+    );
+    _movePageToIndex(
+      pendingIndex,
+      source: '$source.pending_flush',
+      animate: false,
+    );
+  }
+
+  void _onPanelSelected(int index) {
+    _debugLog(
+      'panel_tap',
+      {
+        'index': index,
+      },
+    );
+    _switchSectionWithTransition(
+      index,
+      source: 'user_tap',
+    );
+  }
+
+  void _onPageChanged(int index) {
+    _debugLog(
+      'page_changed',
+      {
+        'index': index,
+      },
+    );
+    context.read<HomeTabCubit>().setIndex(
+          index,
+          source: 'page_sync',
+        );
+  }
+
+  void _onVotingAreaHorizontalDragStart(DragStartDetails details) {
+    _horizontalDragDx = 0;
+  }
+
+  void _onVotingAreaHorizontalDragUpdate(DragUpdateDetails details) {
+    _horizontalDragDx += details.delta.dx;
+  }
+
+  void _onVotingAreaHorizontalDragCancel() {
+    _horizontalDragDx = 0;
+  }
+
+  void _onVotingAreaHorizontalDragEnd(DragEndDetails details) {
+    if (_showSectionLoader) {
+      _horizontalDragDx = 0;
+      return;
+    }
+
+    final velocity = details.primaryVelocity ?? 0;
+    int direction = 0;
+    if (velocity.abs() > 350) {
+      direction = velocity < 0 ? 1 : -1;
+    } else if (_horizontalDragDx.abs() > 56) {
+      direction = _horizontalDragDx < 0 ? 1 : -1;
+    }
+    _horizontalDragDx = 0;
+
+    if (direction == 0) return;
+
+    final currentIndex = context.read<HomeTabCubit>().state.index;
+    final targetIndex = _normalizePanelIndex(currentIndex + direction);
+    if (targetIndex == currentIndex) return;
+
+    _switchSectionWithTransition(
+      targetIndex,
+      source: 'user_swipe',
+    );
+  }
+
+  void _refreshCurrentPage(int index) {
+    final status = _statusForIndex(index);
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
@@ -237,24 +507,38 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: _selectedPanelIndex);
+    WidgetsBinding.instance.addObserver(this);
+    final initialIndex = context.read<HomeTabCubit>().state.index;
+    _pageController = PageController(initialPage: initialIndex);
+    _debugLog(
+      'init_state',
+      {
+        'initial_index': initialIndex,
+      },
+    );
 
     // Listen for notification navigation events
     _navigationSubscription =
         NotificationNavigationService().onNavigate.listen((event) {
       if (mounted) {
-        // Smoothly animate to the requested tab
-        _fetchEventsForPanel(event.tabIndex);
-
-        // Trigger data refresh if requested (onPageChanged will do it, but force if needed)
-        if (event.shouldRefresh) {
-          // Wait a bit for animation or just trigger
-          // Actually _onPageChanged will trigger fetch.
-          // If we are ALREADY on that page, onPageChanged won't fire for animateToPage(sameIndex).
-          if (_selectedPanelIndex == event.tabIndex) {
+        _debugLog(
+          'notification_navigation_received',
+          {
+            'tab_index': event.tabIndex,
+            'should_refresh': event.shouldRefresh,
+          },
+        );
+        final currentIndex = context.read<HomeTabCubit>().state.index;
+        if (event.tabIndex == currentIndex) {
+          if (event.shouldRefresh) {
             _refreshCurrentPage(event.tabIndex);
           }
+          return;
         }
+        _switchSectionWithTransition(
+          event.tabIndex,
+          source: 'notification',
+        );
       }
     });
 
@@ -292,14 +576,51 @@ class _HomeScreenState extends State<HomeScreen> {
     context
         .read<VotingBloc>()
         .add(RefreshEventsSilent(status: model.VotingStatus.completed));
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _flushPendingNavigationIfNeeded(source: 'post_frame_init');
+    });
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    if (!mounted) return;
+
+    final view = View.of(context);
+    final logicalSize = view.physicalSize / view.devicePixelRatio;
+    final orientation = logicalSize.width >= logicalSize.height
+        ? Orientation.landscape
+        : Orientation.portrait;
+    _debugLog(
+      'metrics_changed',
+      {
+        'orientation': orientation.name,
+        'size': '${logicalSize.width.toStringAsFixed(1)}x'
+            '${logicalSize.height.toStringAsFixed(1)}',
+      },
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final targetIndex = context.read<HomeTabCubit>().state.index;
+      _movePageToIndex(
+        targetIndex,
+        source: 'metrics_sync',
+        animate: false,
+      );
+      _flushPendingNavigationIfNeeded(source: 'metrics_sync');
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _uiTicker?.cancel();
     _dataTicker?.cancel();
-    _sectionDebounce?.cancel();
+    _sectionTransitionTimeoutTimer?.cancel();
     _navigationSubscription?.cancel();
     _timeNotifier.dispose();
     super.dispose();
@@ -308,9 +629,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.read<MonthlyThemeService>().theme;
+    final selectedPanelIndex =
+        context.select((HomeTabCubit cubit) => cubit.state.index);
 
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final mediaQuery = MediaQuery.of(context);
+    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+
+    if (kDebugMode &&
+        (_lastLoggedOrientation != mediaQuery.orientation ||
+            _lastLoggedSize != mediaQuery.size)) {
+      _lastLoggedOrientation = mediaQuery.orientation;
+      _lastLoggedSize = mediaQuery.size;
+      _debugLog(
+        'build_orientation_snapshot',
+        {
+          'orientation': mediaQuery.orientation.name,
+          'size': '${mediaQuery.size.width.toStringAsFixed(1)}x'
+              '${mediaQuery.size.height.toStringAsFixed(1)}',
+          'selected_index': selectedPanelIndex,
+          'tap_blocking_overlay': false,
+        },
+      );
+    }
 
     // --- UI COMPONENTS ---
 
@@ -402,8 +742,8 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       child: AnimatedPanelSelector(
-        selectedIndex: _selectedPanelIndex,
-        onPanelSelected: _fetchEventsForPanel,
+        selectedIndex: selectedPanelIndex,
+        onPanelSelected: _onPanelSelected,
         hasEvents: _actionableCount,
         // Compact landscape navbar as requested to save space for poem
         totalHeight: isLandscape ? 80.0 : 110.0,
@@ -432,27 +772,62 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: PageView.builder(
-          controller: _pageController,
-          physics: const BouncingScrollPhysics(),
-          onPageChanged: _onPageChanged,
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return _SmokeTransition(
-              index: index,
-              pageController: _pageController,
-              child: _EventListPage(
-                status: [
-                  model.VotingStatus.registration,
-                  model.VotingStatus.active,
-                  model.VotingStatus.completed,
-                ][index],
-                imagePath: theme.imagePath,
-                onRefresh: () => _refreshCurrentPage(index),
-                timeNotifier: _timeNotifier,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            IgnorePointer(
+              ignoring: _transitionTargetIndex != null,
+              child: AnimatedScale(
+                scale: _sectionContentScale,
+                duration: _sectionFadeDuration,
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: _sectionContentOpacity,
+                  duration: _sectionFadeDuration,
+                  curve: Curves.easeOut,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragStart: _onVotingAreaHorizontalDragStart,
+                    onHorizontalDragUpdate: _onVotingAreaHorizontalDragUpdate,
+                    onHorizontalDragCancel: _onVotingAreaHorizontalDragCancel,
+                    onHorizontalDragEnd: _onVotingAreaHorizontalDragEnd,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onPageChanged: _onPageChanged,
+                      itemCount: 3,
+                      itemBuilder: (context, index) {
+                        return _EventListPage(
+                          status: _statusForIndex(index),
+                          imagePath: theme.imagePath,
+                          onRefresh: () => _refreshCurrentPage(index),
+                          timeNotifier: _timeNotifier,
+                          suppressTransitions: _transitionTargetIndex != null ||
+                              _showSectionLoader,
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
-            );
-          },
+            ),
+            AnimatedSwitcher(
+              duration: _loaderFadeDuration,
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: !_showSectionLoader
+                  ? const SizedBox.shrink(key: ValueKey('section_loader_off'))
+                  : IgnorePointer(
+                      key: const ValueKey('section_loader_on'),
+                      child: Container(
+                        color: Colors.transparent,
+                        child: const Center(
+                          child: SeasonsLoader(size: 64),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -462,8 +837,12 @@ class _HomeScreenState extends State<HomeScreen> {
     // Actually, we will just use the footer widget and rely on layout constraints
     final footer = _Footer(poem: theme.poem, author: theme.author);
 
-    return AppBackground(
-      imagePath: theme.imagePath,
+    Widget content = BlocListener<VotingBloc, VotingState>(
+      listenWhen: (previous, current) =>
+          current is VotingEventsLoadSuccess || current is VotingFailure,
+      listener: (context, state) {
+        _handleSectionTransitionState(state);
+      },
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -563,6 +942,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+
+    if (kDebugMode) {
+      content = Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (event) {
+          _debugLog(
+            'pointer_down',
+            {
+              'x': event.position.dx.toStringAsFixed(1),
+              'y': event.position.dy.toStringAsFixed(1),
+              'selected_index': selectedPanelIndex,
+            },
+          );
+        },
+        child: content,
+      );
+    }
+
+    return AppBackground(
+      imagePath: theme.imagePath,
+      child: content,
     );
   }
 }
@@ -795,12 +1196,14 @@ class _EventListPage extends StatelessWidget {
   final String imagePath;
   final VoidCallback onRefresh;
   final ValueNotifier<int> timeNotifier; // Use ValueNotifier
+  final bool suppressTransitions;
 
   const _EventListPage({
     required this.status,
     required this.imagePath,
     required this.onRefresh,
     required this.timeNotifier,
+    this.suppressTransitions = false,
   });
 
   @override
@@ -819,10 +1222,16 @@ class _EventListPage extends StatelessWidget {
         Widget content;
 
         if (state is VotingLoadInProgress) {
-          content = const Center(
-            key: ValueKey('loader'),
-            child: SeasonsLoader(),
-          );
+          if (suppressTransitions) {
+            content = const SizedBox.shrink(
+              key: ValueKey('loader_suppressed'),
+            );
+          } else {
+            content = const Center(
+              key: ValueKey('loader'),
+              child: SeasonsLoader(),
+            );
+          }
         } else if (state is VotingEventsLoadSuccess) {
           if (state.events.isEmpty) {
             content = Container(
@@ -860,6 +1269,9 @@ class _EventListPage extends StatelessWidget {
               itemCount: state.events.length,
               itemBuilder: (context, index) {
                 return _VotingEventCard(
+                  key: ValueKey(
+                    'event_card_${state.events[index].id}_${state.timestamp}_$index',
+                  ),
                   event: state.events[index],
                   imagePath: imagePath,
                   onActionComplete: onRefresh,
@@ -921,6 +1333,10 @@ class _EventListPage extends StatelessWidget {
           content = const SizedBox.shrink(key: ValueKey('shrink'));
         }
 
+        if (suppressTransitions) {
+          return content;
+        }
+
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 600),
           switchInCurve: Curves.easeOut,
@@ -948,6 +1364,7 @@ class _VotingEventCard extends StatelessWidget {
   final ValueNotifier<int> timeNotifier;
 
   const _VotingEventCard({
+    super.key,
     required this.event,
     required this.imagePath,
     required this.onActionComplete,
@@ -1074,71 +1491,6 @@ class _VotingEventCard extends StatelessWidget {
           }
         },
       ),
-    );
-  }
-}
-
-// Smoke effect transition wrapper
-class _SmokeTransition extends StatelessWidget {
-  final Widget child;
-  final int index;
-  final PageController pageController;
-
-  const _SmokeTransition({
-    required this.child,
-    required this.index,
-    required this.pageController,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-
-        return AnimatedBuilder(
-          animation: pageController,
-          child: child,
-          builder: (context, child) {
-            double value = 0.0;
-            try {
-              if (pageController.hasClients &&
-                  pageController.position.haveDimensions) {
-                value = pageController.page ?? 0.0;
-              } else {
-                value = (index).toDouble();
-              }
-            } catch (_) {
-              value = (index).toDouble();
-            }
-
-            final double dist = (value - index);
-            final double absDist = dist.abs();
-
-            if (absDist > 1.0) {
-              return const SizedBox.shrink();
-            }
-
-            // Lightweight effects — no blur (kills performance on older GPUs)
-            final double opacity = (1.0 - absDist).clamp(0.0, 1.0);
-            final double scale = 1.0 + (absDist * 0.08);
-
-            // Counteract the sliding movement
-            final double translation = dist * width;
-
-            return Transform.translate(
-              offset: Offset(translation, 0),
-              child: Opacity(
-                opacity: opacity,
-                child: Transform.scale(
-                  scale: scale,
-                  child: child,
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
