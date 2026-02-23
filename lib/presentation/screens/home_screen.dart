@@ -29,6 +29,7 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
+    final currentLanguageCode = Localizations.localeOf(context).languageCode;
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -47,12 +48,16 @@ class _TopBar extends StatelessWidget {
         children: [
           // Language switcher button (moved to left)
           PopupMenuButton<Locale>(
+            initialValue: Locale(
+              currentLanguageCode == 'en' ? 'en' : 'ru',
+            ),
             icon: const Icon(Icons.language, color: Colors.white),
             onSelected: (Locale locale) {
               context.read<LocaleBloc>().add(ChangeLocale(locale));
             },
             itemBuilder: (BuildContext context) => [
-              PopupMenuItem<Locale>(
+              CheckedPopupMenuItem<Locale>(
+                checked: currentLanguageCode == 'ru',
                 value: const Locale('ru'),
                 child: Row(
                   children: [
@@ -62,7 +67,8 @@ class _TopBar extends StatelessWidget {
                   ],
                 ),
               ),
-              PopupMenuItem<Locale>(
+              CheckedPopupMenuItem<Locale>(
+                checked: currentLanguageCode == 'en',
                 value: const Locale('en'),
                 child: Row(
                   children: [
@@ -181,6 +187,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  static const Duration _sectionFadeDuration = Duration(milliseconds: 180);
+  static const Duration _loaderFadeDuration = Duration(milliseconds: 120);
+  static const Duration _minLoaderVisibleDuration = Duration(milliseconds: 180);
+  static const Duration _sectionTransitionTimeout = Duration(seconds: 4);
+  static const double _sectionSqueezedScale = 0.92;
+
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
   final ValueNotifier<int> _timeNotifier = ValueNotifier<int>(0);
 
@@ -196,6 +208,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int? _pendingNavigationIndex;
   Orientation? _lastLoggedOrientation;
   Size? _lastLoggedSize;
+  bool _showSectionLoader = false;
+  double _sectionContentOpacity = 1.0;
+  double _sectionContentScale = 1.0;
+  int? _transitionTargetIndex;
+  DateTime? _loaderShownAt;
+  int _sectionTransitionToken = 0;
+  Timer? _sectionTransitionTimeoutTimer;
+  double _horizontalDragDx = 0;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -219,6 +239,121 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (index < 0) return 0;
     if (index > 2) return 2;
     return index;
+  }
+
+  model.VotingStatus _statusForIndex(int index) {
+    return [
+      model.VotingStatus.registration,
+      model.VotingStatus.active,
+      model.VotingStatus.completed,
+    ][_normalizePanelIndex(index)];
+  }
+
+  Future<void> _switchSectionWithTransition(
+    int index, {
+    required String source,
+  }) async {
+    final normalizedIndex = _normalizePanelIndex(index);
+    final currentIndex = context.read<HomeTabCubit>().state.index;
+    if (normalizedIndex == currentIndex) {
+      _refreshCurrentPage(normalizedIndex);
+      return;
+    }
+
+    final alreadyRunningForTarget = _transitionTargetIndex == normalizedIndex;
+    if (alreadyRunningForTarget) return;
+
+    _sectionTransitionToken++;
+    final token = _sectionTransitionToken;
+    _sectionTransitionTimeoutTimer?.cancel();
+    _sectionTransitionTimeoutTimer = Timer(_sectionTransitionTimeout, () {
+      if (!mounted || _transitionTargetIndex == null) return;
+      setState(() {
+        _showSectionLoader = false;
+        _sectionContentOpacity = 1.0;
+        _sectionContentScale = 1.0;
+        _transitionTargetIndex = null;
+        _loaderShownAt = null;
+      });
+    });
+
+    context.read<HomeTabCubit>().setIndex(
+          normalizedIndex,
+          source: source,
+        );
+    _transitionTargetIndex = normalizedIndex;
+    _loaderShownAt = null;
+    if (!mounted) return;
+    setState(() {
+      _showSectionLoader = false;
+      _sectionContentOpacity = 0.0;
+      _sectionContentScale = _sectionSqueezedScale;
+    });
+
+    await Future.delayed(_sectionFadeDuration);
+    if (!mounted || token != _sectionTransitionToken) return;
+    _movePageToIndex(
+      normalizedIndex,
+      source: '$source.hidden_switch',
+      animate: false,
+    );
+
+    setState(() {
+      _showSectionLoader = true;
+      _loaderShownAt = DateTime.now();
+    });
+    _refreshCurrentPage(normalizedIndex);
+  }
+
+  Future<void> _completeSectionContentTransition({required int index}) async {
+    if (_transitionTargetIndex != index) return;
+
+    final token = _sectionTransitionToken;
+    if (!_showSectionLoader) {
+      if (!mounted || token != _sectionTransitionToken) return;
+      setState(() {
+        _showSectionLoader = true;
+        _loaderShownAt = DateTime.now();
+      });
+      await Future.delayed(_loaderFadeDuration);
+      if (!mounted || token != _sectionTransitionToken) return;
+    }
+
+    final shownAt = _loaderShownAt ?? DateTime.now();
+    final elapsed = DateTime.now().difference(shownAt);
+    final remaining = _minLoaderVisibleDuration - elapsed;
+    if (remaining > Duration.zero) {
+      await Future.delayed(remaining);
+      if (!mounted || token != _sectionTransitionToken) return;
+    }
+
+    setState(() {
+      _showSectionLoader = false;
+    });
+    await Future.delayed(_loaderFadeDuration);
+    if (!mounted || token != _sectionTransitionToken) return;
+
+    _sectionTransitionTimeoutTimer?.cancel();
+    setState(() {
+      _sectionContentOpacity = 1.0;
+      _sectionContentScale = 1.0;
+      _transitionTargetIndex = null;
+      _loaderShownAt = null;
+    });
+  }
+
+  void _handleSectionTransitionState(VotingState state) {
+    final targetIndex = _transitionTargetIndex;
+    if (targetIndex == null) return;
+
+    final targetStatus = _statusForIndex(targetIndex);
+    if (state is VotingEventsLoadSuccess && state.status == targetStatus) {
+      _completeSectionContentTransition(index: targetIndex);
+      return;
+    }
+    if (state is VotingFailure) {
+      _completeSectionContentTransition(index: targetIndex);
+    }
   }
 
   void _navigateToPanel(
@@ -285,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (animate) {
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutQuart,
       );
       return;
@@ -319,13 +454,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         'index': index,
       },
     );
-    _navigateToPanel(
+    _switchSectionWithTransition(
       index,
       source: 'user_tap',
     );
   }
-
-  Timer? _sectionDebounce;
 
   void _onPageChanged(int index) {
     _debugLog(
@@ -336,21 +469,51 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     context.read<HomeTabCubit>().setIndex(
           index,
-          source: 'page_swipe',
+          source: 'page_sync',
         );
-    // Debounce API calls — if user swipes rapidly, only fetch for the final section
-    _sectionDebounce?.cancel();
-    _sectionDebounce = Timer(const Duration(milliseconds: 300), () {
-      _refreshCurrentPage(index);
-    });
+  }
+
+  void _onVotingAreaHorizontalDragStart(DragStartDetails details) {
+    _horizontalDragDx = 0;
+  }
+
+  void _onVotingAreaHorizontalDragUpdate(DragUpdateDetails details) {
+    _horizontalDragDx += details.delta.dx;
+  }
+
+  void _onVotingAreaHorizontalDragCancel() {
+    _horizontalDragDx = 0;
+  }
+
+  void _onVotingAreaHorizontalDragEnd(DragEndDetails details) {
+    if (_showSectionLoader) {
+      _horizontalDragDx = 0;
+      return;
+    }
+
+    final velocity = details.primaryVelocity ?? 0;
+    int direction = 0;
+    if (velocity.abs() > 350) {
+      direction = velocity < 0 ? 1 : -1;
+    } else if (_horizontalDragDx.abs() > 56) {
+      direction = _horizontalDragDx < 0 ? 1 : -1;
+    }
+    _horizontalDragDx = 0;
+
+    if (direction == 0) return;
+
+    final currentIndex = context.read<HomeTabCubit>().state.index;
+    final targetIndex = _normalizePanelIndex(currentIndex + direction);
+    if (targetIndex == currentIndex) return;
+
+    _switchSectionWithTransition(
+      targetIndex,
+      source: 'user_swipe',
+    );
   }
 
   void _refreshCurrentPage(int index) {
-    final status = [
-      model.VotingStatus.registration,
-      model.VotingStatus.active,
-      model.VotingStatus.completed,
-    ][index];
+    final status = _statusForIndex(index);
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
@@ -382,21 +545,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             'should_refresh': event.shouldRefresh,
           },
         );
-        // Smoothly animate to the requested tab
-        _navigateToPanel(
+        final currentIndex = context.read<HomeTabCubit>().state.index;
+        if (event.tabIndex == currentIndex) {
+          if (event.shouldRefresh) {
+            _refreshCurrentPage(event.tabIndex);
+          }
+          return;
+        }
+        _switchSectionWithTransition(
           event.tabIndex,
           source: 'notification',
         );
-
-        // Trigger data refresh if requested (onPageChanged will do it, but force if needed)
-        if (event.shouldRefresh) {
-          // Wait a bit for animation or just trigger
-          // Actually _onPageChanged will trigger fetch.
-          // If we are ALREADY on that page, onPageChanged won't fire for animateToPage(sameIndex).
-          if (context.read<HomeTabCubit>().state.index == event.tabIndex) {
-            _refreshCurrentPage(event.tabIndex);
-          }
-        }
       }
     });
 
@@ -478,7 +637,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _pageController.dispose();
     _uiTicker?.cancel();
     _dataTicker?.cancel();
-    _sectionDebounce?.cancel();
+    _sectionTransitionTimeoutTimer?.cancel();
     _navigationSubscription?.cancel();
     _timeNotifier.dispose();
     super.dispose();
@@ -630,27 +789,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: PageView.builder(
-          controller: _pageController,
-          physics: const BouncingScrollPhysics(),
-          onPageChanged: _onPageChanged,
-          itemCount: 3,
-          itemBuilder: (context, index) {
-            return _SmokeTransition(
-              index: index,
-              pageController: _pageController,
-              child: _EventListPage(
-                status: [
-                  model.VotingStatus.registration,
-                  model.VotingStatus.active,
-                  model.VotingStatus.completed,
-                ][index],
-                imagePath: theme.imagePath,
-                onRefresh: () => _refreshCurrentPage(index),
-                timeNotifier: _timeNotifier,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            IgnorePointer(
+              ignoring: _transitionTargetIndex != null,
+              child: AnimatedScale(
+                scale: _sectionContentScale,
+                duration: _sectionFadeDuration,
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: _sectionContentOpacity,
+                  duration: _sectionFadeDuration,
+                  curve: Curves.easeOut,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragStart: _onVotingAreaHorizontalDragStart,
+                    onHorizontalDragUpdate: _onVotingAreaHorizontalDragUpdate,
+                    onHorizontalDragCancel: _onVotingAreaHorizontalDragCancel,
+                    onHorizontalDragEnd: _onVotingAreaHorizontalDragEnd,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onPageChanged: _onPageChanged,
+                      itemCount: 3,
+                      itemBuilder: (context, index) {
+                        return _EventListPage(
+                          status: _statusForIndex(index),
+                          imagePath: theme.imagePath,
+                          onRefresh: () => _refreshCurrentPage(index),
+                          timeNotifier: _timeNotifier,
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
-            );
-          },
+            ),
+            AnimatedSwitcher(
+              duration: _loaderFadeDuration,
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: !_showSectionLoader
+                  ? const SizedBox.shrink(key: ValueKey('section_loader_off'))
+                  : IgnorePointer(
+                      key: const ValueKey('section_loader_on'),
+                      child: Container(
+                        color: Colors.transparent,
+                        child: const Center(
+                          child: SeasonsLoader(size: 64),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -660,102 +852,111 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Actually, we will just use the footer widget and rely on layout constraints
     final footer = _Footer(poem: theme.poem, author: theme.author);
 
-    Widget content = Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.35),
-                  Colors.black.withValues(alpha: 0.25),
-                  Colors.black.withValues(alpha: 0.35),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            body: SafeArea(
-              bottom:
-                  true, // Enable bottom safe area for Galaxy Fold / Android Gestures
-              left: false,
-              right: false,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: isLandscape
-                      // LANDSCAPE: Split Layout (50/50 Split)
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Left: Voting List (The "Detailed" content)
-                            Expanded(
-                              flex: 1, // 50% width
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8.0),
-                                child: votingListContent,
-                              ),
-                            ),
-
-                            // Right: Sidebar (Header, Controls, Poem)
-                            Expanded(
-                              flex: 1, // 50% width
-                              child: Column(
-                                children: [
-                                  topBar,
-                                  Expanded(
-                                    // Distribute space
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        header,
-                                        const SizedBox(
-                                            height: 4), // Ultra compact spacing
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6.0),
-                                          child: navbar,
-                                        ),
-                                        const SizedBox(
-                                            height: 4), // Ultra compact spacing
-                                        Expanded(
-                                            child:
-                                                footer), // Force footer to fit in remaining space
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      // PORTRAIT: Stacked Layout (Original)
-                      : Column(
-                          children: [
-                            topBar,
-                            header,
-                            navbar,
-                            Expanded(
-                                child:
-                                    votingListContent), // Correctly applied Expanded inside Column
-                            footer,
-                          ],
-                        ),
+    Widget content = BlocListener<VotingBloc, VotingState>(
+      listenWhen: (previous, current) =>
+          current is VotingEventsLoadSuccess || current is VotingFailure,
+      listener: (context, state) {
+        _handleSectionTransitionState(state);
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.25),
+                    Colors.black.withValues(alpha: 0.35),
+                  ],
                 ),
               ),
             ),
           ),
-        ),
-      ],
+          Positioned.fill(
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SafeArea(
+                bottom:
+                    true, // Enable bottom safe area for Galaxy Fold / Android Gestures
+                left: false,
+                right: false,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: isLandscape
+                        // LANDSCAPE: Split Layout (50/50 Split)
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Left: Voting List (The "Detailed" content)
+                              Expanded(
+                                flex: 1, // 50% width
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: votingListContent,
+                                ),
+                              ),
+
+                              // Right: Sidebar (Header, Controls, Poem)
+                              Expanded(
+                                flex: 1, // 50% width
+                                child: Column(
+                                  children: [
+                                    topBar,
+                                    Expanded(
+                                      // Distribute space
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          header,
+                                          const SizedBox(
+                                              height:
+                                                  4), // Ultra compact spacing
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6.0),
+                                            child: navbar,
+                                          ),
+                                          const SizedBox(
+                                              height:
+                                                  4), // Ultra compact spacing
+                                          Expanded(
+                                              child:
+                                                  footer), // Force footer to fit in remaining space
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        // PORTRAIT: Stacked Layout (Original)
+                        : Column(
+                            children: [
+                              topBar,
+                              header,
+                              navbar,
+                              Expanded(
+                                  child:
+                                      votingListContent), // Correctly applied Expanded inside Column
+                              footer,
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
     if (kDebugMode) {
@@ -1074,11 +1275,37 @@ class _EventListPage extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
               itemCount: state.events.length,
               itemBuilder: (context, index) {
-                return _VotingEventCard(
-                  event: state.events[index],
-                  imagePath: imagePath,
-                  onActionComplete: onRefresh,
-                  timeNotifier: timeNotifier,
+                final clampedIndex = index > 6 ? 6 : index;
+                final duration = Duration(
+                  milliseconds: 220 + (clampedIndex * 30),
+                );
+                return TweenAnimationBuilder<double>(
+                  key: ValueKey(
+                    'event_card_${state.events[index].id}_${state.timestamp}_$index',
+                  ),
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: duration,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    final slide = (1 - value) * 14;
+                    final scale = 0.985 + (value * 0.015);
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, slide),
+                        child: Transform.scale(
+                          scale: scale,
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: _VotingEventCard(
+                    event: state.events[index],
+                    imagePath: imagePath,
+                    onActionComplete: onRefresh,
+                    timeNotifier: timeNotifier,
+                  ),
                 );
               },
             );
@@ -1289,71 +1516,6 @@ class _VotingEventCard extends StatelessWidget {
           }
         },
       ),
-    );
-  }
-}
-
-// Smoke effect transition wrapper
-class _SmokeTransition extends StatelessWidget {
-  final Widget child;
-  final int index;
-  final PageController pageController;
-
-  const _SmokeTransition({
-    required this.child,
-    required this.index,
-    required this.pageController,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-
-        return AnimatedBuilder(
-          animation: pageController,
-          child: child,
-          builder: (context, child) {
-            double value = 0.0;
-            try {
-              if (pageController.hasClients &&
-                  pageController.position.haveDimensions) {
-                value = pageController.page ?? 0.0;
-              } else {
-                value = (index).toDouble();
-              }
-            } catch (_) {
-              value = (index).toDouble();
-            }
-
-            final double dist = (value - index);
-            final double absDist = dist.abs();
-
-            if (absDist > 1.0) {
-              return const SizedBox.shrink();
-            }
-
-            // Lightweight effects — no blur (kills performance on older GPUs)
-            final double opacity = (1.0 - absDist).clamp(0.0, 1.0);
-            final double scale = 1.0 + (absDist * 0.08);
-
-            // Counteract the sliding movement
-            final double translation = dist * width;
-
-            return Transform.translate(
-              offset: Offset(translation, 0),
-              child: Opacity(
-                opacity: opacity,
-                child: Transform.scale(
-                  scale: scale,
-                  child: child,
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
