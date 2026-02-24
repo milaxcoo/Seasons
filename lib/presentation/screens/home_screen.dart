@@ -643,6 +643,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         animate: false,
       );
       _flushPendingNavigationIfNeeded(source: 'metrics_sync');
+      _refreshCurrentPage(targetIndex);
     });
   }
 
@@ -1368,6 +1369,7 @@ class _EventListPage extends StatelessWidget {
                     'event_card_${state.events[index].id}_${state.timestamp}_$index',
                   ),
                   event: state.events[index],
+                  sectionStatus: status,
                   imagePath: imagePath,
                   onActionComplete: onRefresh,
                   timeNotifier: timeNotifier,
@@ -1454,6 +1456,7 @@ class _EventListPage extends StatelessWidget {
 
 class _VotingEventCard extends StatelessWidget {
   final model.VotingEvent event;
+  final model.VotingStatus sectionStatus;
   final String imagePath;
   final VoidCallback onActionComplete;
   final ValueNotifier<int> timeNotifier;
@@ -1461,6 +1464,7 @@ class _VotingEventCard extends StatelessWidget {
   const _VotingEventCard({
     super.key,
     required this.event,
+    required this.sectionStatus,
     required this.imagePath,
     required this.onActionComplete,
     required this.timeNotifier,
@@ -1474,7 +1478,7 @@ class _VotingEventCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     String dateInfo;
 
-    switch (event.status) {
+    switch (sectionStatus) {
       case model.VotingStatus.registration:
         if (event.registrationEndDate != null) {
           if (DateTime.now().isAfter(event.registrationEndDate!)) {
@@ -1526,36 +1530,27 @@ class _VotingEventCard extends StatelessWidget {
                     color: Colors.black54,
                   ),
             ),
-            if (event.status == model.VotingStatus.registration ||
-                event.status == model.VotingStatus.active) ...[
+            if (sectionStatus == model.VotingStatus.registration ||
+                sectionStatus == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
               ValueListenableBuilder<int>(
                   valueListenable: timeNotifier,
                   builder: (context, _, __) {
-                    // Determine registration status based on CURRENT time (updates every second)
-                    final isRegistrationClosed =
-                        event.registrationEndDate != null &&
-                            DateTime.now().isAfter(event.registrationEndDate!);
-
                     return Text(
-                      event.status == model.VotingStatus.registration
+                      sectionStatus == model.VotingStatus.registration
                           ? (event.isRegistered
                               ? AppLocalizations.of(context)!.registered
-                              : (isRegistrationClosed
-                                  ? AppLocalizations.of(context)!
-                                      .registrationClosed
-                                  : AppLocalizations.of(context)!
-                                      .notRegistered))
+                              : AppLocalizations.of(context)!.notRegistered)
                           : (event.hasVoted
                               ? AppLocalizations.of(context)!.voted
                               : AppLocalizations.of(context)!.notVoted),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                (event.status == model.VotingStatus.registration
-                                        ? event.isRegistered
-                                        : event.hasVoted)
-                                    ? AppTheme.rudnGreenColor
-                                    : AppTheme.rudnRedColor,
+                            color: (sectionStatus ==
+                                        model.VotingStatus.registration
+                                    ? event.isRegistered
+                                    : event.hasVoted)
+                                ? AppTheme.rudnGreenColor
+                                : AppTheme.rudnRedColor,
                             fontWeight: FontWeight.w500,
                           ),
                     );
@@ -1568,10 +1563,10 @@ class _VotingEventCard extends StatelessWidget {
           final result = await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) {
-                if (event.status == model.VotingStatus.registration) {
+                if (sectionStatus == model.VotingStatus.registration) {
                   return RegistrationDetailsScreen(
                       event: event, imagePath: imagePath);
-                } else if (event.status == model.VotingStatus.active) {
+                } else if (sectionStatus == model.VotingStatus.active) {
                   return VotingDetailsScreen(
                       event: event, imagePath: imagePath);
                 } else {
