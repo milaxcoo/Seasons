@@ -53,6 +53,23 @@ void main() {
       expect(votingBloc.state, equals(VotingInitial()));
     });
 
+    test('emits auth-invalid signal from background updates', () async {
+      final completer = Completer<void>();
+      final subscription = votingBloc.onAuthInvalid.listen((_) {
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      });
+
+      mockServiceStreamController.add({'action': 'auth_invalid'});
+
+      await expectLater(
+        completer.future,
+        completes,
+      );
+      await subscription.cancel();
+    });
+
     group('FetchEventsByStatus', () {
       final testEvents = [
         model.VotingEvent(
@@ -227,6 +244,22 @@ void main() {
         verify: (_) {
           verify(() => mockVotingRepository.submitVote(any(), any())).called(1);
         },
+      );
+
+      blocTest<VotingBloc, VotingState>(
+        'emits [VotingLoadInProgress, VotingFailure] when repository reports already-voted conflict via false',
+        build: () {
+          when(() => mockVotingRepository.submitVote(any(), any()))
+              .thenAnswer((_) async => false);
+          return votingBloc;
+        },
+        act: (bloc) =>
+            bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
+        expect: () => [
+          VotingLoadInProgress(),
+          isA<VotingFailure>()
+              .having((s) => s.error, 'error', contains('already voted')),
+        ],
       );
 
       blocTest<VotingBloc, VotingState>(

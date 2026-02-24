@@ -165,6 +165,42 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
-    await _clearSessionAndEmitUnauthenticated(emit);
+    bool logoutInvocationFailed = false;
+    try {
+      await _votingRepository.logout();
+    } catch (_) {
+      logoutInvocationFailed = true;
+    }
+
+    try {
+      final tokenAfterLogout = await _votingRepository.getAuthToken();
+      final hasTokenAfterLogout =
+          tokenAfterLogout != null && tokenAfterLogout.isNotEmpty;
+      if (hasTokenAfterLogout) {
+        emit(const AuthFailure(
+          error: 'Could not clear local session. Please try logging out again.',
+        ));
+        return;
+      }
+    } catch (_) {
+      emit(const AuthFailure(
+        error: 'Could not verify logout. Please try again.',
+      ));
+      return;
+    }
+
+    if (logoutInvocationFailed) {
+      emit(const AuthFailure(
+        error: 'Logout did not complete cleanly. Please try again.',
+      ));
+      return;
+    }
+
+    try {
+      await _draftService.clearAllDrafts();
+    } catch (_) {
+      // Draft cleanup should not block logout transitions.
+    }
+    emit(AuthUnauthenticated());
   }
 }

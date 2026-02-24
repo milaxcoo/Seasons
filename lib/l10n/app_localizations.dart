@@ -445,6 +445,78 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Нажмите, чтобы обновить'**
   String get tapToRetry;
+
+  /// Generic user-friendly error message
+  ///
+  /// In ru, this message translates to:
+  /// **'Что-то пошло не так. Попробуйте снова.'**
+  String get genericError;
+
+  /// Network error message
+  ///
+  /// In ru, this message translates to:
+  /// **'Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.'**
+  String get networkError;
+
+  /// Timeout error message
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер отвечает слишком долго. Попробуйте снова.'**
+  String get timeoutError;
+
+  /// Server unavailable message
+  ///
+  /// In ru, this message translates to:
+  /// **'Сервер временно недоступен. Попробуйте позже.'**
+  String get serverUnavailable;
+
+  /// Session expired and re-login required
+  ///
+  /// In ru, this message translates to:
+  /// **'Сессия истекла. Войдите снова.'**
+  String get sessionExpiredReLogin;
+
+  /// Registration failure message
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось завершить регистрацию. Попробуйте снова.'**
+  String get registrationFailed;
+
+  /// Vote submit failure message
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось отправить голос. Попробуйте снова.'**
+  String get voteSubmitFailed;
+
+  /// Data load failure message
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить данные. Попробуйте снова.'**
+  String get dataLoadFailed;
+
+  /// Unexpected error message
+  ///
+  /// In ru, this message translates to:
+  /// **'Произошла непредвиденная ошибка. Попробуйте снова.'**
+  String get unexpectedError;
+
+  /// WebView load error shown on login page
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить страницу входа. Проверьте подключение и повторите попытку.'**
+  String get webViewLoadError;
+
+  /// Retry button label
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить'**
+  String get retryAction;
+
+  /// Login persistence failure message
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить сессию входа на устройстве. Повторите попытку.'**
+  String get loginSessionSaveFailed;
 }
 
 class _AppLocalizationsDelegate

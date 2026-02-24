@@ -314,5 +314,65 @@
   "tapToRetry": "Нажмите, чтобы обновить",
   "@tapToRetry": {
     "description": "Tap to retry hint"
+  },
+
+  "genericError": "Что-то пошло не так. Попробуйте снова.",
+  "@genericError": {
+    "description": "Generic user-friendly error message"
+  },
+
+  "networkError": "Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.",
+  "@networkError": {
+    "description": "Network error message"
+  },
+
+  "timeoutError": "Сервер отвечает слишком долго. Попробуйте снова.",
+  "@timeoutError": {
+    "description": "Timeout error message"
+  },
+
+  "serverUnavailable": "Сервер временно недоступен. Попробуйте позже.",
+  "@serverUnavailable": {
+    "description": "Server unavailable message"
+  },
+
+  "sessionExpiredReLogin": "Сессия истекла. Войдите снова.",
+  "@sessionExpiredReLogin": {
+    "description": "Session expired and re-login required"
+  },
+
+  "registrationFailed": "Не удалось завершить регистрацию. Попробуйте снова.",
+  "@registrationFailed": {
+    "description": "Registration failure message"
+  },
+
+  "voteSubmitFailed": "Не удалось отправить голос. Попробуйте снова.",
+  "@voteSubmitFailed": {
+    "description": "Vote submit failure message"
+  },
+
+  "dataLoadFailed": "Не удалось загрузить данные. Попробуйте снова.",
+  "@dataLoadFailed": {
+    "description": "Data load failure message"
+  },
+
+  "unexpectedError": "Произошла непредвиденная ошибка. Попробуйте снова.",
+  "@unexpectedError": {
+    "description": "Unexpected error message"
+  },
+
+  "webViewLoadError": "Не удалось загрузить страницу входа. Проверьте подключение и повторите попытку.",
+  "@webViewLoadError": {
+    "description": "WebView load error shown on login page"
+  },
+
+  "retryAction": "Повторить",
+  "@retryAction": {
+    "description": "Retry button label"
+  },
+
+  "loginSessionSaveFailed": "Не удалось сохранить сессию входа на устройстве. Повторите попытку.",
+  "@loginSessionSaveFailed": {
+    "description": "Login persistence failure message"
   }
 }

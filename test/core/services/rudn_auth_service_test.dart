@@ -42,6 +42,26 @@ class MockSlowStorage implements SecureStorageInterface {
   }
 }
 
+class MockWriteMismatchStorage extends MockSlowStorage {
+  @override
+  Future<void> write({required String key, required String? value}) async {
+    if (throwError) throw Exception('Storage error');
+    if (value != null) {
+      _data[key] = '${value}_mismatch';
+    } else {
+      _data.remove(key);
+    }
+  }
+}
+
+class MockDeleteNoopStorage extends MockSlowStorage {
+  @override
+  Future<void> delete({required String key}) async {
+    if (throwError) throw Exception('Storage error');
+    // Intentionally keep value to simulate delete failure.
+  }
+}
+
 void main() {
   group('RudnAuthService Tests', () {
     test('getCookie returns null on timeout', () async {
@@ -65,7 +85,7 @@ void main() {
       final service = RudnAuthService.withStorage(fastStorage);
 
       // Pre-populate directly
-      await service.saveCookie('test_cookie');
+      expect(await service.saveCookie('test_cookie'), isTrue);
 
       final result = await service.getCookie();
       expect(result, equals('test_cookie'));
@@ -79,12 +99,19 @@ void main() {
       expect(result, isNull);
     });
 
-    test('saveCookie does not crash on error', () async {
+    test('saveCookie returns false on storage error', () async {
       final errorStorage = MockSlowStorage(throwError: true);
       final service = RudnAuthService.withStorage(errorStorage);
 
-      // Should not throw
-      await expectLater(service.saveCookie('cookie'), completes);
+      expect(await service.saveCookie('cookie'), isFalse);
+    });
+
+    test('saveCookie returns false when persistence verification fails',
+        () async {
+      final mismatchStorage = MockWriteMismatchStorage();
+      final service = RudnAuthService.withStorage(mismatchStorage);
+
+      expect(await service.saveCookie('cookie'), isFalse);
     });
 
     test('isAuthenticated returns true when cookie exists', () async {
@@ -119,32 +146,42 @@ void main() {
       final storage = MockSlowStorage();
       final service = RudnAuthService.withStorage(storage);
 
-      await service.saveCookie('some_cookie');
+      expect(await service.saveCookie('some_cookie'), isTrue);
       expect(await service.isAuthenticated(), isTrue);
 
-      await service.logout();
+      expect(await service.logout(), isTrue);
       expect(await service.isAuthenticated(), isFalse);
     });
 
-    test('logout does not crash when no cookie exists', () async {
+    test('logout returns true when no cookie exists', () async {
       final storage = MockSlowStorage();
       final service = RudnAuthService.withStorage(storage);
 
-      await expectLater(service.logout(), completes);
+      expect(await service.logout(), isTrue);
     });
 
-    test('logout does not crash on storage error', () async {
+    test('logout returns false on storage error', () async {
       final errorStorage = MockSlowStorage(throwError: true);
       final service = RudnAuthService.withStorage(errorStorage);
 
-      await expectLater(service.logout(), completes);
+      expect(await service.logout(), isFalse);
+    });
+
+    test('logout returns false when cookie remains after delete attempt',
+        () async {
+      final storage = MockDeleteNoopStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      expect(await service.saveCookie('some_cookie'), isTrue);
+      expect(await service.logout(), isFalse);
+      expect(await service.isAuthenticated(), isTrue);
     });
 
     test('clearSecureData removes all stored values', () async {
       final storage = MockSlowStorage();
       final service = RudnAuthService.withStorage(storage);
 
-      await service.saveCookie('some_cookie');
+      expect(await service.saveCookie('some_cookie'), isTrue);
       expect(await service.isAuthenticated(), isTrue);
 
       await service.clearSecureData();

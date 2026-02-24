@@ -29,6 +29,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       const WebViewFinalizationState.initial();
   bool _isCallbackCompletionInProgress = false;
   bool _isRetryInProgress = false;
+  String? _webResourceErrorMessage;
   String? _lastCallbackUrl;
   String? _lastForcedNavigationUrl;
   int _finalizationRunId = 0;
@@ -58,12 +59,14 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             if (_webViewHiddenAfterCallback) return;
             setState(() {
               _isLoading = true;
+              _webResourceErrorMessage = null;
             });
           },
           onPageFinished: (String url) async {
             if (!mounted) return;
             setState(() {
               _isLoading = false;
+              _webResourceErrorMessage = null;
             });
 
             if (isExpectedAuthCallbackUrl(url)) {
@@ -104,7 +107,20 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
             await _checkCookies();
           },
           onWebResourceError: (WebResourceError error) {
-            // Error logging removed for production
+            if (!mounted || _hasPopped) return;
+            if (!shouldShowWebResourceError(
+              isForMainFrame: error.isForMainFrame ?? false,
+              errorCode: error.errorCode,
+              isFinishingLogin: _isFinishingLogin,
+              webViewHiddenAfterCallback: _webViewHiddenAfterCallback,
+            )) {
+              return;
+            }
+            final l10n = AppLocalizations.of(context)!;
+            setState(() {
+              _isLoading = false;
+              _webResourceErrorMessage = l10n.webViewLoadError;
+            });
           },
           onNavigationRequest: (NavigationRequest request) {
             final action = resolveWebViewNavigationAction(request.url);
@@ -365,7 +381,14 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<void> _completeLoginAndPop(String sessionCookie) async {
-    await RudnAuthService().saveCookie(sessionCookie);
+    final cookiePersisted = await RudnAuthService().saveCookie(sessionCookie);
+    if (!cookiePersisted) {
+      ErrorReportingService().reportEvent(
+        'webview_cookie_persist_failed',
+      );
+      _showFinishingError(WebViewFinalizationState.storageSaveFailedMessage);
+      return;
+    }
     ErrorReportingService().reportEvent('webview_cookie_found', details: {
       'cookie_length': '${sessionCookie.length}',
     });
@@ -503,6 +526,24 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     await _controller.reload();
   }
 
+  Future<void> _retryWebResourceLoad() async {
+    if (!mounted || _hasPopped || _isFinishingLogin) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _webResourceErrorMessage = null;
+      _isLoading = true;
+    });
+    try {
+      await _controller.reload();
+    } catch (_) {
+      if (!mounted || _hasPopped) return;
+      setState(() {
+        _isLoading = false;
+        _webResourceErrorMessage = l10n.webViewLoadError;
+      });
+    }
+  }
+
   void _logNavigationDecision({
     required String url,
     required WebViewNavigationAction action,
@@ -528,6 +569,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: const Text(''),
@@ -544,6 +586,48 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
           if (_isLoading)
             const Center(
               child: SeasonsLoader(),
+            ),
+          if (!_isFinishingLogin && _webResourceErrorMessage != null)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.84),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white38),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          _webResourceErrorMessage!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton(
+                            onPressed: () {
+                              unawaited(_retryWebResourceLoad());
+                            },
+                            child: Text(l10n.retryAction),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           if (_isFinishingLogin)
             Container(
@@ -573,7 +657,10 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        _finishingErrorMessage,
+                        localizeWebViewFinalizationError(
+                          l10n: l10n,
+                          message: _finishingErrorMessage,
+                        ),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
@@ -589,7 +676,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                             onPressed: () {
                               unawaited(_retryLogin(userInitiated: true));
                             },
-                            child: const Text('Retry'),
+                            child: Text(l10n.retryAction),
                           ),
                           const SizedBox(width: 12),
                           OutlinedButton(
@@ -598,7 +685,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                               foregroundColor: Colors.white,
                               side: const BorderSide(color: Colors.white54),
                             ),
-                            child: const Text('Cancel'),
+                            child: Text(l10n.cancel),
                           ),
                         ],
                       ),
@@ -629,6 +716,8 @@ class WebViewFinalizationState {
       'Login is taking longer than expected. Please retry.';
   static const String phaseBTimeoutMessage =
       'Could not complete login. Please retry or cancel.';
+  static const String storageSaveFailedMessage =
+      'Could not save login session on device. Please retry.';
 
   final bool webViewHiddenAfterCallback;
   final bool isFinishing;
@@ -707,6 +796,44 @@ enum WebViewFinalizationPhase {
   waitingCallbackLoad,
   pollingCookie,
   error,
+}
+
+const Set<int> _ignoredWebResourceErrorCodes = {
+  -999, // cancellation/no-op in several platform stacks
+};
+
+@visibleForTesting
+bool shouldShowWebResourceError({
+  required bool isForMainFrame,
+  required int errorCode,
+  required bool isFinishingLogin,
+  required bool webViewHiddenAfterCallback,
+}) {
+  if (!isForMainFrame) return false;
+  if (isFinishingLogin || webViewHiddenAfterCallback) return false;
+  if (_ignoredWebResourceErrorCodes.contains(errorCode)) return false;
+  return true;
+}
+
+@visibleForTesting
+String webResourceErrorMessage({String? description}) {
+  const fallback = 'Unable to load login page. Check connection and retry.';
+  return fallback;
+}
+
+@visibleForTesting
+String localizeWebViewFinalizationError({
+  required AppLocalizations l10n,
+  required String message,
+}) {
+  if (message == WebViewFinalizationState.phaseATimeoutMessage ||
+      message == WebViewFinalizationState.phaseBTimeoutMessage) {
+    return l10n.timeoutError;
+  }
+  if (message == WebViewFinalizationState.storageSaveFailedMessage) {
+    return l10n.loginSessionSaveFailed;
+  }
+  return l10n.genericError;
 }
 
 const Set<String> _allowedWebViewHosts = {

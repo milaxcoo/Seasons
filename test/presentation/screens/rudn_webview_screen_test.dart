@@ -29,6 +29,13 @@ void main() {
       expect(retried.phase, WebViewFinalizationPhase.waitingCallbackLoad);
     });
 
+    test('storage persistence failure message is available for retry UI', () {
+      expect(
+        WebViewFinalizationState.storageSaveFailedMessage,
+        'Could not save login session on device. Please retry.',
+      );
+    });
+
     test('callback onPageFinished transitions from phase A to phase B', () {
       const initial = WebViewFinalizationState.initial();
       final waiting = initial.onCallbackDetected();
@@ -515,6 +522,62 @@ void main() {
         expect(isAllowedWebViewUrl(url), isFalse,
             reason: 'Expected deny: $url');
       }
+    });
+
+    test(
+        'shouldShowWebResourceError filters subresource/cancelled/finishing errors',
+        () {
+      expect(
+        shouldShowWebResourceError(
+          isForMainFrame: true,
+          errorCode: -2,
+          isFinishingLogin: false,
+          webViewHiddenAfterCallback: false,
+        ),
+        isTrue,
+      );
+
+      expect(
+        shouldShowWebResourceError(
+          isForMainFrame: false,
+          errorCode: -2,
+          isFinishingLogin: false,
+          webViewHiddenAfterCallback: false,
+        ),
+        isFalse,
+      );
+
+      expect(
+        shouldShowWebResourceError(
+          isForMainFrame: true,
+          errorCode: -999,
+          isFinishingLogin: false,
+          webViewHiddenAfterCallback: false,
+        ),
+        isFalse,
+      );
+
+      expect(
+        shouldShowWebResourceError(
+          isForMainFrame: true,
+          errorCode: -2,
+          isFinishingLogin: true,
+          webViewHiddenAfterCallback: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('webResourceErrorMessage provides fallback and description variants',
+        () {
+      expect(
+        webResourceErrorMessage(),
+        'Unable to load login page. Check connection and retry.',
+      );
+      expect(
+        webResourceErrorMessage(description: 'Host lookup failed'),
+        'Unable to load login page. Check connection and retry.',
+      );
     });
 
     test('shouldAutoClickEntryButton only applies to seasons root page', () {

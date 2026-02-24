@@ -98,7 +98,10 @@ class ApiVotingRepository implements VotingRepository {
 
   @override
   Future<void> logout() async {
-    await _authService.logout();
+    final isCleared = await _authService.logout();
+    if (!isCleared) {
+      throw Exception('Local auth session was not cleared');
+    }
   }
 
   @override

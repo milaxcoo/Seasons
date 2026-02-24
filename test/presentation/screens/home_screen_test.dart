@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -65,6 +67,10 @@ void main() {
 
     when(() => mockNavigationService.onNavigate)
         .thenAnswer((_) => const Stream.empty());
+    when(() => mockNavigationService.consumePendingNavigation())
+        .thenReturn(null);
+    when(() => mockVotingBloc.onAuthInvalid)
+        .thenAnswer((_) => const Stream<void>.empty());
   });
 
   tearDown(() {
@@ -232,6 +238,36 @@ void main() {
       verify(() => mockAuthBloc.add(LoggedOut())).called(1);
     });
 
+    testWidgets('handles auth_invalid once and avoids duplicate logout spam',
+        (tester) async {
+      final authInvalidController = StreamController<void>.broadcast();
+      when(() => mockVotingBloc.onAuthInvalid)
+          .thenAnswer((_) => authInvalidController.stream);
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+        events: [],
+        status: model.VotingStatus.registration,
+      ));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+      when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      authInvalidController.add(null);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      authInvalidController.add(null);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Сессия истекла. Войдите снова.'), findsOneWidget);
+      verify(() => mockAuthBloc.add(LoggedOut())).called(1);
+
+      await authInvalidController.close();
+    });
+
     testWidgets('displays registered status correctly', (tester) async {
       // Arrange
       final events = [
@@ -375,6 +411,62 @@ void main() {
               const FetchEventsByStatus(status: model.VotingStatus.active)))
           .called(greaterThan(0));
       expect(homeTabCubit.state.index, 1);
+    });
+
+    testWidgets(
+        'completed panel turns blue immediately after user opens completed section',
+        (tester) async {
+      final completedEvent = model.VotingEvent(
+        id: 'completed-01',
+        title: 'Finished Event',
+        description: 'Finished description',
+        status: model.VotingStatus.completed,
+        votingEndDate: DateTime(2026, 1, 31),
+        isRegistered: true,
+        questions: const [],
+        hasVoted: true,
+        results: const [],
+      );
+      final stateController = StreamController<VotingState>.broadcast();
+      addTearDown(() async {
+        await stateController.close();
+      });
+
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      stateController.add(VotingEventsLoadSuccess(
+          events: [completedEvent], status: model.VotingStatus.completed));
+      await tester.pumpAndSettle();
+
+      final completedIcon = find.byType(ResultsIcon).first;
+      final completedAvatarFinder =
+          find.ancestor(of: completedIcon, matching: find.byType(CircleAvatar));
+
+      expect(
+        tester
+            .widget<CircleAvatar>(completedAvatarFinder.first)
+            .backgroundColor,
+        const Color(0xFF00A94F),
+      );
+
+      await tester.tap(completedIcon);
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<CircleAvatar>(completedAvatarFinder.first)
+            .backgroundColor,
+        const Color(0xFF6d9fc5),
+      );
+
+      await tester.pumpAndSettle();
     });
 
     testWidgets('keeps selected panel after orientation change',
