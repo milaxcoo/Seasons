@@ -47,5 +47,20 @@ void main() {
       expect(normalizeMonthNumber(0), 12);
       expect(normalizeMonthNumber(-1), 11);
     });
+
+    test('updates theme when provider month changes', () {
+      var now = DateTime(2026, 1, 31, 23, 59);
+      final service = MonthlyThemeService(
+        currentDateProvider: () => now,
+      );
+
+      expect(service.currentMonth, 1);
+      expect(service.backgroundAssetPath, 'assets/backgrounds/january.jpg');
+
+      now = DateTime(2026, 2, 1, 0, 1);
+
+      expect(service.currentMonth, 2);
+      expect(service.theme.imagePath, 'assets/backgrounds/february.jpg');
+    });
   });
 }

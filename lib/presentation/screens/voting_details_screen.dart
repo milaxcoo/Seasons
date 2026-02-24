@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -31,29 +30,26 @@ class VotingDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBackground(
       imagePath: imagePath,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-        child: Scaffold(
-          backgroundColor: Colors.black.withValues(alpha: 0.2),
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            title: Text(
-              event.title,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                  ),
-            ),
-            centerTitle: true,
+      child: Scaffold(
+        backgroundColor: Colors.black.withValues(alpha: 0.2),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
           ),
-          body: _VotingDetailsView(event: event),
+          title: Text(
+            event.title,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                ),
+          ),
+          centerTitle: true,
         ),
+        body: _VotingDetailsView(event: event),
       ),
     );
   }

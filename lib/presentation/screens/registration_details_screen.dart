@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -43,16 +42,13 @@ class RegistrationDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-            child: Scaffold(
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
               backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-              ),
-              body: _RegistrationDetailsView(event: event),
+              elevation: 0,
             ),
+            body: _RegistrationDetailsView(event: event),
           ),
         ],
       ),

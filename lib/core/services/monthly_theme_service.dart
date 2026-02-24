@@ -15,21 +15,52 @@ MonthlyTheme monthlyThemeForMonth(int month) {
 }
 
 class MonthlyThemeService {
-  final DateTime sessionDateTime;
-  final int currentMonth;
-  final MonthlyTheme theme;
+  final CurrentDateProvider _currentDateProvider;
+  DateTime _lastResolvedDateTime;
+  int _currentMonth;
+  MonthlyTheme _theme;
 
   factory MonthlyThemeService({
     CurrentDateProvider? currentDateProvider,
   }) {
     final nowProvider = currentDateProvider ?? DateTime.now;
-    final sessionNow = nowProvider().toLocal();
-    return MonthlyThemeService._(sessionNow);
+    final initialNow = nowProvider().toLocal();
+    return MonthlyThemeService._(nowProvider, initialNow);
   }
 
-  MonthlyThemeService._(this.sessionDateTime)
-      : currentMonth = normalizeMonthNumber(sessionDateTime.month),
-        theme = monthlyThemeForMonth(sessionDateTime.month);
+  MonthlyThemeService._(
+    this._currentDateProvider,
+    DateTime initialNow,
+  )   : _lastResolvedDateTime = initialNow,
+        _currentMonth = normalizeMonthNumber(initialNow.month),
+        _theme = monthlyThemeForMonth(normalizeMonthNumber(initialNow.month));
+
+  void _syncThemeIfMonthChanged() {
+    final now = _currentDateProvider().toLocal();
+    final resolvedMonth = normalizeMonthNumber(now.month);
+    if (resolvedMonth == _currentMonth) {
+      _lastResolvedDateTime = now;
+      return;
+    }
+    _lastResolvedDateTime = now;
+    _currentMonth = resolvedMonth;
+    _theme = monthlyThemeForMonth(resolvedMonth);
+  }
+
+  DateTime get sessionDateTime {
+    _syncThemeIfMonthChanged();
+    return _lastResolvedDateTime;
+  }
+
+  int get currentMonth {
+    _syncThemeIfMonthChanged();
+    return _currentMonth;
+  }
+
+  MonthlyTheme get theme {
+    _syncThemeIfMonthChanged();
+    return _theme;
+  }
 
   String get backgroundAssetPath => theme.imagePath;
 }

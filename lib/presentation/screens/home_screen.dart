@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/core/monthly_theme_data.dart';
+import 'package:seasons/core/navigation/corporate_page_transition.dart';
 import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -28,6 +29,10 @@ import 'package:seasons/core/theme.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 class _TopBar extends StatelessWidget {
+  final String imagePath;
+
+  const _TopBar({required this.imagePath});
+
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
@@ -87,7 +92,8 @@ class _TopBar extends StatelessWidget {
               GestureDetector(
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    buildCorporatePageRoute(
+                        ProfileScreen(imagePathOverride: imagePath)),
                   );
                 },
                 child: Text(userLogin,
@@ -233,6 +239,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Timer? _sectionTransitionTimeoutTimer;
   double _horizontalDragDx = 0;
   int? _debugThemeMonth;
+  int? _resolvedThemeMonth;
+  bool _isAppResumed = true;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -532,8 +540,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
+  bool _isHomeRouteActive() {
+    final route = ModalRoute.of(context);
+    if (route == null) return true;
+    return route.isCurrent;
+  }
+
   Timer? _uiTicker;
-  Timer? _dataTicker;
   StreamSubscription? _navigationSubscription;
 
   @override
@@ -542,6 +555,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     final initialIndex = context.read<HomeTabCubit>().state.index;
     _pageController = PageController(initialPage: initialIndex);
+    _resolvedThemeMonth = context.read<MonthlyThemeService>().currentMonth;
     _debugLog(
       'init_state',
       {
@@ -576,25 +590,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // UI Ticker: Updates every 1 second to handle time-based UI changes instantly
     // e.g. "Registration closes in..." or switching from Open to Closed based on local time
-    _uiTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+    _uiTicker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted || !_isAppResumed || !_isHomeRouteActive()) return;
       // Notify listeners (VotingCards) without rebuilding the whole HomeScreen
       _timeNotifier.value++;
-    });
 
-    // Data Ticker: Background sync every 30 seconds
-    // Keeps button states up-to-date alongside WebSocket push events
-    _dataTicker = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) {
-        // Fetch fresh data for ALL statuses to keep button colors updated
-        context
-            .read<VotingBloc>()
-            .add(RefreshEventsSilent(status: model.VotingStatus.registration));
-        context
-            .read<VotingBloc>()
-            .add(RefreshEventsSilent(status: model.VotingStatus.active));
-        context
-            .read<VotingBloc>()
-            .add(RefreshEventsSilent(status: model.VotingStatus.completed));
+      final latestMonth = context.read<MonthlyThemeService>().currentMonth;
+      if (_resolvedThemeMonth != latestMonth) {
+        _resolvedThemeMonth = latestMonth;
+        setState(() {});
       }
     });
 
@@ -648,11 +652,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    final resumed = state == AppLifecycleState.resumed;
+    if (_isAppResumed == resumed) return;
+    _isAppResumed = resumed;
+    if (!mounted || !resumed) return;
+    _timeNotifier.value++;
+    _resolvedThemeMonth = context.read<MonthlyThemeService>().currentMonth;
+    _refreshCurrentPage(context.read<HomeTabCubit>().state.index);
+    setState(() {});
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _uiTicker?.cancel();
-    _dataTicker?.cancel();
     _sectionTransitionTimeoutTimer?.cancel();
     _navigationSubscription?.cancel();
     _timeNotifier.dispose();
@@ -693,7 +709,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // --- UI COMPONENTS ---
 
     // 1. Top Bar (Profile / Lang)
-    final topBar = _TopBar();
+    final topBar = _TopBar(imagePath: theme.imagePath);
 
     // 2. Header (Seasons Title)
     final Widget landscapeHeader = Stack(
@@ -1018,38 +1034,53 @@ class _Footer extends StatefulWidget {
   State<_Footer> createState() => _FooterState();
 }
 
-class _FooterState extends State<_Footer> {
+class _FooterState extends State<_Footer> with WidgetsBindingObserver {
   final ScrollController _scrollController = ScrollController();
   bool _isUserScrolling = false;
   bool _isAutoScrollAnimating = false;
   bool _showTopFade = false;
   bool _showBottomFade = false;
+  bool _isAppResumed = true;
   Timer? _resumeTimer;
-  Timer? _autoScrollWatchdog;
   int _scrollGeneration = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_handleScrollMetricsChanged);
     // Start rolling after a short delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleScrollMetricsChanged();
       _resumeAutoScroll(delay: const Duration(seconds: 3));
     });
-    _autoScrollWatchdog = Timer.periodic(
-      const Duration(seconds: 3),
-      (_) => _ensureAutoScrollRunning(),
-    );
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _resumeTimer?.cancel();
-    _autoScrollWatchdog?.cancel();
     _scrollController.removeListener(_handleScrollMetricsChanged);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  bool _isRouteActive() {
+    final route = ModalRoute.of(context);
+    if (route == null) return true;
+    return route.isCurrent;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    _isAppResumed = state == AppLifecycleState.resumed;
+    if (!_isAppResumed) {
+      _resumeTimer?.cancel();
+      _isAutoScrollAnimating = false;
+      return;
+    }
+    _resumeAutoScroll(delay: const Duration(seconds: 2));
   }
 
   @override
@@ -1082,7 +1113,13 @@ class _FooterState extends State<_Footer> {
   }
 
   void _ensureAutoScrollRunning() {
-    if (!mounted || _isUserScrolling || _isAutoScrollAnimating) return;
+    if (!mounted ||
+        !_isAppResumed ||
+        !_isRouteActive() ||
+        _isUserScrolling ||
+        _isAutoScrollAnimating) {
+      return;
+    }
     if (_resumeTimer?.isActive ?? false) return;
     if (!_scrollController.hasClients) return;
     if (_scrollController.position.maxScrollExtent <= 0) return;
@@ -1094,6 +1131,8 @@ class _FooterState extends State<_Footer> {
     final generation = _scrollGeneration;
     _resumeTimer = Timer(delay, () {
       if (mounted &&
+          _isAppResumed &&
+          _isRouteActive() &&
           !_isUserScrolling &&
           _scrollController.hasClients &&
           _scrollGeneration == generation) {
@@ -1104,6 +1143,8 @@ class _FooterState extends State<_Footer> {
 
   void _scrollLoop(int generation) {
     if (!mounted ||
+        !_isAppResumed ||
+        !_isRouteActive() ||
         _isUserScrolling ||
         !_scrollController.hasClients ||
         _scrollGeneration != generation) {
@@ -1560,20 +1601,19 @@ class _VotingEventCard extends StatelessWidget {
         ),
         trailing: const Icon(Icons.chevron_right, color: Colors.black54),
         onTap: () async {
+          final Widget detailsScreen;
+          if (sectionStatus == model.VotingStatus.registration) {
+            detailsScreen =
+                RegistrationDetailsScreen(event: event, imagePath: imagePath);
+          } else if (sectionStatus == model.VotingStatus.active) {
+            detailsScreen =
+                VotingDetailsScreen(event: event, imagePath: imagePath);
+          } else {
+            detailsScreen = ResultsScreen(event: event, imagePath: imagePath);
+          }
+
           final result = await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) {
-                if (sectionStatus == model.VotingStatus.registration) {
-                  return RegistrationDetailsScreen(
-                      event: event, imagePath: imagePath);
-                } else if (sectionStatus == model.VotingStatus.active) {
-                  return VotingDetailsScreen(
-                      event: event, imagePath: imagePath);
-                } else {
-                  return ResultsScreen(event: event, imagePath: imagePath);
-                }
-              },
-            ),
+            buildCorporatePageRoute(detailsScreen),
           );
 
           if (result == true) {

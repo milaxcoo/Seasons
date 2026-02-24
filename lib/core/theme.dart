@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:seasons/core/navigation/corporate_page_transition.dart';
 
 class AppTheme {
   // --- COLOR PALETTE ---
@@ -16,6 +17,7 @@ class AppTheme {
 
   // --- THEME ---
   static final ThemeData lightTheme = _buildLightTheme();
+  static const _corporateTransitionBuilder = CorporatePageTransitionsBuilder();
 
   static ThemeData _buildLightTheme() {
     final baseTheme = ThemeData(
@@ -148,6 +150,16 @@ class AppTheme {
     // вместо старого 'apply'.
     return baseTheme.copyWith(
       textTheme: finalTheme,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: _corporateTransitionBuilder,
+          TargetPlatform.iOS: _corporateTransitionBuilder,
+          TargetPlatform.macOS: _corporateTransitionBuilder,
+          TargetPlatform.windows: _corporateTransitionBuilder,
+          TargetPlatform.linux: _corporateTransitionBuilder,
+          TargetPlatform.fuchsia: _corporateTransitionBuilder,
+        },
+      ),
     );
   }
 }

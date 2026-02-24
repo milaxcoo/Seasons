@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:seasons/core/navigation/corporate_page_transition.dart';
 import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
@@ -24,7 +25,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   static const Duration _entryAnimationDuration = Duration(milliseconds: 700);
-  static const double _initialBlurSigma = 22;
+  static const double _initialBlurSigma = 12;
 
   late final AnimationController _entryAnimationController;
   late final Animation<double> _blurSigmaAnimation;
@@ -93,9 +94,7 @@ class _LoginScreenState extends State<LoginScreen>
     ErrorReportingService().reportEvent('login_started');
     final String languageCode = Localizations.localeOf(context).languageCode;
     final bool? success = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RudnWebviewScreen(languageCode: languageCode),
-      ),
+      buildCorporatePageRoute(RudnWebviewScreen(languageCode: languageCode)),
     );
 
     ErrorReportingService().reportEvent('webview_returned', details: {
