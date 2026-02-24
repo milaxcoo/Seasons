@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/data/models/vote_result.dart';
@@ -37,16 +36,13 @@ class ResultsScreen extends StatelessWidget {
               ),
             ),
           ),
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-            child: Scaffold(
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
               backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-              ),
-              body: _ResultsView(event: event),
+              elevation: 0,
             ),
+            body: _ResultsView(event: event),
           ),
         ],
       ),

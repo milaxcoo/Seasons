@@ -13,6 +13,7 @@ class AppBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       children: [
         const Positioned.fill(
           child: DecoratedBox(
@@ -31,26 +32,20 @@ class AppBackground extends StatelessWidget {
         ),
         // Background layer - always full screen
         Positioned.fill(
-          child: imagePath.isNotEmpty
-              ? Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  gaplessPlayback: true,
-                  frameBuilder:
-                      (context, child, frame, wasSynchronouslyLoaded) {
-                    if (wasSynchronouslyLoaded) {
-                      return child;
-                    }
-                    return AnimatedOpacity(
-                      opacity: frame == null ? 0 : 1,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOut,
-                      child: child,
-                    );
-                  },
-                )
-              : const SizedBox.expand(),
+          child: IgnorePointer(
+            child: imagePath.isNotEmpty
+                ? Image.asset(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    width: double.infinity,
+                    height: double.infinity,
+                    gaplessPlayback: true,
+                    filterQuality: FilterQuality.medium,
+                    excludeFromSemantics: true,
+                  )
+                : const SizedBox.expand(),
+          ),
         ),
         // Content layer on top
         child,

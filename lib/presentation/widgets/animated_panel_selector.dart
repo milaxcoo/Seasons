@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/widgets/custom_icons.dart';
@@ -58,7 +57,7 @@ class AnimatedPanelSelector extends StatelessWidget {
                   return Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // Unified background with blur
+                      // Unified background without expensive backdrop blur.
                       ClipPath(
                         clipper: _UnifiedShapeClipper(
                           animationValue: animationValue,
@@ -69,21 +68,18 @@ class AnimatedPanelSelector extends StatelessWidget {
                           internalPadding: internalPadding,
                           totalWidth: constraints.maxWidth,
                         ),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                          child: Container(
-                            width: constraints.maxWidth,
-                            height: totalHeight,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.5),
-                                  Colors.black.withValues(alpha: 0.3),
-                                  Colors.black.withValues(alpha: 0.5),
-                                ],
-                              ),
+                        child: Container(
+                          width: constraints.maxWidth,
+                          height: totalHeight,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.52),
+                                Colors.black.withValues(alpha: 0.36),
+                                Colors.black.withValues(alpha: 0.52),
+                              ],
                             ),
                           ),
                         ),

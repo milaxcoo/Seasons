@@ -16,6 +16,7 @@ import 'package:seasons/presentation/bloc/locale/locale_event.dart';
 import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
 import 'package:seasons/presentation/bloc/locale/locale_state.dart';
 import 'package:seasons/presentation/screens/home_screen.dart';
+import 'package:seasons/presentation/screens/registration_details_screen.dart';
 import 'package:seasons/presentation/widgets/custom_icons.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
@@ -259,6 +260,71 @@ void main() {
       expect(find.text('Зарегистрирован(-а)'), findsOneWidget);
     });
 
+    testWidgets(
+        'displays not registered on second line when registration is closed',
+        (tester) async {
+      final events = [
+        model.VotingEvent(
+          id: 'reg-closed-01',
+          title: 'Closed Registration Event',
+          description: 'Description',
+          status: model.VotingStatus.registration,
+          registrationEndDate: DateTime(2025, 1, 1),
+          isRegistered: false,
+          questions: const [],
+          hasVoted: false,
+          results: const [],
+        ),
+      ];
+      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
+          events: events, status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Регистрация закрыта'), findsOneWidget);
+      expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
+    });
+
+    testWidgets(
+        'registration tab keeps registration behavior for unregistered active-status event',
+        (tester) async {
+      final events = [
+        model.VotingEvent(
+          id: 'reg-closed-active-01',
+          title: 'Closed Registration Active Event',
+          description: 'Description',
+          status: model.VotingStatus.active,
+          registrationEndDate: DateTime(2025, 1, 1),
+          votingStartDate: DateTime(2025, 1, 2),
+          votingEndDate: DateTime(2026, 12, 31),
+          isRegistered: false,
+          questions: const [],
+          hasVoted: false,
+          results: const [],
+        ),
+      ];
+      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
+          events: events, status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Регистрация закрыта'), findsOneWidget);
+      expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
+      expect(find.text('Идет голосование'), findsNothing);
+      expect(find.text('Не проголосовал(-а)'), findsNothing);
+
+      await tester.tap(find.byType(Card).first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegistrationDetailsScreen), findsOneWidget);
+    });
+
     testWidgets('displays voted status correctly', (tester) async {
       // Arrange
       final events = [
@@ -278,6 +344,7 @@ void main() {
           events: events, status: model.VotingStatus.active));
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+      homeTabCubit.setIndex(1, source: 'test_setup');
 
       // Act
       await tester.pumpWidget(createTestWidget());
