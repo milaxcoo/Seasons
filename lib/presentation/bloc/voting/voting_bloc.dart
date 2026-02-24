@@ -11,6 +11,10 @@ import 'package:seasons/data/models/voting_event.dart' as model;
 class VotingBloc extends Bloc<VotingEvent, VotingState> {
   final VotingRepository _votingRepository;
   StreamSubscription? _serviceSubscription;
+  final StreamController<void> _authInvalidController =
+      StreamController<void>.broadcast();
+
+  Stream<void> get onAuthInvalid => _authInvalidController.stream;
 
   VotingBloc({
     required VotingRepository votingRepository,
@@ -33,6 +37,11 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       final action = data['action'] as String?;
       if (kDebugMode) {
         debugPrint("VotingBloc: Received from BackgroundService: $action");
+      }
+
+      if (action == 'auth_invalid') {
+        _authInvalidController.add(null);
+        return;
       }
 
       // Refresh ALL statuses to update all button colors and lists
@@ -94,6 +103,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
   @override
   Future<void> close() {
     _serviceSubscription?.cancel();
+    _authInvalidController.close();
     return super.close();
   }
 
@@ -150,8 +160,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     try {
       // Теперь мы передаем 'event.event' (полный объект VotingEvent)
       // и 'event.answers' в репозиторий.
-      await _votingRepository.submitVote(event.event, event.answers);
-      emit(VotingSubmissionSuccess());
+      final isVoteAccepted =
+          await _votingRepository.submitVote(event.event, event.answers);
+      if (isVoteAccepted) {
+        emit(VotingSubmissionSuccess());
+      } else {
+        emit(const VotingFailure(error: 'User already voted'));
+      }
     } catch (e) {
       emit(VotingFailure(error: e.toString()));
     }

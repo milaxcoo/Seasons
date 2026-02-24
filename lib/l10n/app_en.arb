@@ -58,5 +58,17 @@
   "languageRussian": "Русский",
   "languageEnglish": "English",
   "connectionError": "Could not load votings",
-  "tapToRetry": "Tap to retry"
+  "tapToRetry": "Tap to retry",
+  "genericError": "Something went wrong. Please try again.",
+  "networkError": "Network connection problem. Check your internet and try again.",
+  "timeoutError": "The request took too long. Please try again.",
+  "serverUnavailable": "Server is temporarily unavailable. Please try again later.",
+  "sessionExpiredReLogin": "Your session has expired. Please sign in again.",
+  "registrationFailed": "Could not complete registration. Please try again.",
+  "voteSubmitFailed": "Could not submit your vote. Please try again.",
+  "dataLoadFailed": "Could not load data. Please try again.",
+  "unexpectedError": "Unexpected error. Please try again.",
+  "webViewLoadError": "Unable to load the sign-in page. Check connection and retry.",
+  "retryAction": "Retry",
+  "loginSessionSaveFailed": "Could not save sign-in session on this device. Please retry."
 }

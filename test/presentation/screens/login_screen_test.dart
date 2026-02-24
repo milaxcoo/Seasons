@@ -196,6 +196,9 @@ void main() {
       // Assert: The screen should still render normally
       expect(find.text('Seasons'), findsOneWidget);
       expect(find.text('Войти'), findsOneWidget);
+      expect(find.text('Произошла непредвиденная ошибка. Попробуйте снова.'),
+          findsOneWidget);
+      expect(find.text('Login failed'), findsNothing);
     });
 
     testWidgets('has correct copyright and contact information',

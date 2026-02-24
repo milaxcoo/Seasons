@@ -197,26 +197,57 @@ void main() {
         'emits [AuthUnauthenticated] when LoggedOut is added',
         build: () {
           when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => null);
           return authBloc;
         },
         act: (bloc) => bloc.add(LoggedOut()),
         expect: () => [AuthUnauthenticated()],
         verify: (_) {
+          verify(() => mockVotingRepository.getAuthToken()).called(1);
           verify(() => mockDraftService.clearAllDrafts()).called(1);
         },
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthUnauthenticated] even when logout throws',
+        'emits [AuthFailure] when logout throws and token remains',
         build: () {
           when(() => mockVotingRepository.logout())
               .thenThrow(Exception('Logout error'));
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'still-present');
           return authBloc;
         },
         act: (bloc) => bloc.add(LoggedOut()),
-        expect: () => [AuthUnauthenticated()],
+        expect: () => const [
+          AuthFailure(
+            error:
+                'Could not clear local session. Please try logging out again.',
+          ),
+        ],
         verify: (_) {
-          verify(() => mockDraftService.clearAllDrafts()).called(1);
+          verify(() => mockVotingRepository.getAuthToken()).called(1);
+          verifyNever(() => mockDraftService.clearAllDrafts());
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
+        'emits [AuthFailure] when logout succeeds but token remains',
+        build: () {
+          when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
+          when(() => mockVotingRepository.getAuthToken())
+              .thenAnswer((_) async => 'still-present');
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(LoggedOut()),
+        expect: () => const [
+          AuthFailure(
+            error:
+                'Could not clear local session. Please try logging out again.',
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockDraftService.clearAllDrafts());
         },
       );
     });
@@ -227,6 +258,8 @@ void main() {
         when(() => mockVotingRepository.getUserLogin())
             .thenAnswer((_) async => 'testuser');
         when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
+        when(() => mockVotingRepository.getAuthToken())
+            .thenAnswer((_) async => null);
         return authBloc;
       },
       act: (bloc) async {

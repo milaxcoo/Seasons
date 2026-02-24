@@ -19,8 +19,15 @@ class NotificationNavigationService {
     _instance = mock;
   }
 
+  /// For testing purposes only
+  @visibleForTesting
+  static void resetInstance() {
+    _instance = null;
+  }
+
   final _navigationController =
       StreamController<NotificationNavigationEvent>.broadcast();
+  NotificationNavigationEvent? _pendingEvent;
 
   /// Stream that HomeScreen listens to for navigation events
   Stream<NotificationNavigationEvent> get onNavigate =>
@@ -28,10 +35,25 @@ class NotificationNavigationService {
 
   /// Call this when notification is tapped
   void navigateToTab(int tabIndex, {bool shouldRefresh = true}) {
-    _navigationController.add(NotificationNavigationEvent(
+    final event = NotificationNavigationEvent(
       tabIndex: tabIndex,
       shouldRefresh: shouldRefresh,
-    ));
+    );
+
+    if (_navigationController.hasListener) {
+      _pendingEvent = null;
+      _navigationController.add(event);
+      return;
+    }
+
+    _pendingEvent = event;
+  }
+
+  /// Returns and clears the pending event that arrived before listeners.
+  NotificationNavigationEvent? consumePendingNavigation() {
+    final event = _pendingEvent;
+    _pendingEvent = null;
+    return event;
   }
 
   void dispose() {

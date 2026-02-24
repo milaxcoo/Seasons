@@ -225,6 +225,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     model.VotingStatus.active: 0,
     model.VotingStatus.completed: 0,
   };
+  final Set<String> _seenCompletedEventIds = <String>{};
+  final Set<String> _latestCompletedEventIds = <String>{};
 
   late final PageController _pageController;
   int? _pendingNavigationIndex;
@@ -281,6 +283,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final normalizedIndex = _normalizePanelIndex(index);
     final currentIndex = context.read<HomeTabCubit>().state.index;
     if (normalizedIndex == currentIndex) {
+      if (normalizedIndex == 2) {
+        _markCompletedSectionAsViewed();
+      }
       _refreshCurrentPage(normalizedIndex);
       return;
     }
@@ -306,6 +311,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           normalizedIndex,
           source: source,
         );
+    if (normalizedIndex == 2) {
+      _markCompletedSectionAsViewed();
+    }
     _transitionTargetIndex = normalizedIndex;
     _loaderShownAt = null;
     if (!mounted) return;
@@ -494,6 +502,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           index,
           source: 'page_sync',
         );
+    if (index == 2) {
+      _markCompletedSectionAsViewed();
+    }
+  }
+
+  void _markCompletedSectionAsViewed() {
+    if (_latestCompletedEventIds.isNotEmpty) {
+      _seenCompletedEventIds.addAll(_latestCompletedEventIds);
+    }
+    if ((_actionableCount[model.VotingStatus.completed] ?? 0) == 0) {
+      return;
+    }
+    setState(() {
+      _actionableCount[model.VotingStatus.completed] = 0;
+    });
   }
 
   void _onVotingAreaHorizontalDragStart(DragStartDetails details) {
@@ -540,6 +563,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     context.read<VotingBloc>().add(FetchEventsByStatus(status: status));
   }
 
+  void _handleNotificationNavigation(
+    NotificationNavigationEvent event, {
+    required String source,
+  }) {
+    if (!mounted) return;
+
+    _debugLog(
+      'notification_navigation_received',
+      {
+        'tab_index': event.tabIndex,
+        'should_refresh': event.shouldRefresh,
+        'source': source,
+      },
+    );
+    final currentIndex = context.read<HomeTabCubit>().state.index;
+    if (event.tabIndex == currentIndex) {
+      if (event.shouldRefresh) {
+        _refreshCurrentPage(event.tabIndex);
+      }
+      return;
+    }
+    _switchSectionWithTransition(
+      event.tabIndex,
+      source: source,
+    );
+  }
+
   bool _isHomeRouteActive() {
     final route = ModalRoute.of(context);
     if (route == null) return true;
@@ -548,6 +598,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Timer? _uiTicker;
   StreamSubscription? _navigationSubscription;
+  StreamSubscription<void>? _authInvalidSubscription;
+  bool _authInvalidHandled = false;
+
+  void _handleAuthInvalid() {
+    if (!mounted || _authInvalidHandled) return;
+    _authInvalidHandled = true;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.sessionExpiredReLogin),
+          backgroundColor: AppTheme.rudnRedColor,
+        ),
+      );
+    context.read<AuthBloc>().add(LoggedOut());
+  }
 
   @override
   void initState() {
@@ -564,29 +631,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
 
     // Listen for notification navigation events
-    _navigationSubscription =
-        NotificationNavigationService().onNavigate.listen((event) {
-      if (mounted) {
-        _debugLog(
-          'notification_navigation_received',
-          {
-            'tab_index': event.tabIndex,
-            'should_refresh': event.shouldRefresh,
-          },
-        );
-        final currentIndex = context.read<HomeTabCubit>().state.index;
-        if (event.tabIndex == currentIndex) {
-          if (event.shouldRefresh) {
-            _refreshCurrentPage(event.tabIndex);
-          }
-          return;
-        }
-        _switchSectionWithTransition(
-          event.tabIndex,
-          source: 'notification',
-        );
-      }
+    final navigationService = NotificationNavigationService();
+    _navigationSubscription = navigationService.onNavigate.listen((event) {
+      _handleNotificationNavigation(
+        event,
+        source: 'notification_live',
+      );
     });
+
+    final pendingNavigation = navigationService.consumePendingNavigation();
+    if (pendingNavigation != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleNotificationNavigation(
+          pendingNavigation,
+          source: 'notification_replay',
+        );
+      });
+    }
+
+    _authInvalidSubscription = context.read<VotingBloc>().onAuthInvalid.listen(
+          (_) => _handleAuthInvalid(),
+        );
 
     // UI Ticker: Updates every 1 second to handle time-based UI changes instantly
     // e.g. "Registration closes in..." or switching from Open to Closed based on local time
@@ -671,6 +736,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _uiTicker?.cancel();
     _sectionTransitionTimeoutTimer?.cancel();
     _navigationSubscription?.cancel();
+    _authInvalidSubscription?.cancel();
     _timeNotifier.dispose();
     super.dispose();
   }
@@ -776,6 +842,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       listener: (context, state) {
         if (state is VotingEventsLoadSuccess) {
           final status = state.status;
+          final currentIndex = context.read<HomeTabCubit>().state.index;
           int actionableCount;
           if (status == model.VotingStatus.registration) {
             actionableCount = state.events
@@ -792,7 +859,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         !DateTime.now().isAfter(e.votingEndDate!)))
                 .length;
           } else {
-            actionableCount = state.events.length;
+            _latestCompletedEventIds
+              ..clear()
+              ..addAll(state.events.map((event) => event.id));
+            if (currentIndex == 2) {
+              _seenCompletedEventIds.addAll(_latestCompletedEventIds);
+              actionableCount = 0;
+            } else {
+              actionableCount = state.events
+                  .where((event) => !_seenCompletedEventIds.contains(event.id))
+                  .length;
+            }
           }
           _updateActionableCount(status, actionableCount);
         }

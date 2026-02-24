@@ -218,6 +218,7 @@ void onStart(ServiceInstance service) async {
   Timer? reconnectTimer;
   Timer? foregroundNotificationTimer;
   bool isConnected = false;
+  bool isConnecting = false;
   int reconnectAttempts = 0;
   bool isStopped = false;
 
@@ -236,23 +237,42 @@ void onStart(ServiceInstance service) async {
     isConnected = false;
   }
 
-  // Handle stop request
-  stopSubscription = service.on('stopService').listen((event) async {
+  Future<void> shutdownService({
+    required String reason,
+    bool notifyAuthInvalid = false,
+  }) async {
     if (isStopped) return;
     isStopped = true;
 
+    if (kDebugMode) {
+      debugPrint('BackgroundService: shutting down ($reason)');
+    }
+
+    if (notifyAuthInvalid) {
+      try {
+        service.invoke('update', {
+          'action': 'auth_invalid',
+          'reason': reason,
+        });
+      } catch (_) {
+        // Ignore invoke errors during isolate teardown.
+      }
+    }
+
+    cancelRuntimeResources();
+    await stopSubscription?.cancel();
+    service.stopSelf();
+  }
+
+  // Handle stop request
+  stopSubscription = service.on('stopService').listen((event) async {
     final reason = event is Map<String, dynamic>
         ? (event['reason'] as String? ?? 'unknown')
         : 'unknown';
     if (kDebugMode) {
       debugPrint("BackgroundService: Stop requested from UI (reason: $reason)");
     }
-
-    cancelRuntimeResources();
-    await stopSubscription?.cancel();
-    service.stopSelf();
-
-    if (kDebugMode) print("BackgroundService: Stopped by request");
+    await shutdownService(reason: 'requested_from_ui:$reason');
   });
 
   // Initialize notifications plugin for this isolate
@@ -266,21 +286,30 @@ void onStart(ServiceInstance service) async {
 
   // Connect to WebSocket
   Future<void> connect() async {
-    if (isStopped || isConnected) return;
+    if (!canAttemptBackgroundConnect(
+      isStopped: isStopped,
+      isConnected: isConnected,
+      isConnecting: isConnecting,
+    )) {
+      return;
+    }
+    isConnecting = true;
 
     try {
       // Get auth cookie from secure storage (need to access it differently in isolate)
       final cookie = await RudnAuthService().getCookie();
       if (isStopped) return;
 
-      if (cookie == null || cookie.isEmpty) {
+      if (shouldStopReconnectForAuth(cookie: cookie)) {
         if (kDebugMode) {
-          print("BackgroundService: No auth cookie, scheduling reconnect");
+          debugPrint(
+            'BackgroundService: Missing auth cookie; stopping reconnect loop',
+          );
         }
-        reconnectTimer = _scheduleReconnect(reconnectTimer, () {
-          if (isStopped) return;
-          unawaited(connect());
-        }, attempts: reconnectAttempts++);
+        await shutdownService(
+          reason: 'missing_cookie',
+          notifyAuthInvalid: true,
+        );
         return;
       }
 
@@ -300,22 +329,54 @@ void onStart(ServiceInstance service) async {
           )
           .timeout(const Duration(seconds: 10));
 
+      if (shouldStopReconnectForAuth(
+        negotiateStatusCode: response.statusCode,
+      )) {
+        if (kDebugMode) {
+          debugPrint(
+            'BackgroundService: Auth invalid during WS negotiation '
+            '(status=${response.statusCode}); stopping reconnect loop',
+          );
+        }
+        await shutdownService(
+          reason: 'ws_negotiate_auth_invalid_${response.statusCode}',
+          notifyAuthInvalid: true,
+        );
+        return;
+      }
+
       if (response.statusCode != 200) {
         throw Exception("Failed to negotiate WS URL: ${response.statusCode}");
       }
 
       final data = jsonDecode(response.body);
-      final realWsUrl = data['url'] as String;
+      final realWsUrl =
+          data is Map<String, dynamic> ? data['url'] as String? : null;
+
+      if (!isAllowedNegotiatedWebSocketUrl(realWsUrl)) {
+        if (kDebugMode) {
+          debugPrint(
+            'BackgroundService: Rejected negotiated WS URL: '
+            '${sanitizeUrlForLog(realWsUrl ?? '')}',
+          );
+        }
+        reconnectTimer = _scheduleReconnect(reconnectTimer, () {
+          if (isStopped) return;
+          unawaited(connect());
+        }, attempts: reconnectAttempts++);
+        return;
+      }
+      final wsUrl = realWsUrl!;
 
       if (kDebugMode) {
         print(
-          "BackgroundService: Connecting to ${sanitizeUrlForLog(realWsUrl)}",
+          "BackgroundService: Connecting to ${sanitizeUrlForLog(wsUrl)}",
         );
       }
 
       // Step 2: Connect to the dynamic URL
       channel = IOWebSocketChannel.connect(
-        Uri.parse(realWsUrl),
+        Uri.parse(wsUrl),
         headers: {
           ...headers,
           'Origin': 'https://seasons.rudn.ru',
@@ -362,6 +423,15 @@ void onStart(ServiceInstance service) async {
         },
         onError: (error) {
           if (isStopped) return;
+          if (isAuthInvalidWebSocketError(error)) {
+            unawaited(
+              shutdownService(
+                reason: 'ws_stream_auth_invalid',
+                notifyAuthInvalid: true,
+              ),
+            );
+            return;
+          }
           if (kDebugMode) {
             debugPrint(
                 "BackgroundService: WS Error: ${sanitizeObjectForLog(error)}");
@@ -384,6 +454,8 @@ void onStart(ServiceInstance service) async {
         if (isStopped) return;
         unawaited(connect());
       }, attempts: reconnectAttempts++);
+    } finally {
+      isConnecting = false;
     }
   }
 
@@ -541,6 +613,54 @@ Timer _scheduleReconnect(Timer? timer, Function() connect, {int attempts = 0}) {
         "BackgroundService: Scheduling reconnect in ${delaySec}s (attempt ${attempts + 1})...");
   }
   return Timer(Duration(seconds: delaySec), connect);
+}
+
+const Set<String> _trustedWebSocketHosts = {
+  'seasons.rudn.ru',
+};
+
+@visibleForTesting
+bool canAttemptBackgroundConnect({
+  required bool isStopped,
+  required bool isConnected,
+  required bool isConnecting,
+}) {
+  return !isStopped && !isConnected && !isConnecting;
+}
+
+@visibleForTesting
+bool shouldStopReconnectForAuth({
+  String? cookie,
+  int? negotiateStatusCode,
+}) {
+  if (cookie != null && cookie.isEmpty) return true;
+  if (cookie == null && negotiateStatusCode == null) return true;
+  if (negotiateStatusCode == 401 || negotiateStatusCode == 403) return true;
+  return false;
+}
+
+@visibleForTesting
+bool isAllowedNegotiatedWebSocketUrl(
+  String? rawUrl, {
+  Set<String> allowedHosts = _trustedWebSocketHosts,
+}) {
+  if (rawUrl == null || rawUrl.trim().isEmpty) return false;
+  final uri = Uri.tryParse(rawUrl.trim());
+  if (uri == null || !uri.hasScheme) return false;
+
+  if (uri.scheme.toLowerCase() != 'wss') return false;
+  final host = uri.host.toLowerCase();
+  if (host.isEmpty) return false;
+  return allowedHosts.contains(host);
+}
+
+@visibleForTesting
+bool isAuthInvalidWebSocketError(Object error) {
+  final value = error.toString().toLowerCase();
+  return value.contains('401') ||
+      value.contains('403') ||
+      value.contains('unauthorized') ||
+      value.contains('forbidden');
 }
 
 @visibleForTesting

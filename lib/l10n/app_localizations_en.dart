@@ -192,4 +192,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tapToRetry => 'Tap to retry';
+
+  @override
+  String get genericError => 'Something went wrong. Please try again.';
+
+  @override
+  String get networkError =>
+      'Network connection problem. Check your internet and try again.';
+
+  @override
+  String get timeoutError => 'The request took too long. Please try again.';
+
+  @override
+  String get serverUnavailable =>
+      'Server is temporarily unavailable. Please try again later.';
+
+  @override
+  String get sessionExpiredReLogin =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get registrationFailed =>
+      'Could not complete registration. Please try again.';
+
+  @override
+  String get voteSubmitFailed =>
+      'Could not submit your vote. Please try again.';
+
+  @override
+  String get dataLoadFailed => 'Could not load data. Please try again.';
+
+  @override
+  String get unexpectedError => 'Unexpected error. Please try again.';
+
+  @override
+  String get webViewLoadError =>
+      'Unable to load the sign-in page. Check connection and retry.';
+
+  @override
+  String get retryAction => 'Retry';
+
+  @override
+  String get loginSessionSaveFailed =>
+      'Could not save sign-in session on this device. Please retry.';
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +14,7 @@ import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 
 import 'package:seasons/core/theme.dart';
+import 'package:seasons/core/utils/user_friendly_error_mapper.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
 // Removed local rudnGreenColor constant in favor of AppTheme.rudnGreenColor
@@ -19,11 +22,13 @@ import 'package:seasons/presentation/widgets/seasons_loader.dart';
 class VotingDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
   final String imagePath;
+  final DraftService? draftService;
 
   const VotingDetailsScreen({
     super.key,
     required this.event,
     required this.imagePath,
+    this.draftService,
   });
 
   @override
@@ -49,7 +54,10 @@ class VotingDetailsScreen extends StatelessWidget {
           ),
           centerTitle: true,
         ),
-        body: _VotingDetailsView(event: event),
+        body: _VotingDetailsView(
+          event: event,
+          draftService: draftService,
+        ),
       ),
     );
   }
@@ -57,7 +65,12 @@ class VotingDetailsScreen extends StatelessWidget {
 
 class _VotingDetailsView extends StatefulWidget {
   final model.VotingEvent event;
-  const _VotingDetailsView({required this.event});
+  final DraftService? draftService;
+
+  const _VotingDetailsView({
+    required this.event,
+    this.draftService,
+  });
 
   @override
   State<_VotingDetailsView> createState() => _VotingDetailsViewState();
@@ -65,12 +78,13 @@ class _VotingDetailsView extends StatefulWidget {
 
 class _VotingDetailsViewState extends State<_VotingDetailsView> {
   Map<String, String> _selectedAnswers = {};
-  final DraftService _draftService = DraftService();
+  late final DraftService _draftService;
   bool _isLoadingDraft = true;
 
   @override
   void initState() {
     super.initState();
+    _draftService = widget.draftService ?? DraftService();
     _loadDraft();
   }
 
@@ -205,8 +219,9 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             widget.event.votingEndDate!.isAfter(now));
 
     return BlocConsumer<VotingBloc, VotingState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is VotingSubmissionSuccess) {
+          if (!context.mounted) return;
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -258,8 +273,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             ),
           );
         } else if (state is VotingFailure) {
-          final errorMessage = state.error.toLowerCase();
-          if (errorMessage.contains("user already voted")) {
+          if (UserFriendlyErrorMapper.isAlreadyVotedError(state.error)) {
             final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
@@ -270,10 +284,15 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             Navigator.of(context).pop(true);
           } else {
             final l10n = AppLocalizations.of(context)!;
+            final userMessage = UserFriendlyErrorMapper.toMessage(
+              l10n,
+              state.error,
+              context: UserErrorContext.voteSubmit,
+            );
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(
-                content: Text(l10n.error(state.error)),
+                content: Text(userMessage),
                 backgroundColor: AppTheme.rudnRedColor,
               ));
           }

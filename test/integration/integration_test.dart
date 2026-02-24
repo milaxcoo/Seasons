@@ -67,6 +67,7 @@ void main() {
                 ),
               ]);
       when(() => mockRepository.logout()).thenAnswer((_) async {});
+      when(() => mockRepository.getAuthToken()).thenAnswer((_) async => null);
 
       // Act & Assert - Login
       authBloc.add(const LoggedIn());
@@ -257,6 +258,7 @@ void main() {
     test('State persistence: logout does not affect voting bloc', () async {
       // Arrange
       when(() => mockRepository.logout()).thenAnswer((_) async {});
+      when(() => mockRepository.getAuthToken()).thenAnswer((_) async => null);
       when(() => mockRepository.getEventsByStatus(any()))
           .thenAnswer((_) async => []);
 

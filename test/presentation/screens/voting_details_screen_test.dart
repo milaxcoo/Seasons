@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/models/nominee.dart';
 import 'package:seasons/data/models/question.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
@@ -86,7 +87,10 @@ void main() {
     );
   });
 
-  Widget createTestWidget({model.VotingEvent? event}) {
+  Widget createTestWidget({
+    model.VotingEvent? event,
+    DraftService? draftService,
+  }) {
     return RepositoryProvider<VotingRepository>.value(
       value: mockVotingRepository,
       child: BlocProvider<VotingBloc>.value(
@@ -100,7 +104,11 @@ void main() {
           ],
           supportedLocales: const [Locale('ru'), Locale('en')],
           locale: const Locale('ru'),
-          home: VotingDetailsScreen(event: event ?? testEvent, imagePath: ''),
+          home: VotingDetailsScreen(
+            event: event ?? testEvent,
+            imagePath: '',
+            draftService: draftService,
+          ),
         ),
       ),
     );
@@ -243,6 +251,53 @@ void main() {
       stateController.close();
     });
 
+    testWidgets('does not clear draft after successful vote submission',
+        (tester) async {
+      final mockDraftService = MockDraftService();
+      when(() => mockDraftService.loadDraft(any())).thenAnswer((_) async => {});
+      when(() => mockDraftService.clearDraft(any())).thenAnswer((_) async {});
+
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      final stateController = StreamController<VotingState>.broadcast();
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
+
+      await tester.pumpWidget(
+        createTestWidget(draftService: mockDraftService),
+      );
+      await tester.pumpAndSettle();
+
+      stateController.add(VotingSubmissionSuccess());
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockDraftService.clearDraft(any()));
+      await stateController.close();
+    });
+
+    testWidgets('does not clear draft when vote submission fails',
+        (tester) async {
+      final mockDraftService = MockDraftService();
+      when(() => mockDraftService.loadDraft(any())).thenAnswer((_) async => {});
+      when(() => mockDraftService.clearDraft(any())).thenAnswer((_) async {});
+
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      final stateController = StreamController<VotingState>.broadcast();
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        createTestWidget(draftService: mockDraftService),
+      );
+      await tester.pumpAndSettle();
+
+      stateController.add(const VotingFailure(error: 'Submission failed'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockDraftService.clearDraft(any()));
+      await stateController.close();
+    });
+
     testWidgets('shows error snackbar when vote submission fails',
         (tester) async {
       // Arrange
@@ -261,10 +316,70 @@ void main() {
       stateController.add(const VotingFailure(error: 'Submission failed'));
       await tester.pumpAndSettle();
 
-      // Assert: Error snackbar should be shown
-      expect(find.text('Ошибка: Submission failed'), findsOneWidget);
+      // Assert: User-friendly localized error is shown
+      expect(
+        find.text('Не удалось отправить голос. Попробуйте снова.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Submission failed'), findsNothing);
 
       stateController.close();
+    });
+
+    testWidgets('maps network vote failures to localized network message',
+        (tester) async {
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      final stateController = StreamController<VotingState>.broadcast();
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      stateController.add(
+        const VotingFailure(
+          error:
+              'SocketException: Failed host lookup: seasons.rudn.ru (OS Error)',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('SocketException'), findsNothing);
+
+      await stateController.close();
+    });
+
+    testWidgets('keeps already-voted as dedicated snackbar path',
+        (tester) async {
+      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+      final stateController = StreamController<VotingState>.broadcast();
+      when(() => mockVotingBloc.stream)
+          .thenAnswer((_) => stateController.stream);
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      stateController.add(const VotingFailure(error: 'User already voted'));
+      await tester.pumpAndSettle();
+
+      // Dedicated already-voted mapping is verified in
+      // user_friendly_error_mapper_test. Here we only assert that no generic
+      // or raw-technical vote error text leaks into UI.
+      expect(
+        find.text('Не удалось отправить голос. Попробуйте снова.'),
+        findsNothing,
+      );
+      expect(find.textContaining('already voted'), findsNothing);
+
+      await stateController.close();
     });
 
     testWidgets('disables submit button when user already voted',

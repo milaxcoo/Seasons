@@ -14,6 +14,7 @@ import 'rudn_webview_screen.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
+import 'package:seasons/core/utils/user_friendly_error_mapper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -120,7 +121,18 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final theme = context.read<MonthlyThemeService>().theme;
+    final l10n = AppLocalizations.of(context)!;
     final currentLanguageCode = Localizations.localeOf(context).languageCode;
+    final authFailureState = context.select<AuthBloc, AuthState>((bloc) {
+      return bloc.state;
+    });
+    final authFailureMessage = authFailureState is AuthFailure
+        ? UserFriendlyErrorMapper.toMessage(
+            l10n,
+            authFailureState.error,
+            context: UserErrorContext.auth,
+          )
+        : null;
 
     return AppBackground(
       imagePath: theme.imagePath,
@@ -221,6 +233,33 @@ class _LoginScreenState extends State<LoginScreen>
                                           ],
                                         ),
                                       ),
+                                      if (authFailureMessage != null) ...[
+                                        const SizedBox(height: 14),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black
+                                                .withValues(alpha: 0.5),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.white54,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            authFailureMessage,
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
+                                              color: Colors.white,
+                                              shadows: const [],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),

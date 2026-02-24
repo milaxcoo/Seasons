@@ -194,4 +194,47 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get tapToRetry => 'Нажмите, чтобы обновить';
+
+  @override
+  String get genericError => 'Что-то пошло не так. Попробуйте снова.';
+
+  @override
+  String get networkError =>
+      'Проблема с интернет-соединением. Проверьте сеть и попробуйте снова.';
+
+  @override
+  String get timeoutError => 'Сервер отвечает слишком долго. Попробуйте снова.';
+
+  @override
+  String get serverUnavailable =>
+      'Сервер временно недоступен. Попробуйте позже.';
+
+  @override
+  String get sessionExpiredReLogin => 'Сессия истекла. Войдите снова.';
+
+  @override
+  String get registrationFailed =>
+      'Не удалось завершить регистрацию. Попробуйте снова.';
+
+  @override
+  String get voteSubmitFailed =>
+      'Не удалось отправить голос. Попробуйте снова.';
+
+  @override
+  String get dataLoadFailed => 'Не удалось загрузить данные. Попробуйте снова.';
+
+  @override
+  String get unexpectedError =>
+      'Произошла непредвиденная ошибка. Попробуйте снова.';
+
+  @override
+  String get webViewLoadError =>
+      'Не удалось загрузить страницу входа. Проверьте подключение и повторите попытку.';
+
+  @override
+  String get retryAction => 'Повторить';
+
+  @override
+  String get loginSessionSaveFailed =>
+      'Не удалось сохранить сессию входа на устройстве. Повторите попытку.';
 }

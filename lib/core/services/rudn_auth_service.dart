@@ -40,6 +40,7 @@ class FlutterSecureStorageAdapter implements SecureStorageInterface {
 
 class RudnAuthService {
   static const _cookieKey = 'rudn_session_cookie';
+  static const _storageTimeout = Duration(seconds: 2);
 
   final SecureStorageInterface _storage;
 
@@ -64,12 +65,24 @@ class RudnAuthService {
   RudnAuthService._internal(this._storage);
 
   /// Saves the session cookie securely.
-  Future<void> saveCookie(String cookie) async {
+  Future<bool> saveCookie(String cookie) async {
     try {
       await _storage.write(key: _cookieKey, value: cookie);
+      final persisted = await _storage.read(key: _cookieKey).timeout(
+        _storageTimeout,
+        onTimeout: () {
+          debugPrint('Storage verification timed out on saveCookie');
+          return null;
+        },
+      );
+      final isPersisted = persisted == cookie;
+      if (!isPersisted) {
+        debugPrint('saveCookie verification failed');
+      }
+      return isPersisted;
     } catch (e) {
-      // If storage fails, we can't do much, but we shouldn't crash
       debugPrint('Error saving cookie: $e');
+      return false;
     }
   }
 
@@ -78,7 +91,7 @@ class RudnAuthService {
     try {
       // Add timeout to prevent hanging if KeyStore is corrupted/slow
       return await _storage.read(key: _cookieKey).timeout(
-        const Duration(seconds: 2),
+        _storageTimeout,
         onTimeout: () {
           debugPrint('Storage read timed out');
           return null;
@@ -91,11 +104,24 @@ class RudnAuthService {
   }
 
   /// Removes the stored session cookie (logout).
-  Future<void> logout() async {
+  Future<bool> logout() async {
     try {
       await _storage.delete(key: _cookieKey);
+      final remaining = await _storage.read(key: _cookieKey).timeout(
+        _storageTimeout,
+        onTimeout: () {
+          debugPrint('Storage verification timed out on logout');
+          return null;
+        },
+      );
+      if (remaining == null || remaining.isEmpty) {
+        return true;
+      }
+      debugPrint('logout verification failed: cookie is still present');
+      return false;
     } catch (e) {
       debugPrint('Error deleting cookie: $e');
+      return false;
     }
   }
 

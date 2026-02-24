@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:async';
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/l10n/app_localizations.dart';
@@ -87,5 +88,46 @@ void main() {
 
     final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
     expect(button.onPressed, isNull);
+  });
+
+  testWidgets(
+      'shows friendly localized registration failure without raw details',
+      (tester) async {
+    final stateController = StreamController<VotingState>.broadcast();
+    when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+    when(() => mockVotingBloc.stream).thenAnswer((_) => stateController.stream);
+
+    final event = model.VotingEvent(
+      id: 'reg-3',
+      title: 'Registration Error Case',
+      description: 'Registration details',
+      status: model.VotingStatus.registration,
+      registrationEndDate: DateTime.now().add(const Duration(days: 2)),
+      isRegistered: false,
+      questions: const [],
+      hasVoted: false,
+      results: const [],
+    );
+
+    await tester.pumpWidget(createTestWidget(event));
+    await tester.pumpAndSettle();
+
+    stateController.add(const RegistrationFailure(
+      error:
+          'POST https://seasons.rudn.ru/api/v1/voter/register_in_voting failed',
+    ));
+    await tester.pumpAndSettle();
+
+    final BuildContext context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context)!;
+
+    expect(
+      find.text(l10n.registrationFailed),
+      findsOneWidget,
+    );
+    expect(find.textContaining('https://'), findsNothing);
+    expect(find.textContaining('/api/'), findsNothing);
+
+    await stateController.close();
   });
 }

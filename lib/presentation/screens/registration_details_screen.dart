@@ -8,6 +8,7 @@ import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/widgets/app_background.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/core/theme.dart';
+import 'package:seasons/core/utils/user_friendly_error_mapper.dart';
 
 class RegistrationDetailsScreen extends StatelessWidget {
   final model.VotingEvent event;
@@ -89,9 +90,14 @@ class _RegistrationDetailsView extends StatelessWidget {
           Navigator.of(context).pop(true);
         }
         if (state is RegistrationFailure) {
+          final userMessage = UserFriendlyErrorMapper.toMessage(
+            l10n,
+            state.error,
+            context: UserErrorContext.registration,
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(l10n.registrationError(state.error)),
+                content: Text(userMessage),
                 backgroundColor: AppTheme.rudnRedColor),
           );
         }

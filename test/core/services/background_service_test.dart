@@ -273,6 +273,90 @@ void main() {
       timer.cancel();
     });
 
+    test('isAllowedNegotiatedWebSocketUrl accepts trusted wss URL', () {
+      expect(
+        isAllowedNegotiatedWebSocketUrl('wss://seasons.rudn.ru/socket'),
+        isTrue,
+      );
+    });
+
+    test('isAllowedNegotiatedWebSocketUrl rejects non-wss URL', () {
+      expect(
+        isAllowedNegotiatedWebSocketUrl('ws://seasons.rudn.ru/socket'),
+        isFalse,
+      );
+    });
+
+    test('isAllowedNegotiatedWebSocketUrl rejects untrusted host', () {
+      expect(
+        isAllowedNegotiatedWebSocketUrl('wss://evil.example.com/socket'),
+        isFalse,
+      );
+      expect(
+        isAllowedNegotiatedWebSocketUrl('wss://sub.seasons.rudn.ru/socket'),
+        isFalse,
+      );
+    });
+
+    test('isAllowedNegotiatedWebSocketUrl rejects malformed URL', () {
+      expect(isAllowedNegotiatedWebSocketUrl('not a ws url'), isFalse);
+    });
+
+    test('canAttemptBackgroundConnect blocks parallel connect attempts', () {
+      expect(
+        canAttemptBackgroundConnect(
+          isStopped: false,
+          isConnected: false,
+          isConnecting: false,
+        ),
+        isTrue,
+      );
+      expect(
+        canAttemptBackgroundConnect(
+          isStopped: false,
+          isConnected: false,
+          isConnecting: true,
+        ),
+        isFalse,
+      );
+      expect(
+        canAttemptBackgroundConnect(
+          isStopped: true,
+          isConnected: false,
+          isConnecting: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('shouldStopReconnectForAuth stops on missing cookie or auth status',
+        () {
+      expect(
+        shouldStopReconnectForAuth(cookie: null),
+        isTrue,
+      );
+      expect(
+        shouldStopReconnectForAuth(cookie: ''),
+        isTrue,
+      );
+      expect(
+        shouldStopReconnectForAuth(negotiateStatusCode: 401),
+        isTrue,
+      );
+      expect(
+        shouldStopReconnectForAuth(negotiateStatusCode: 403),
+        isTrue,
+      );
+      expect(
+        shouldStopReconnectForAuth(cookie: 'session-token'),
+        isFalse,
+      );
+      expect(
+        shouldStopReconnectForAuth(negotiateStatusCode: 500),
+        isFalse,
+      );
+    });
+
     test('onIosBackground returns true', () async {
       expect(await onIosBackground(mockInstance), isTrue);
     });
