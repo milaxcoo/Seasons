@@ -6,7 +6,9 @@ import 'package:seasons/data/models/question.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
+import 'package:seasons/core/services/background_service.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_connection_status.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 
@@ -25,6 +27,8 @@ void main() {
       votingBloc = VotingBloc(
         votingRepository: mockVotingRepository,
         backgroundServiceStream: mockServiceStreamController.stream,
+        refreshDebounce: const Duration(milliseconds: 20),
+        restoredStatusDuration: const Duration(milliseconds: 40),
       );
     });
 
@@ -68,6 +72,79 @@ void main() {
         completes,
       );
       await subscription.cancel();
+    });
+
+    test(
+        'emits reconnecting/waiting/syncing/restored lifecycle statuses on reconnect recovery',
+        () async {
+      when(() => mockVotingRepository.getEventsByStatus(any()))
+          .thenAnswer((_) async => []);
+      final statuses = <VotingConnectionStatus>[];
+      final subscription =
+          votingBloc.connectionStatusStream.listen(statuses.add);
+
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionReconnecting});
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionWaitingForNetwork});
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionConnected});
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(
+        statuses,
+        equals([
+          VotingConnectionStatus.reconnecting,
+          VotingConnectionStatus.waitingForNetwork,
+          VotingConnectionStatus.syncing,
+          VotingConnectionStatus.restored,
+          VotingConnectionStatus.connected,
+        ]),
+      );
+      await subscription.cancel();
+    });
+
+    test('dedupes identical connection statuses', () async {
+      final statuses = <VotingConnectionStatus>[];
+      final subscription =
+          votingBloc.connectionStatusStream.listen(statuses.add);
+
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionReconnecting});
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionReconnecting});
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionWaitingForNetwork});
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionWaitingForNetwork});
+
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+
+      expect(
+        statuses,
+        equals([
+          VotingConnectionStatus.reconnecting,
+          VotingConnectionStatus.waitingForNetwork,
+        ]),
+      );
+      await subscription.cancel();
+    });
+
+    test('coalesces reconnect catch-up refresh into one burst', () async {
+      when(() => mockVotingRepository.getEventsByStatus(any()))
+          .thenAnswer((_) async => []);
+
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionReconnecting});
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionConnected});
+      mockServiceStreamController
+          .add({'action': BackgroundService.actionConnectionConnected});
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      verify(() => mockVotingRepository.getEventsByStatus(any())).called(3);
     });
 
     group('FetchEventsByStatus', () {

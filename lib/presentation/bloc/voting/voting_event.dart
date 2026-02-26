@@ -25,6 +25,14 @@ class RefreshEventsSilent extends VotingEvent {
   List<Object> get props => [status];
 }
 
+class RefreshAllEventsSilent extends VotingEvent {
+  final bool emitRestoredStatus;
+  const RefreshAllEventsSilent({this.emitRestoredStatus = false});
+
+  @override
+  List<Object> get props => [emitRestoredStatus];
+}
+
 class RegisterForEvent extends VotingEvent {
   final String eventId;
   const RegisterForEvent({required this.eventId});

@@ -374,5 +374,30 @@
   "loginSessionSaveFailed": "Не удалось сохранить сессию входа на устройстве. Повторите попытку.",
   "@loginSessionSaveFailed": {
     "description": "Login persistence failure message"
+  },
+
+  "waitingForNetwork": "Ожидание сети...",
+  "@waitingForNetwork": {
+    "description": "Connection banner status while internet is unavailable"
+  },
+
+  "reconnecting": "Переподключение...",
+  "@reconnecting": {
+    "description": "Connection banner status while websocket reconnects"
+  },
+
+  "syncingUpdates": "Синхронизация обновлений...",
+  "@syncingUpdates": {
+    "description": "Connection banner status while app catches up after reconnect"
+  },
+
+  "connectionRestored": "Подключение восстановлено",
+  "@connectionRestored": {
+    "description": "Transient connection banner status after successful recovery"
+  },
+
+  "connectivityIssue": "Проблема с подключением. Пытаемся восстановить...",
+  "@connectivityIssue": {
+    "description": "Fallback connection banner status for degraded connection state"
   }
 }

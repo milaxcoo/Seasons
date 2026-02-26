@@ -48,6 +48,11 @@ class BackgroundService {
   // Notification channel IDs
   static const String serviceChannelId = 'seasons_service';
   static const String alertChannelId = 'seasons_alerts';
+  static const String actionAuthInvalid = 'auth_invalid';
+  static const String actionConnectionConnected = 'connection_connected';
+  static const String actionConnectionReconnecting = 'connection_reconnecting';
+  static const String actionConnectionWaitingForNetwork =
+      'connection_waiting_for_network';
 
   // WebSocket URL for negotiation
   static const String _wsNegotiateUrl =
@@ -221,6 +226,7 @@ void onStart(ServiceInstance service) async {
   bool isConnecting = false;
   int reconnectAttempts = 0;
   bool isStopped = false;
+  String? lastConnectionAction;
 
   void cancelRuntimeResources() {
     reconnectTimer?.cancel();
@@ -237,6 +243,19 @@ void onStart(ServiceInstance service) async {
     isConnected = false;
   }
 
+  void emitConnectionAction(String action, {Map<String, dynamic>? payload}) {
+    if (isStopped || action == lastConnectionAction) return;
+    lastConnectionAction = action;
+    try {
+      service.invoke('update', {
+        'action': action,
+        if (payload != null) ...payload,
+      });
+    } catch (_) {
+      // Ignore invoke errors when service channel is unavailable.
+    }
+  }
+
   Future<void> shutdownService({
     required String reason,
     bool notifyAuthInvalid = false,
@@ -251,7 +270,7 @@ void onStart(ServiceInstance service) async {
     if (notifyAuthInvalid) {
       try {
         service.invoke('update', {
-          'action': 'auth_invalid',
+          'action': BackgroundService.actionAuthInvalid,
           'reason': reason,
         });
       } catch (_) {
@@ -296,6 +315,13 @@ void onStart(ServiceInstance service) async {
     isConnecting = true;
 
     try {
+      if (reconnectAttempts > 0) {
+        emitConnectionAction(
+          BackgroundService.actionConnectionReconnecting,
+          payload: {'attempt': reconnectAttempts + 1},
+        );
+      }
+
       // Get auth cookie from secure storage (need to access it differently in isolate)
       final cookie = await RudnAuthService().getCookie();
       if (isStopped) return;
@@ -360,6 +386,10 @@ void onStart(ServiceInstance service) async {
             '${sanitizeUrlForLog(realWsUrl ?? '')}',
           );
         }
+        emitConnectionAction(
+          BackgroundService.actionConnectionReconnecting,
+          payload: {'reason': 'invalid_negotiated_url'},
+        );
         reconnectTimer = _scheduleReconnect(reconnectTimer, () {
           if (isStopped) return;
           unawaited(connect());
@@ -390,6 +420,7 @@ void onStart(ServiceInstance service) async {
       isConnected = true;
       reconnectTimer?.cancel();
       reconnectAttempts = 0; // Reset backoff on successful connection
+      emitConnectionAction(BackgroundService.actionConnectionConnected);
 
       // Listen to messages
       websocketSubscription = channel!.stream.listen(
@@ -416,6 +447,10 @@ void onStart(ServiceInstance service) async {
           if (kDebugMode) print("BackgroundService: WS Connection closed");
           isConnected = false;
           channel = null;
+          emitConnectionAction(
+            BackgroundService.actionConnectionReconnecting,
+            payload: {'reason': 'stream_done'},
+          );
           reconnectTimer = _scheduleReconnect(reconnectTimer, () {
             if (isStopped) return;
             unawaited(connect());
@@ -438,6 +473,12 @@ void onStart(ServiceInstance service) async {
           }
           isConnected = false;
           channel = null;
+          emitConnectionAction(
+            isLikelyNetworkIssue(error)
+                ? BackgroundService.actionConnectionWaitingForNetwork
+                : BackgroundService.actionConnectionReconnecting,
+            payload: {'reason': 'stream_error'},
+          );
           reconnectTimer = _scheduleReconnect(reconnectTimer, () {
             if (isStopped) return;
             unawaited(connect());
@@ -450,6 +491,12 @@ void onStart(ServiceInstance service) async {
         debugPrint(
             "BackgroundService: Connection failed: ${sanitizeObjectForLog(e)}");
       }
+      emitConnectionAction(
+        isLikelyNetworkIssue(e)
+            ? BackgroundService.actionConnectionWaitingForNetwork
+            : BackgroundService.actionConnectionReconnecting,
+        payload: {'reason': 'connect_failure'},
+      );
       reconnectTimer = _scheduleReconnect(reconnectTimer, () {
         if (isStopped) return;
         unawaited(connect());
@@ -661,6 +708,17 @@ bool isAuthInvalidWebSocketError(Object error) {
       value.contains('403') ||
       value.contains('unauthorized') ||
       value.contains('forbidden');
+}
+
+@visibleForTesting
+bool isLikelyNetworkIssue(Object error) {
+  final value = error.toString().toLowerCase();
+  return value.contains('socketexception') ||
+      value.contains('failed host lookup') ||
+      value.contains('network is unreachable') ||
+      value.contains('timed out') ||
+      value.contains('connection refused') ||
+      value.contains('no route to host');
 }
 
 @visibleForTesting

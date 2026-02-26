@@ -12,6 +12,7 @@ import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/home_tab/home_tab_cubit.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_connection_status.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/bloc/locale/locale_event.dart';
@@ -71,6 +72,10 @@ void main() {
         .thenReturn(null);
     when(() => mockVotingBloc.onAuthInvalid)
         .thenAnswer((_) => const Stream<void>.empty());
+    when(() => mockVotingBloc.connectionStatusStream)
+        .thenAnswer((_) => const Stream<VotingConnectionStatus>.empty());
+    when(() => mockVotingBloc.currentConnectionStatus)
+        .thenReturn(VotingConnectionStatus.connected);
   });
 
   tearDown(() {
@@ -80,7 +85,7 @@ void main() {
     // Overwriting in next setUp is sufficient.
   });
 
-  Widget createTestWidget() {
+  Widget createTestWidget({Locale locale = const Locale('ru')}) {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<MonthlyThemeService>(
@@ -96,7 +101,7 @@ void main() {
           BlocProvider<LocaleBloc>.value(value: mockLocaleBloc),
           BlocProvider<HomeTabCubit>.value(value: homeTabCubit),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -104,7 +109,7 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: [Locale('ru'), Locale('en')],
-          locale: Locale('ru'),
+          locale: locale,
           home: HomeScreen(),
         ),
       ),
@@ -133,8 +138,245 @@ void main() {
       expect(find.byType(ResultsIcon), findsWidgets);
     });
 
+    testWidgets('shows centered connection overlay for degraded/syncing states',
+        (tester) async {
+      final connectionStatusController =
+          StreamController<VotingConnectionStatus>.broadcast();
+      addTearDown(() async {
+        await connectionStatusController.close();
+      });
+
+      when(() => mockVotingBloc.connectionStatusStream)
+          .thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      connectionStatusController.add(VotingConnectionStatus.reconnecting);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Переподключение...'), findsOneWidget);
+      expect(find.byKey(const ValueKey('connection_status_overlay_loader')),
+          findsOneWidget);
+      expect(find.byKey(const ValueKey('connection_status_overlay_text')),
+          findsOneWidget);
+      final overlayText = tester.widget<Text>(
+        find.byKey(const ValueKey('connection_status_overlay_text')),
+      );
+      expect(overlayText.style?.fontSize, 20.0);
+      expect(find.text('Проблема с подключением. Пытаемся восстановить...'),
+          findsNothing);
+      expect(
+          find.byKey(const ValueKey('connection_status_overlay_reconnecting')),
+          findsOneWidget);
+
+      connectionStatusController.add(VotingConnectionStatus.waitingForNetwork);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Ожидание сети...'), findsOneWidget);
+      expect(
+          find.byKey(
+              const ValueKey('connection_status_overlay_waitingForNetwork')),
+          findsOneWidget);
+
+      connectionStatusController.add(VotingConnectionStatus.syncing);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Синхронизация обновлений...'), findsOneWidget);
+      expect(find.byKey(const ValueKey('connection_status_overlay_syncing')),
+          findsOneWidget);
+    });
+
+    testWidgets('connection overlay is localized in English', (tester) async {
+      final connectionStatusController =
+          StreamController<VotingConnectionStatus>.broadcast();
+      addTearDown(() async {
+        await connectionStatusController.close();
+      });
+
+      when(() => mockVotingBloc.connectionStatusStream)
+          .thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget(locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      connectionStatusController.add(VotingConnectionStatus.waitingForNetwork);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Waiting for network...'), findsOneWidget);
+    });
+
+    testWidgets('overlay is hidden in healthy connected state', (tester) async {
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('connection_status_overlay_hidden')),
+          findsOneWidget);
+      expect(find.byKey(const ValueKey('connection_status_overlay_content')),
+          findsNothing);
+      expect(find.byKey(const ValueKey('connection_content_absorb_off')),
+          findsOneWidget);
+    });
+
+    testWidgets('restored overlay hides after connected status',
+        (tester) async {
+      final connectionStatusController =
+          StreamController<VotingConnectionStatus>.broadcast();
+      addTearDown(() async {
+        await connectionStatusController.close();
+      });
+
+      when(() => mockVotingBloc.connectionStatusStream)
+          .thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      connectionStatusController.add(VotingConnectionStatus.restored);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Подключение восстановлено'), findsOneWidget);
+      expect(find.byKey(const ValueKey('connection_content_absorb_on')),
+          findsOneWidget);
+
+      connectionStatusController.add(VotingConnectionStatus.connected);
+      await tester.pumpAndSettle();
+      expect(find.text('Подключение восстановлено'), findsNothing);
+      expect(find.byKey(const ValueKey('connection_status_overlay_hidden')),
+          findsOneWidget);
+    });
+
+    testWidgets('blocks content-area taps while degraded overlay is active',
+        (tester) async {
+      final connectionStatusController =
+          StreamController<VotingConnectionStatus>.broadcast();
+      addTearDown(() async {
+        await connectionStatusController.close();
+      });
+
+      final events = [
+        model.VotingEvent(
+          id: 'reg-blocked-01',
+          title: 'Blocked Event',
+          description: 'Description',
+          status: model.VotingStatus.registration,
+          registrationEndDate: DateTime(2030, 12, 31),
+          isRegistered: false,
+          questions: const [],
+          hasVoted: false,
+          results: const [],
+        ),
+      ];
+
+      when(() => mockVotingBloc.connectionStatusStream)
+          .thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
+          events: events, status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+      expect(find.text('Blocked Event'), findsOneWidget);
+
+      connectionStatusController.add(VotingConnectionStatus.reconnecting);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const ValueKey('connection_content_absorb_on')),
+          findsOneWidget);
+
+      await tester.tap(find.text('Blocked Event'), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byType(RegistrationDetailsScreen), findsNothing);
+    });
+
+    testWidgets('does not stack duplicate overlays for identical statuses',
+        (tester) async {
+      final connectionStatusController =
+          StreamController<VotingConnectionStatus>.broadcast();
+      addTearDown(() async {
+        await connectionStatusController.close();
+      });
+
+      when(() => mockVotingBloc.connectionStatusStream)
+          .thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      connectionStatusController.add(VotingConnectionStatus.reconnecting);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      connectionStatusController.add(VotingConnectionStatus.reconnecting);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byKey(const ValueKey('connection_status_overlay_content')),
+          findsOneWidget);
+      expect(
+          find.byKey(const ValueKey('connection_status_overlay_reconnecting')),
+          findsOneWidget);
+    });
+
     testWidgets(
-        'renders CircularProgressIndicator when state is VotingLoadInProgress',
+        'auto-refreshes currently visible section after reconnect recovery',
+        (tester) async {
+      final connectionStatusController =
+          StreamController<VotingConnectionStatus>.broadcast();
+      addTearDown(() async {
+        await connectionStatusController.close();
+      });
+
+      homeTabCubit.setIndex(1, source: 'test_setup');
+      when(() => mockVotingBloc.connectionStatusStream)
+          .thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.active));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+      clearInteractions(mockVotingBloc);
+
+      connectionStatusController.add(VotingConnectionStatus.reconnecting);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      connectionStatusController.add(VotingConnectionStatus.restored);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 900));
+
+      verify(
+        () => mockVotingBloc
+            .add(const FetchEventsByStatus(status: model.VotingStatus.active)),
+      ).called(1);
+    });
+
+    testWidgets('renders SeasonsLoader when state is VotingLoadInProgress',
         (tester) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingLoadInProgress());

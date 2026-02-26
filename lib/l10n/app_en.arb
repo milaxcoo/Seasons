@@ -70,5 +70,10 @@
   "unexpectedError": "Unexpected error. Please try again.",
   "webViewLoadError": "Unable to load the sign-in page. Check connection and retry.",
   "retryAction": "Retry",
-  "loginSessionSaveFailed": "Could not save sign-in session on this device. Please retry."
+  "loginSessionSaveFailed": "Could not save sign-in session on this device. Please retry.",
+  "waitingForNetwork": "Waiting for network...",
+  "reconnecting": "Reconnecting...",
+  "syncingUpdates": "Syncing updates...",
+  "connectionRestored": "Connection restored",
+  "connectivityIssue": "Connection issue. Trying to recover..."
 }

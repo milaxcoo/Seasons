@@ -237,4 +237,20 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get loginSessionSaveFailed =>
       'Не удалось сохранить сессию входа на устройстве. Повторите попытку.';
+
+  @override
+  String get waitingForNetwork => 'Ожидание сети...';
+
+  @override
+  String get reconnecting => 'Переподключение...';
+
+  @override
+  String get syncingUpdates => 'Синхронизация обновлений...';
+
+  @override
+  String get connectionRestored => 'Подключение восстановлено';
+
+  @override
+  String get connectivityIssue =>
+      'Проблема с подключением. Пытаемся восстановить...';
 }

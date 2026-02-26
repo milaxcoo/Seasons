@@ -1,62 +1,165 @@
 import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
-import 'package:seasons/data/repositories/voting_repository.dart';
-import 'package:seasons/presentation/bloc/voting/voting_event.dart';
-import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/core/services/background_service.dart';
 import 'package:seasons/core/utils/safe_log.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
+import 'package:seasons/data/repositories/voting_repository.dart';
+import 'package:seasons/presentation/bloc/voting/voting_connection_status.dart';
+import 'package:seasons/presentation/bloc/voting/voting_event.dart';
+import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 
 class VotingBloc extends Bloc<VotingEvent, VotingState> {
   final VotingRepository _votingRepository;
+  final Duration _refreshDebounce;
+  final Duration _restoredStatusDuration;
+
   StreamSubscription? _serviceSubscription;
   final StreamController<void> _authInvalidController =
       StreamController<void>.broadcast();
+  final StreamController<VotingConnectionStatus> _connectionStatusController =
+      StreamController<VotingConnectionStatus>.broadcast();
+
+  Timer? _coalescedRefreshTimer;
+  Timer? _restoredStatusTimer;
+  bool _pendingRefreshNeedsRestoredStatus = false;
+  bool _needsCatchUpAfterReconnect = false;
+  VotingConnectionStatus _currentConnectionStatus =
+      VotingConnectionStatus.connected;
 
   Stream<void> get onAuthInvalid => _authInvalidController.stream;
+  Stream<VotingConnectionStatus> get connectionStatusStream =>
+      _connectionStatusController.stream;
+  VotingConnectionStatus get currentConnectionStatus =>
+      _currentConnectionStatus;
 
   VotingBloc({
     required VotingRepository votingRepository,
     Stream<Map<String, dynamic>?>? backgroundServiceStream,
+    Duration refreshDebounce = const Duration(milliseconds: 350),
+    Duration restoredStatusDuration = const Duration(seconds: 2),
   })  : _votingRepository = votingRepository,
+        _refreshDebounce = refreshDebounce,
+        _restoredStatusDuration = restoredStatusDuration,
         super(VotingInitial()) {
     on<FetchEventsByStatus>(_onFetchEventsByStatus);
     on<RefreshEventsSilent>(_onRefreshEventsSilent);
+    on<RefreshAllEventsSilent>(_onRefreshAllEventsSilent);
     on<RegisterForEvent>(_onRegisterForEvent);
     on<SubmitVote>(_onSubmitVote);
     on<FetchResults>(_onFetchResults);
     on<VotingUpdated>(_onVotingUpdated);
     on<VotingListUpdated>(_onVotingListUpdated);
 
-    // Listen to BackgroundService for updates (or provided stream for testing)
+    // Listen to BackgroundService for updates (or provided stream for testing).
     _serviceSubscription =
         (backgroundServiceStream ?? BackgroundService().on).listen((data) {
       if (data == null) return;
 
       final action = data['action'] as String?;
+      if (action == null || action.isEmpty) return;
       if (kDebugMode) {
         debugPrint("VotingBloc: Received from BackgroundService: $action");
       }
 
-      if (action == 'auth_invalid') {
-        _authInvalidController.add(null);
-        return;
-      }
-
-      // Refresh ALL statuses to update all button colors and lists
-      // We do this regardless of current state to ensure data is fresh
-      add(RefreshEventsSilent(status: model.VotingStatus.registration));
-      add(RefreshEventsSilent(status: model.VotingStatus.active));
-      add(RefreshEventsSilent(status: model.VotingStatus.completed));
+      _handleBackgroundServiceAction(action);
     });
   }
 
+  void _handleBackgroundServiceAction(String action) {
+    if (action == BackgroundService.actionAuthInvalid) {
+      _authInvalidController.add(null);
+      return;
+    }
+
+    if (action == BackgroundService.actionConnectionReconnecting) {
+      _needsCatchUpAfterReconnect = true;
+      _emitConnectionStatus(VotingConnectionStatus.reconnecting);
+      return;
+    }
+
+    if (action == BackgroundService.actionConnectionWaitingForNetwork) {
+      _needsCatchUpAfterReconnect = true;
+      _emitConnectionStatus(VotingConnectionStatus.waitingForNetwork);
+      return;
+    }
+
+    if (action == BackgroundService.actionConnectionConnected) {
+      if (_needsCatchUpAfterReconnect) {
+        _needsCatchUpAfterReconnect = false;
+        _emitConnectionStatus(VotingConnectionStatus.syncing);
+        _scheduleCoalescedSilentRefresh(emitRestoredStatus: true);
+      } else {
+        _emitConnectionStatus(VotingConnectionStatus.connected);
+      }
+      return;
+    }
+
+    // Coalesce bursty WS actions into one refresh wave.
+    _scheduleCoalescedSilentRefresh(emitRestoredStatus: false);
+  }
+
+  void _scheduleCoalescedSilentRefresh({required bool emitRestoredStatus}) {
+    _pendingRefreshNeedsRestoredStatus =
+        _pendingRefreshNeedsRestoredStatus || emitRestoredStatus;
+    if (_coalescedRefreshTimer?.isActive ?? false) return;
+
+    _coalescedRefreshTimer = Timer(_refreshDebounce, () {
+      if (isClosed) return;
+      final shouldEmitRestored = _pendingRefreshNeedsRestoredStatus;
+      _pendingRefreshNeedsRestoredStatus = false;
+      add(RefreshAllEventsSilent(emitRestoredStatus: shouldEmitRestored));
+    });
+  }
+
+  void _emitConnectionStatus(VotingConnectionStatus status) {
+    if (_currentConnectionStatus == status) return;
+    if (status != VotingConnectionStatus.restored) {
+      _restoredStatusTimer?.cancel();
+      _restoredStatusTimer = null;
+    }
+    _currentConnectionStatus = status;
+    _connectionStatusController.add(status);
+  }
+
+  void _emitRestoredThenConnected() {
+    _emitConnectionStatus(VotingConnectionStatus.restored);
+    _restoredStatusTimer?.cancel();
+    _restoredStatusTimer = Timer(_restoredStatusDuration, () {
+      if (isClosed) return;
+      _emitConnectionStatus(VotingConnectionStatus.connected);
+    });
+  }
+
+  Future<bool> _refreshStatusSilent(
+    model.VotingStatus status,
+    Emitter<VotingState> emit,
+  ) async {
+    try {
+      final events = await _votingRepository.getEventsByStatus(status);
+      emit(VotingEventsLoadSuccess(
+        events: events,
+        status: status,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      ));
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Silent refresh failed for $status: ${sanitizeObjectForLog(e)}',
+        );
+      }
+      return false;
+    }
+  }
+
   void _onVotingListUpdated(
-      VotingListUpdated event, Emitter<VotingState> emit) {
+    VotingListUpdated event,
+    Emitter<VotingState> emit,
+  ) {
     if (state is VotingEventsLoadSuccess) {
       final currentState = state as VotingEventsLoadSuccess;
-      // Filter for current tab status
       final filtered =
           event.events.where((e) => e.status == currentState.status).toList();
 
@@ -77,20 +180,12 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
   void _onVotingUpdated(VotingUpdated event, Emitter<VotingState> emit) {
     if (state is VotingEventsLoadSuccess) {
       final currentState = state as VotingEventsLoadSuccess;
-      // Update the modified event in the list
       final updatedEvents = currentState.events.map((e) {
         if (e.id == event.event.id) {
-          // Preserve status logic if backend doesn't send it?
-          // But backend sends status usually.
           return event.event;
         }
         return e;
       }).toList();
-
-      // If the event is NOT in the list, should we add it?
-      // Only if it matches the current status filter.
-      // But checking status logic here is complex.
-      // For now, let's just update existing ones.
 
       emit(VotingEventsLoadSuccess(
         events: updatedEvents,
@@ -102,13 +197,18 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
 
   @override
   Future<void> close() {
+    _coalescedRefreshTimer?.cancel();
+    _restoredStatusTimer?.cancel();
     _serviceSubscription?.cancel();
     _authInvalidController.close();
+    _connectionStatusController.close();
     return super.close();
   }
 
   Future<void> _onFetchEventsByStatus(
-      FetchEventsByStatus event, Emitter<VotingState> emit) async {
+    FetchEventsByStatus event,
+    Emitter<VotingState> emit,
+  ) async {
     emit(VotingLoadInProgress());
     try {
       final events = await _votingRepository.getEventsByStatus(event.status);
@@ -122,27 +222,46 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     }
   }
 
-  // Silent refresh for FCM - no loading spinner
   Future<void> _onRefreshEventsSilent(
-      RefreshEventsSilent event, Emitter<VotingState> emit) async {
-    // Don't emit loading state - update silently in background
-    try {
-      final events = await _votingRepository.getEventsByStatus(event.status);
-      emit(VotingEventsLoadSuccess(
-        events: events,
-        status: event.status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
-    } catch (e) {
-      // Silently fail - don't show error to user for background refresh
-      if (kDebugMode) {
-        debugPrint('Silent refresh failed: ${sanitizeObjectForLog(e)}');
-      }
+    RefreshEventsSilent event,
+    Emitter<VotingState> emit,
+  ) async {
+    await _refreshStatusSilent(event.status, emit);
+  }
+
+  Future<void> _onRefreshAllEventsSilent(
+    RefreshAllEventsSilent event,
+    Emitter<VotingState> emit,
+  ) async {
+    final statuses = <model.VotingStatus>[
+      model.VotingStatus.registration,
+      model.VotingStatus.active,
+      model.VotingStatus.completed,
+    ];
+
+    var hasSuccess = false;
+    for (final status in statuses) {
+      final success = await _refreshStatusSilent(status, emit);
+      hasSuccess = hasSuccess || success;
     }
+
+    if (!hasSuccess) {
+      _emitConnectionStatus(VotingConnectionStatus.disconnected);
+      return;
+    }
+
+    if (event.emitRestoredStatus) {
+      _emitRestoredThenConnected();
+      return;
+    }
+
+    _emitConnectionStatus(VotingConnectionStatus.connected);
   }
 
   Future<void> _onRegisterForEvent(
-      RegisterForEvent event, Emitter<VotingState> emit) async {
+    RegisterForEvent event,
+    Emitter<VotingState> emit,
+  ) async {
     emit(RegistrationInProgress());
     try {
       await _votingRepository.registerForEvent(event.eventId);
@@ -152,14 +271,10 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     }
   }
 
-  // FIXED: Обработчик теперь получает полный 'event' из события SubmitVote
-  // и ему больше не нужно искать его в 'state'.
   Future<void> _onSubmitVote(
       SubmitVote event, Emitter<VotingState> emit) async {
     emit(VotingLoadInProgress());
     try {
-      // Теперь мы передаем 'event.event' (полный объект VotingEvent)
-      // и 'event.answers' в репозиторий.
       final isVoteAccepted =
           await _votingRepository.submitVote(event.event, event.answers);
       if (isVoteAccepted) {

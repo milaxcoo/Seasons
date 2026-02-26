@@ -13,6 +13,7 @@ import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 import 'package:seasons/presentation/bloc/home_tab/home_tab_cubit.dart';
 import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
+import 'package:seasons/presentation/bloc/voting/voting_connection_status.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
 import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/bloc/locale/locale_bloc.dart';
@@ -599,7 +600,91 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Timer? _uiTicker;
   StreamSubscription? _navigationSubscription;
   StreamSubscription<void>? _authInvalidSubscription;
+  StreamSubscription<VotingConnectionStatus>? _connectionStatusSubscription;
   bool _authInvalidHandled = false;
+  VotingConnectionStatus? _connectionOverlayStatus;
+  Timer? _postReconnectSectionRefreshTimer;
+  bool _needsSectionRefreshAfterReconnect = false;
+
+  bool _isConnectionOverlayBlocking(VotingConnectionStatus? status) {
+    if (status == null) return false;
+    return status == VotingConnectionStatus.waitingForNetwork ||
+        status == VotingConnectionStatus.reconnecting ||
+        status == VotingConnectionStatus.syncing ||
+        status == VotingConnectionStatus.disconnected;
+  }
+
+  String? _connectionStatusTitleFor(
+    VotingConnectionStatus? status,
+    AppLocalizations l10n,
+  ) {
+    switch (status) {
+      case VotingConnectionStatus.waitingForNetwork:
+        return l10n.waitingForNetwork;
+      case VotingConnectionStatus.reconnecting:
+        return l10n.reconnecting;
+      case VotingConnectionStatus.syncing:
+        return l10n.syncingUpdates;
+      case VotingConnectionStatus.restored:
+        return l10n.connectionRestored;
+      case VotingConnectionStatus.disconnected:
+        return l10n.connectivityIssue;
+      case VotingConnectionStatus.connected:
+      case null:
+        return null;
+    }
+  }
+
+  void _schedulePostReconnectSectionRefresh() {
+    _postReconnectSectionRefreshTimer?.cancel();
+    _postReconnectSectionRefreshTimer = Timer(
+      const Duration(milliseconds: 700),
+      () {
+        if (!mounted) return;
+        final currentIndex = context.read<HomeTabCubit>().state.index;
+        _refreshCurrentPage(currentIndex);
+      },
+    );
+  }
+
+  void _handleConnectionStatus(VotingConnectionStatus status) {
+    if (!mounted) return;
+
+    final isDegraded = status == VotingConnectionStatus.waitingForNetwork ||
+        status == VotingConnectionStatus.reconnecting ||
+        status == VotingConnectionStatus.syncing ||
+        status == VotingConnectionStatus.disconnected;
+    if (isDegraded) {
+      _needsSectionRefreshAfterReconnect = true;
+    }
+
+    if (status == VotingConnectionStatus.restored &&
+        _needsSectionRefreshAfterReconnect) {
+      _needsSectionRefreshAfterReconnect = false;
+      _schedulePostReconnectSectionRefresh();
+    }
+
+    if (status == VotingConnectionStatus.connected) {
+      if (_needsSectionRefreshAfterReconnect) {
+        _needsSectionRefreshAfterReconnect = false;
+        _schedulePostReconnectSectionRefresh();
+      }
+      if (_connectionOverlayStatus != null) {
+        setState(() {
+          _connectionOverlayStatus = null;
+        });
+      }
+      return;
+    }
+
+    if (_connectionOverlayStatus == status) {
+      return;
+    }
+
+    setState(() {
+      _connectionOverlayStatus = status;
+    });
+  }
 
   void _handleAuthInvalid() {
     if (!mounted || _authInvalidHandled) return;
@@ -652,6 +737,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _authInvalidSubscription = context.read<VotingBloc>().onAuthInvalid.listen(
           (_) => _handleAuthInvalid(),
         );
+    final votingBloc = context.read<VotingBloc>();
+    _handleConnectionStatus(votingBloc.currentConnectionStatus);
+    _connectionStatusSubscription =
+        votingBloc.connectionStatusStream.listen(_handleConnectionStatus);
 
     // UI Ticker: Updates every 1 second to handle time-based UI changes instantly
     // e.g. "Registration closes in..." or switching from Open to Closed based on local time
@@ -737,6 +826,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _sectionTransitionTimeoutTimer?.cancel();
     _navigationSubscription?.cancel();
     _authInvalidSubscription?.cancel();
+    _connectionStatusSubscription?.cancel();
+    _postReconnectSectionRefreshTimer?.cancel();
     _timeNotifier.dispose();
     super.dispose();
   }
@@ -754,6 +845,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     final mediaQuery = MediaQuery.of(context);
     final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final l10n = AppLocalizations.of(context)!;
+    final overlayStatus = _connectionOverlayStatus;
+    final overlayTitle = _connectionStatusTitleFor(overlayStatus, l10n);
+    final shouldShowOverlay = overlayStatus != null && overlayTitle != null;
+    final shouldBlockContentForConnection =
+        shouldShowOverlay || _isConnectionOverlayBlocking(overlayStatus);
 
     if (kDebugMode &&
         (_lastLoggedOrientation != mediaQuery.orientation ||
@@ -767,7 +864,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           'size': '${mediaQuery.size.width.toStringAsFixed(1)}x'
               '${mediaQuery.size.height.toStringAsFixed(1)}',
           'selected_index': selectedPanelIndex,
-          'tap_blocking_overlay': false,
+          'tap_blocking_overlay': shouldBlockContentForConnection,
         },
       );
     }
@@ -908,14 +1005,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            IgnorePointer(
-              ignoring: _transitionTargetIndex != null,
+            AbsorbPointer(
+              key: ValueKey(
+                'connection_content_absorb_${shouldBlockContentForConnection ? 'on' : 'off'}',
+              ),
+              absorbing: _transitionTargetIndex != null ||
+                  shouldBlockContentForConnection,
               child: AnimatedScale(
                 scale: _sectionContentScale,
                 duration: _sectionFadeDuration,
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
-                  opacity: _sectionContentOpacity,
+                  opacity: shouldBlockContentForConnection
+                      ? 0.0
+                      : _sectionContentOpacity,
                   duration: _sectionFadeDuration,
                   curve: Curves.easeOut,
                   child: GestureDetector(
@@ -948,7 +1051,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               duration: _loaderFadeDuration,
               switchInCurve: Curves.easeOut,
               switchOutCurve: Curves.easeIn,
-              child: !_showSectionLoader
+              child: !_showSectionLoader || shouldShowOverlay
                   ? const SizedBox.shrink(key: ValueKey('section_loader_off'))
                   : IgnorePointer(
                       key: const ValueKey('section_loader_on'),
@@ -959,6 +1062,96 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
+            ),
+            IgnorePointer(
+              ignoring: true,
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) {
+                    final squeezeAnimation = TweenSequence<double>([
+                      TweenSequenceItem(
+                        tween: Tween<double>(
+                          begin: _sectionSqueezedScale,
+                          end: 1.02,
+                        ).chain(
+                          CurveTween(curve: Curves.easeOutCubic),
+                        ),
+                        weight: 70,
+                      ),
+                      TweenSequenceItem(
+                        tween: Tween<double>(
+                          begin: 1.02,
+                          end: 1.0,
+                        ).chain(
+                          CurveTween(curve: Curves.easeInOutCubic),
+                        ),
+                        weight: 30,
+                      ),
+                    ]).animate(animation);
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: squeezeAnimation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: !shouldShowOverlay
+                      ? const SizedBox.shrink(
+                          key: ValueKey('connection_status_overlay_hidden'),
+                        )
+                      : Padding(
+                          key: ValueKey(
+                            'connection_status_overlay_${overlayStatus.name}',
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 340),
+                            child: SizedBox(
+                              key: const ValueKey(
+                                  'connection_status_overlay_content'),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(
+                                    key: ValueKey(
+                                        'connection_status_overlay_loader'),
+                                    width: 44,
+                                    height: 44,
+                                    child: SeasonsLoader(
+                                      size: 44,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    overlayTitle,
+                                    key: const ValueKey(
+                                        'connection_status_overlay_text'),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 20.0,
+                                      shadows: [
+                                        const Shadow(
+                                          blurRadius: 6,
+                                          color: Colors.black87,
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ),
             ),
           ],
         ),

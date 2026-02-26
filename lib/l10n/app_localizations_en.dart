@@ -235,4 +235,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get loginSessionSaveFailed =>
       'Could not save sign-in session on this device. Please retry.';
+
+  @override
+  String get waitingForNetwork => 'Waiting for network...';
+
+  @override
+  String get reconnecting => 'Reconnecting...';
+
+  @override
+  String get syncingUpdates => 'Syncing updates...';
+
+  @override
+  String get connectionRestored => 'Connection restored';
+
+  @override
+  String get connectivityIssue => 'Connection issue. Trying to recover...';
 }
