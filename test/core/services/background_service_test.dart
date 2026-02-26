@@ -329,6 +329,21 @@ void main() {
       );
     });
 
+    test('isLikelyNetworkIssue classifies common connectivity errors', () {
+      expect(
+        isLikelyNetworkIssue(Exception('SocketException: Failed host lookup')),
+        isTrue,
+      );
+      expect(
+        isLikelyNetworkIssue(Exception('SocketException: Connection refused')),
+        isTrue,
+      );
+      expect(
+        isLikelyNetworkIssue(Exception('Unauthorized 403')),
+        isFalse,
+      );
+    });
+
     test('shouldStopReconnectForAuth stops on missing cookie or auth status',
         () {
       expect(

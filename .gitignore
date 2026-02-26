@@ -50,6 +50,7 @@ android/local.properties
 .env
 .env.local
 .env.*.local
+.local_signing/
 .secrets
 *.key
 *.keystore

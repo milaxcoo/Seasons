@@ -517,6 +517,36 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось сохранить сессию входа на устройстве. Повторите попытку.'**
   String get loginSessionSaveFailed;
+
+  /// Connection banner status while internet is unavailable
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидание сети...'**
+  String get waitingForNetwork;
+
+  /// Connection banner status while websocket reconnects
+  ///
+  /// In ru, this message translates to:
+  /// **'Переподключение...'**
+  String get reconnecting;
+
+  /// Connection banner status while app catches up after reconnect
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизация обновлений...'**
+  String get syncingUpdates;
+
+  /// Transient connection banner status after successful recovery
+  ///
+  /// In ru, this message translates to:
+  /// **'Подключение восстановлено'**
+  String get connectionRestored;
+
+  /// Fallback connection banner status for degraded connection state
+  ///
+  /// In ru, this message translates to:
+  /// **'Проблема с подключением. Пытаемся восстановить...'**
+  String get connectivityIssue;
 }
 
 class _AppLocalizationsDelegate

@@ -1,15 +1,20 @@
 # Store Release Checklist (Google Play + Apple App Store)
 
-Last verified: 2026-02-17
+Last verified: 2026-02-26
+
+This file is a release-readiness snapshot. For step-by-step execution, use:
+- [Release runbook](RELEASE_RUNBOOK.md)
+- [Signing and distribution setup](SIGNING_AND_DISTRIBUTION_SETUP.md)
+- [Manual smoke checklist](MANUAL_SMOKE_CHECKLIST.md)
 
 ## Automated quality gates
 
 - [x] `flutter analyze --fatal-infos --fatal-warnings`
 - [x] `flutter test --coverage`
-- [x] Coverage >= 50% (current: 53.28%)
+- [x] Coverage gate enforced at >= 50% filtered coverage in CI
 - [x] Android release APK build (signed)
 - [x] Android release AAB build (signed)
-- [x] iOS archive build (`flutter build ipa --release --no-codesign`)
+- [x] iOS release build (`flutter build ios --release --no-codesign`)
 
 ## Security and transport checks
 
@@ -33,7 +38,7 @@ Last verified: 2026-02-17
 - [x] Analyze step is strict (`--fatal-infos --fatal-warnings`)
 - [x] Coverage threshold enforced in CI
 - [x] Android signing secrets required and validated in CI
-- [x] CodeQL runs for Android (`java-kotlin`) and iOS (`swift`)
+- [x] CodeQL runs for Android (`java-kotlin`) only; Swift/iOS native code is not currently scanned
 
 ## Policy references to track before submission
 
@@ -55,14 +60,3 @@ Last verified: 2026-02-17
 - [ ] App Store Connect: upload screenshots for all required device classes
 - [ ] App Store Connect: complete app review notes and test account details (if needed)
 - [ ] App Store Connect: sign archive with production certificate and provisioning profile
-
-## Recommended pre-release smoke tests
-
-- [ ] Fresh install login flow
-- [ ] Session restore after app restart
-- [ ] Voting registration flow
-- [ ] Vote submit flow
-- [ ] Results screen rendering
-- [ ] Push/local notification tap navigation
-- [ ] Logout and session cleanup
-- [ ] Offline and flaky-network behavior
