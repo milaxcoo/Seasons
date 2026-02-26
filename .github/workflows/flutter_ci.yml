@@ -2,9 +2,9 @@ name: Flutter CI
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev, main ]
   pull_request:
-    branches: [ dev ]
+    branches: [ dev, main ]
   workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered
@@ -78,6 +78,7 @@ jobs:
           path: |
             coverage/lcov.info
             coverage/lcov_filtered.info
+          if-no-files-found: error
           retention-days: 14
 
   build_android:
@@ -158,6 +159,7 @@ jobs:
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
           retention-days: 14
 
       - name: 📦 Upload AAB artifact
@@ -165,13 +167,14 @@ jobs:
         with:
           name: release-aab
           path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
           retention-days: 14
 
   build_ios:
     name: 🍎 Build iOS
     runs-on: macos-latest
     needs: analyze_and_test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
 
     permissions:
       contents: read
@@ -214,4 +217,5 @@ jobs:
         with:
           name: ios-build
           path: build/ios/iphoneos/Runner.app
+          if-no-files-found: error
           retention-days: 14

@@ -2,12 +2,16 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "main", "devs", "dev" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main", "devs", "dev" ]
+    branches: [ "main", "dev" ]
   workflow_dispatch:
   schedule:
     - cron: '21 10 * * 0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:

@@ -76,14 +76,25 @@ flutter test --coverage       # Run with coverage report
 
 ## ⚙️ CI Quality Gates
 
-Every push/PR to `main`, `devs`, or `dev` triggers the [Flutter CI](.github/workflows/flutter_ci.yml) pipeline:
+Every push/PR to `main` or `dev` triggers the [Flutter CI](.github/workflows/flutter_ci.yml) pipeline:
 
 1. 🎨 **Format** — `dart format --set-exit-if-changed`
 2. 🔍 **Analyze** — `flutter analyze --fatal-infos --fatal-warnings`
 3. 🧪 **Test** — `flutter test --coverage`
 4. ✅ **Coverage** — ≥ 50% filtered (generated code excluded; raw + filtered reports uploaded)
 
-CodeQL security scanning ([workflow](.github/workflows/codeql.yml)) also runs for Java/Kotlin and Swift code.
+CodeQL security scanning ([workflow](.github/workflows/codeql.yml)) currently runs for Java/Kotlin only. Swift/native iOS code is not currently scanned by CodeQL in this repository.
+
+## 📚 Documentation
+
+- [Documentation index](docs/README.md)
+- [Release runbook](docs/RELEASE_RUNBOOK.md)
+- [Store release checklist](docs/STORE_RELEASE_CHECKLIST.md)
+- [Signing and distribution setup](docs/SIGNING_AND_DISTRIBUTION_SETUP.md)
+- [Manual smoke checklist](docs/MANUAL_SMOKE_CHECKLIST.md)
+- [Known limitations](docs/KNOWN_LIMITATIONS.md)
+- [Release ownership decisions template](docs/RELEASE_OWNERSHIP_DECISIONS_TEMPLATE.md)
+- Privacy policy pages: [English](docs/privacy_en.html), [Russian](docs/privacy_ru.html)
 
 ## 📁 Project Structure
 
