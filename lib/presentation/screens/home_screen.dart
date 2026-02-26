@@ -1130,6 +1130,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     overlayTitle,
                                     key: const ValueKey(
                                         'connection_status_overlay_text'),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyLarge
@@ -1193,8 +1195,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               body: SafeArea(
                 bottom:
                     true, // Enable bottom safe area for Galaxy Fold / Android Gestures
-                left: false,
-                right: false,
+                left: true,
+                right: true,
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
