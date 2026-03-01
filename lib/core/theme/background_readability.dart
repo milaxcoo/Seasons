@@ -55,6 +55,12 @@ class BackgroundReadabilityProfile {
         centerLiftAlpha = 0.0,
         bottomLiftAlpha = 0.0;
 
+  bool get hasOverlays =>
+      globalLiftAlpha > 0 ||
+      topLiftAlpha > 0 ||
+      centerLiftAlpha > 0 ||
+      bottomLiftAlpha > 0;
+
   @visibleForTesting
   factory BackgroundReadabilityProfile.fromBrightness(
     BackgroundBrightnessSnapshot snapshot,
