@@ -54,9 +54,20 @@ class AnimatedPanelSelector extends StatelessWidget {
             builder: (context, constraints) {
               final double barWidth =
                   constraints.maxWidth - (horizontalMargin * 2);
-              // Effective width for buttons is barWidth minus internal padding
+              // Protect minimum slot width in extreme narrow layouts by
+              // reducing side padding before geometry has to collapse.
+              const double minPreferredButtonSlotWidth = 56.0;
+              final double maxUsableInternalPadding = math.max(
+                0.0,
+                (barWidth - (minPreferredButtonSlotWidth * 3)) / 2,
+              );
+              final double resolvedInternalPadding = math.min(
+                internalHorizontalPadding,
+                maxUsableInternalPadding,
+              );
+              // Effective width for buttons is barWidth minus internal padding.
               final double effectiveButtonAreaWidth =
-                  barWidth - (internalHorizontalPadding * 2);
+                  math.max(0.0, barWidth - (resolvedInternalPadding * 2));
               final double buttonSlotWidth = effectiveButtonAreaWidth / 3;
 
               return TweenAnimationBuilder<double>(
@@ -79,7 +90,7 @@ class AnimatedPanelSelector extends StatelessWidget {
                           bumpHeight: bumpHeight,
                           totalHeight: totalHeight,
                           horizontalMargin: horizontalMargin,
-                          internalPadding: internalHorizontalPadding,
+                          internalPadding: resolvedInternalPadding,
                           totalWidth: constraints.maxWidth,
                         ),
                         child: Container(
@@ -107,7 +118,7 @@ class AnimatedPanelSelector extends StatelessWidget {
                         height: barHeight,
                         child: Padding(
                           padding: EdgeInsets.symmetric(
-                              horizontal: internalHorizontalPadding),
+                              horizontal: resolvedInternalPadding),
                           child: Row(
                             children: [
                               // Button 1 - Registration
@@ -269,6 +280,9 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     final double cornerRadius = barHeight / 2; // 35px for 70px bar
     const double maxBlobWidth = 95.0;
     const double minBlobWidth = 86.0;
+    const double extremeEdgeTrimMax = 2.2;
+    const double extremeEdgeTrimRange = 28.0;
+    const double cornerVisualInset = 0.75;
 
     // Calculate bar dimensions
     final double barTop = totalHeight - barHeight;
@@ -319,16 +333,25 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
 
     basePath.close();
 
-    const double svgWidth = 203.0;
-    const double svgHeight = 45.5;
-    const double blobCenterSvgX = 101.5;
-    const double blobMinSvgX = 6.7;
-    const double shoulderJoinOffset = 0.5;
+    const double shoulderJoinOffset = 0.0;
+    const double expressiveSlotWidth = 72.0;
+    const double compactSlotWidth = 44.0;
+    const double compactHeightFactorMin = 0.42;
+    const double compactWidthFactorMin = 1.20;
+    const double expressiveWidthFactor = 1.85;
 
-    // ===== STEP 2: Create Blob/Curve Shape (Exact SVG) =====
-    // Extend blob height to exact visible height (overlap handled by path skirt)
-    final double blobHeight = bumpHeight.clamp(12.0, 28.0).toDouble();
-    // Keep bump center strictly aligned to selected button center.
+    // ===== STEP 2: Create Blob/Curve Shape =====
+    final double slotSupportT = ((buttonSlotWidth - compactSlotWidth) /
+            (expressiveSlotWidth - compactSlotWidth))
+        .clamp(0.0, 1.0)
+        .toDouble();
+    if (slotSupportT < 0.01) {
+      return basePath;
+    }
+    final double baseBlobHeight = bumpHeight.clamp(12.0, 28.0).toDouble();
+    final double compactHeightFactor = compactHeightFactorMin +
+        ((1.0 - compactHeightFactorMin) * slotSupportT);
+    final double blobHeight = baseBlobHeight * compactHeightFactor;
     final double desiredBlobCenterX = barLeft +
         internalPadding +
         (animationValue * buttonSlotWidth) +
@@ -341,49 +364,84 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
         ((distanceToNearestBarEdge - (cornerRadius + 36.0)) / 34.0)
             .clamp(0.0, 1.0)
             .toDouble();
-    final double blobWidth =
-        minBlobWidth + ((maxBlobWidth - minBlobWidth) * edgeInfluence);
-    final double scaleX = blobWidth / svgWidth;
-    final double scaleY = blobHeight / svgHeight;
-    final double blobStartX = desiredBlobCenterX - (blobCenterSvgX * scaleX);
+    final double maxWidthBySlot = buttonSlotWidth *
+        (compactWidthFactorMin +
+            ((expressiveWidthFactor - compactWidthFactorMin) * slotSupportT));
+    final double resolvedMaxBlobWidth = math.min(maxBlobWidth, maxWidthBySlot);
+    final double resolvedMinBlobWidth = math.min(
+      minBlobWidth,
+      math.max(28.0, resolvedMaxBlobWidth - 6.0),
+    );
+    final double blobWidthBase = resolvedMinBlobWidth +
+        ((resolvedMaxBlobWidth - resolvedMinBlobWidth) * edgeInfluence);
+    // Tiny edge-only taper to remove residual protrusion on far-left/right tabs.
+    final double extremeEdgeTrimT =
+        ((cornerRadius + 44.0) - distanceToNearestBarEdge)
+                .clamp(0.0, extremeEdgeTrimRange)
+                .toDouble() /
+            extremeEdgeTrimRange;
+    final double edgeTrim =
+        extremeEdgeTrimMax * extremeEdgeTrimT * extremeEdgeTrimT;
+    final double blobWidthAfterEdgeTrim = (blobWidthBase - edgeTrim)
+        .clamp(
+          math.max(18.0, resolvedMinBlobWidth - extremeEdgeTrimMax),
+          resolvedMaxBlobWidth,
+        )
+        .toDouble();
+    // Keep shoulder joins inside rounded-corner safe bounds on extreme tabs.
+    final double safeLeftShoulderX = barLeft + cornerRadius + cornerVisualInset;
+    final double safeRightShoulderX =
+        barRight - cornerRadius - cornerVisualInset;
+    final double maxHalfWidthBySafeEdges = math.max(
+      0.0,
+      math.min(
+        desiredBlobCenterX - safeLeftShoulderX,
+        safeRightShoulderX - desiredBlobCenterX,
+      ),
+    );
+    final double safeEdgeLimitedWidth = maxHalfWidthBySafeEdges * 2.0;
+    final double blobWidth = math.min(
+      blobWidthAfterEdgeTrim,
+      safeEdgeLimitedWidth,
+    );
+    if (blobWidth < 3.0 || blobHeight < 2.0) {
+      return basePath;
+    }
     final double shoulderBaselineY = barTop + shoulderJoinOffset;
-    final double blobStartY = shoulderBaselineY - (svgHeight * scaleY);
+    final double blobPeakY = shoulderBaselineY - blobHeight;
+    final double leftShoulderX = desiredBlobCenterX - (blobWidth / 2);
+    final double rightShoulderX = desiredBlobCenterX + (blobWidth / 2);
+    final double shoulderControlDx = blobWidth * 0.18;
+    final double peakControlDx = blobWidth * 0.25;
+    final double skirtDepth = barHeight + blobHeight + 22.0;
 
     final blobPath = Path();
-    // Start deep at the CENTER (V-shape skirt) to absolutely prevent corner poking
-    blobPath.moveTo(blobCenterSvgX, 45.5 + 100.0);
-    // Come up to the surface start point
-    blobPath.lineTo(blobMinSvgX, 45.5);
-
-    // Curves (unchanged)
-    blobPath.relativeCubicTo(15.0, 0.0, 20.0, -1.0, 23.3, -4.0);
-    blobPath.relativeCubicTo(5.7, -2.3, 9.9, -5.0, 18.1, -10.5);
-    blobPath.relativeCubicTo(10.7, -7.1, 11.8, -9.2, 20.6, -14.3);
-    blobPath.relativeCubicTo(5.0, -2.9, 9.2, -5.2, 15.2, -7.0);
-    blobPath.relativeCubicTo(7.1, -2.1, 13.3, -2.3, 17.6, -2.1);
-    blobPath.relativeCubicTo(4.2, -0.2, 10.5, 0.1, 17.6, 2.1);
-    blobPath.relativeCubicTo(6.1, 1.8, 10.2, 4.1, 15.2, 7.0);
-    blobPath.relativeCubicTo(8.8, 5.0, 9.9, 7.1, 20.6, 14.3);
-    blobPath.relativeCubicTo(8.3, 5.5, 12.4, 8.2, 18.1, 10.5);
-    blobPath.relativeCubicTo(3.0, 3.0, 8.3, 4.0, 23.3, 4.0);
-
-    // Go back to absolute deep center to close the V
-    blobPath.lineTo(blobCenterSvgX, 45.5 + 100.0);
+    blobPath.moveTo(leftShoulderX, shoulderBaselineY);
+    blobPath.cubicTo(
+      leftShoulderX + shoulderControlDx,
+      shoulderBaselineY,
+      desiredBlobCenterX - peakControlDx,
+      blobPeakY,
+      desiredBlobCenterX,
+      blobPeakY,
+    );
+    blobPath.cubicTo(
+      desiredBlobCenterX + peakControlDx,
+      blobPeakY,
+      rightShoulderX - shoulderControlDx,
+      shoulderBaselineY,
+      rightShoulderX,
+      shoulderBaselineY,
+    );
+    blobPath.lineTo(rightShoulderX, shoulderBaselineY + skirtDepth);
+    blobPath.lineTo(leftShoulderX, shoulderBaselineY + skirtDepth);
     blobPath.close();
-
-    // Scale and position the blob while keeping shoulder baseline anchored to barTop.
-    final Matrix4 matrix = Matrix4.identity();
-    matrix.setTranslationRaw(blobStartX, blobStartY, 0.0);
-    // Scale X and Y using setEntry (diagonal indices 0 and 5)
-    matrix.setEntry(0, 0, scaleX);
-    matrix.setEntry(1, 1, scaleY);
-    final scaledBlobPath = blobPath.transform(matrix.storage);
 
     // ===== STEP 3: MERGE into Single Path =====
     final unifiedPath = Path.combine(
       PathOperation.union,
       basePath,
-      scaledBlobPath,
+      blobPath,
     );
 
     return unifiedPath;

@@ -129,63 +129,39 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final adaptive = context.adaptiveLayout;
-    final isLandscape = adaptive.isLandscape;
+    final headerStyle = adaptive.headerStyle;
 
     final headerContent = Padding(
       padding: EdgeInsets.symmetric(
-        vertical: adaptive.headerVerticalPadding,
+        vertical: headerStyle.verticalPadding,
       ),
       child: Column(
         children: [
           Text(
             'Seasons',
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontSize: adaptive.headerTitleFontSize,
+                  fontSize: headerStyle.titleFontSize,
                   height: 1.0,
                   color: Colors.white,
-                  shadows: [
-                    const Shadow(
-                        blurRadius: 15,
-                        color: Colors.black87), // Stronger outer glow
-                    const Shadow(
-                        blurRadius: 4,
-                        color: Colors.black), // Sharper inner shadow
-                  ],
+                  shadows: headerStyle.titleShadows,
                   fontWeight: FontWeight.w900,
                 ),
           ),
-          if (!isLandscape)
-            Transform.translate(
-              offset: Offset(0, adaptive.headerSubtitleOffsetY),
-              child: Text(
-                'времена года',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      shadows: [
-                        const Shadow(blurRadius: 10, color: Colors.black87),
-                        const Shadow(blurRadius: 2, color: Colors.black),
-                      ],
-                      fontStyle: FontStyle.normal,
-                      fontWeight: FontWeight.w900,
-                      fontSize: adaptive.headerSubtitleFontSize,
-                      letterSpacing: adaptive.headerSubtitleLetterSpacing,
-                    ),
-              ),
-            )
-          else
-            Text(
+          Transform.translate(
+            offset: Offset(0, headerStyle.subtitleOffsetY),
+            child: Text(
               'времена года',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shadows: [
-                      const Shadow(blurRadius: 6, color: Colors.black87),
-                    ],
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.94),
+                    shadows: headerStyle.subtitleShadows,
                     fontStyle: FontStyle.normal,
-                    fontWeight: FontWeight.w700,
-                    fontSize: adaptive.headerSubtitleFontSize,
-                    letterSpacing: adaptive.headerSubtitleLetterSpacing,
+                    fontWeight: FontWeight.w900,
+                    fontSize: headerStyle.subtitleFontSize,
+                    letterSpacing: headerStyle.subtitleLetterSpacing,
+                    height: 1.0,
                   ),
             ),
+          ),
         ],
       ),
     );
@@ -847,6 +823,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final overlayDimensions = adaptive.overlayDimensions;
     final mediaQuery = MediaQuery.of(context);
     final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final footerStyle = adaptive.footerStyle;
+    final shouldShowFooter = footerStyle.isVisible;
     final l10n = AppLocalizations.of(context)!;
     final overlayStatus = _connectionOverlayStatus;
     final overlayTitle = _connectionStatusTitleFor(overlayStatus, l10n);
@@ -877,63 +855,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final topBar = _TopBar(imagePath: theme.imagePath);
 
     // 2. Header (Seasons Title)
-    final Widget landscapeHeader = Stack(
-      alignment: Alignment.center,
-      children: [
-        IgnorePointer(
-          child: Padding(
-            padding: EdgeInsets.only(top: adaptive.headerVerticalPadding + 1),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Seasons',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontSize: adaptive.headerTitleFontSize,
-                        height: 1.0,
-                        color: Colors.white,
-                        shadows: [
-                          const Shadow(blurRadius: 10, color: Colors.black54),
-                          const Shadow(blurRadius: 2, color: Colors.black87)
-                        ],
-                        fontWeight: FontWeight.w900,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                Transform.translate(
-                  offset: const Offset(0, 0),
-                  child: Text(
-                    'времена года',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'HemiHead',
-                          color: Colors.white.withValues(alpha: 0.9),
-                          shadows: [
-                            const Shadow(blurRadius: 4, color: Colors.black87),
-                          ],
-                          fontStyle: FontStyle.normal,
-                          fontWeight: FontWeight.w900,
-                          fontSize: adaptive.headerSubtitleFontSize,
-                          letterSpacing: adaptive.headerSubtitleLetterSpacing,
-                          height: 1.0,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-    final Widget header = isLandscape
-        ? (debugThemeTapHandler == null
-            ? landscapeHeader
-            : GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: debugThemeTapHandler,
-                child: landscapeHeader,
-              ))
-        : _Header(onDebugTap: debugThemeTapHandler);
+    final Widget header = _Header(onDebugTap: debugThemeTapHandler);
 
     // 3. Navbar (Panel Selector)
     final navbar = BlocListener<VotingBloc, VotingState>(
@@ -1182,9 +1104,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
 
     // 5. Footer (Poem)
-    // Pass isLandscape=false to footer when in split-view so it doesn't limit height
-    // Actually, we will just use the footer widget and rely on layout constraints
-    final footer = _Footer(poem: theme.poem, author: theme.author);
+    final footer = _Footer(
+      poem: theme.poem,
+      author: theme.author,
+      style: footerStyle,
+    );
 
     Widget content = BlocListener<VotingBloc, VotingState>(
       listenWhen: (previous, current) =>
@@ -1267,7 +1191,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                             SizedBox(
                                               height: adaptive.headerToNavGap,
                                             ),
-                                            Expanded(child: footer),
+                                            if (shouldShowFooter)
+                                              Expanded(child: footer),
                                           ],
                                         ),
                                       ),
@@ -1283,7 +1208,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 header,
                                 navbar,
                                 Expanded(child: votingListContent),
-                                footer,
+                                if (shouldShowFooter) footer,
                               ],
                             ),
                     ),
@@ -1323,8 +1248,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 class _Footer extends StatefulWidget {
   final String poem;
   final String author;
+  final AdaptiveFooterStyle style;
 
-  const _Footer({required this.poem, required this.author});
+  const _Footer({
+    required this.poem,
+    required this.author,
+    required this.style,
+  });
 
   @override
   State<_Footer> createState() => _FooterState();
@@ -1505,18 +1435,18 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final adaptive = context.adaptiveLayout;
-    final isLandscape = adaptive.isLandscape;
+    final style = widget.style;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
         adaptive.homeSectionHorizontalPadding,
-        isLandscape ? 4.0 : 4.0,
+        style.outerTopPadding,
         adaptive.homeSectionHorizontalPadding,
-        isLandscape
-            ? (adaptive.isExpanded ? 12.0 : 8.0)
-            : (adaptive.isExpanded ? 30.0 : 24.0),
+        style.outerBottomPadding,
       ),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         width: double.infinity, // Ensure full width frame
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(26.0),
@@ -1534,17 +1464,12 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
         ),
         clipBehavior: Clip.antiAlias,
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.all(style.contentPadding),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: isLandscape
-                    ? MediaQuery.of(context).size.height * 0.80
-                    : (adaptive.isExpanded
-                        ? 170.0
-                        : adaptive.isMedium
-                            ? 155.0
-                            : 140.0),
+                maxHeight: style.maxContentHeight,
+                maxWidth: style.maxTextWidth,
               ),
               child: NotificationListener<ScrollNotification>(
                 onNotification: (ScrollNotification notification) {
@@ -1595,14 +1520,14 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white,
-                            height: adaptive.footerPoemLineHeight,
-                            fontSize: adaptive.footerPoemFontSize,
+                            height: style.poemLineHeight,
+                            fontSize: style.poemFontSize,
                             shadows: [
                               const Shadow(blurRadius: 6, color: Colors.black87)
                             ],
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: style.poemAuthorSpacing),
                         Text(
                           widget.author,
                           textAlign: TextAlign.left,
@@ -1610,7 +1535,7 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white,
                             fontStyle: FontStyle.italic,
-                            fontSize: adaptive.footerAuthorFontSize,
+                            fontSize: style.authorFontSize,
                             shadows: [
                               const Shadow(blurRadius: 6, color: Colors.black87)
                             ],
