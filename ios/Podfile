@@ -41,6 +41,9 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      # Xcode module verifier can fail for Flutter plugin pods (e.g. Swift-generated
+      # headers importing Flutter) even when runtime build is valid.
+      config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
     end
   end
 

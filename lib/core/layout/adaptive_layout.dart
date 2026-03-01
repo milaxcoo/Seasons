@@ -275,25 +275,25 @@ class AdaptiveLayoutData {
   double get footerPoemFontSize {
     if (isPhoneLikeLandscape) {
       final base = switch (sizeClass) {
-        AdaptiveSizeClass.compact => 15.6,
-        AdaptiveSizeClass.medium => 16.2,
-        AdaptiveSizeClass.expanded => 16.8,
+        AdaptiveSizeClass.compact => 14.8,
+        AdaptiveSizeClass.medium => 15.4,
+        AdaptiveSizeClass.expanded => 16.0,
       };
       final growth =
           ((availableWidth - 620.0) / 720.0).clamp(0.0, 1.0).toDouble();
-      return (base + growth).clamp(15.4, 18.2);
+      return (base + growth).clamp(14.6, 17.4);
     }
     final base = switch (sizeClass) {
-      AdaptiveSizeClass.compact => isLandscape ? 16.2 : 15.3,
-      AdaptiveSizeClass.medium => isLandscape ? 17.8 : 16.2,
-      AdaptiveSizeClass.expanded => isLandscape ? 19.2 : 17.0,
+      AdaptiveSizeClass.compact => isLandscape ? 15.2 : 15.3,
+      AdaptiveSizeClass.medium => isLandscape ? 16.8 : 16.2,
+      AdaptiveSizeClass.expanded => isLandscape ? 18.2 : 17.0,
     };
     final growth = isLandscape
         ? ((availableWidth - 700.0) / 480.0).clamp(0.0, 2.4)
         : ((availableWidth - 380.0) / 560.0).clamp(0.0, 1.1);
     return (base + growth).clamp(
-      isLandscape ? 16.0 : 15.0,
-      isLandscape ? 22.0 : 18.5,
+      isLandscape ? 15.0 : 15.0,
+      isLandscape ? 21.0 : 18.5,
     );
   }
 
@@ -304,16 +304,16 @@ class AdaptiveLayoutData {
 
   double get footerAuthorFontSize {
     final base = switch (sizeClass) {
-      AdaptiveSizeClass.compact => isLandscape ? 13.8 : 13.0,
-      AdaptiveSizeClass.medium => isLandscape ? 14.5 : 13.4,
-      AdaptiveSizeClass.expanded => isLandscape ? 15.2 : 14.0,
+      AdaptiveSizeClass.compact => isLandscape ? 12.8 : 13.0,
+      AdaptiveSizeClass.medium => isLandscape ? 13.5 : 13.4,
+      AdaptiveSizeClass.expanded => isLandscape ? 14.2 : 14.0,
     };
     final growth = isLandscape
         ? ((availableWidth - 700.0) / 1000.0).clamp(0.0, 0.8)
         : ((availableWidth - 380.0) / 900.0).clamp(0.0, 0.6);
     return (base + growth).clamp(
-      isLandscape ? 13.5 : 12.8,
-      isLandscape ? 16.0 : 14.6,
+      isLandscape ? 12.5 : 12.8,
+      isLandscape ? 15.0 : 14.6,
     );
   }
 
