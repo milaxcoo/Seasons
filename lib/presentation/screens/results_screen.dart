@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:seasons/core/layout/adaptive_layout.dart';
 import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/presentation/widgets/app_background.dart';
@@ -66,90 +67,92 @@ class _ResultsView extends StatelessWidget {
     final endDate = event.votingEndDate != null
         ? dateFormat.format(event.votingEndDate!)
         : l10n.notSet;
-
-    // FIXED: Standardized scrollable area style (Window with internal scroll)
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final detailStyle = context.adaptiveLayout.detailLayoutStyle;
     return SafeArea(
       child: Center(
         child: Padding(
-          // Responsive padding: Smaller margins in landscape to maximize card size
-          padding: isLandscape
-              ? const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0)
-              : const EdgeInsets.symmetric(horizontal: 12.0, vertical: 24.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(26),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2), // Subtle shadow
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: SingleChildScrollView(
-                padding: isLandscape
-                    ? const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 4.0)
-                    : const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize:
-                      MainAxisSize.min, // Shrink to fit content if small
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      event.title,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.w900, fontSize: 20),
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.grey, height: 1),
-                    const SizedBox(height: 16),
-                    if (event.description.isNotEmpty) ...[
+          padding: detailStyle.outerPadding,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: detailStyle.maxContentWidth),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(26),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(detailStyle.cardPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                       Text(
-                        event.description,
-                        textAlign: TextAlign.left,
-                        style: Theme.of(context).textTheme.bodyLarge,
+                        event.title,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              fontSize: detailStyle.titleFontSize,
+                            ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: detailStyle.sectionGap),
                       const Divider(color: Colors.grey, height: 1),
-                      const SizedBox(height: 16),
-                    ],
-                    _InfoRow(label: l10n.votingStartLabel, value: startDate),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.grey, height: 1),
-                    const SizedBox(height: 16),
-                    _InfoRow(label: l10n.votingEndLabel, value: endDate),
-                    const SizedBox(height: 32),
-                    _ResultsTable(
-                      results: event.results,
-                      isLandscape: isLandscape,
-                    ),
-                    const SizedBox(height: 32),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(26),
+                      SizedBox(height: detailStyle.sectionGap),
+                      if (event.description.isNotEmpty) ...[
+                        Text(
+                          event.description,
+                          textAlign: TextAlign.left,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        SizedBox(height: detailStyle.sectionGap),
+                        const Divider(color: Colors.grey, height: 1),
+                        SizedBox(height: detailStyle.sectionGap),
+                      ],
+                      _InfoRow(
+                        label: l10n.votingStartLabel,
+                        value: startDate,
+                        style: detailStyle,
                       ),
-                      child: Center(
-                        child: Text(
-                          l10n.sessionCompleted,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: Colors.white),
+                      SizedBox(height: detailStyle.sectionGap),
+                      const Divider(color: Colors.grey, height: 1),
+                      SizedBox(height: detailStyle.sectionGap),
+                      _InfoRow(
+                        label: l10n.votingEndLabel,
+                        value: endDate,
+                        style: detailStyle,
+                      ),
+                      SizedBox(height: detailStyle.sectionGapLarge),
+                      _ResultsTable(
+                        results: event.results,
+                        style: detailStyle,
+                      ),
+                      SizedBox(height: detailStyle.sectionGapLarge),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                            vertical: detailStyle.actionVerticalPadding),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        child: Center(
+                          child: Text(
+                            l10n.sessionCompleted,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.copyWith(color: Colors.white),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -163,8 +166,8 @@ class _ResultsView extends StatelessWidget {
 // Виджет для всей секции с результатами
 class _ResultsTable extends StatelessWidget {
   final List<QuestionResult> results;
-  final bool isLandscape;
-  const _ResultsTable({required this.results, required this.isLandscape});
+  final AdaptiveDetailLayoutStyle style;
+  const _ResultsTable({required this.results, required this.style});
 
   @override
   Widget build(BuildContext context) {
@@ -173,10 +176,12 @@ class _ResultsTable extends StatelessWidget {
       return Text(l10n.resultsUnavailable);
     }
 
-    // Portrait: more generous padding for readability
-    final containerPadding = isLandscape
-        ? const EdgeInsets.all(16)
-        : const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+    final containerPadding = EdgeInsets.symmetric(
+      horizontal: style.cardPadding +
+          (style.isExtremeCompact ? 0.0 : style.sectionGapSmall),
+      vertical: style.cardPadding +
+          (style.isExtremeCompact ? 0.0 : style.sectionGapSmall),
+    );
 
     return Container(
       padding: containerPadding,
@@ -192,17 +197,17 @@ class _ResultsTable extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.w900,
-                  fontSize: isLandscape ? null : 18,
+                  fontSize: style.isExtremeCompact ? null : 18,
                 ),
           ),
-          SizedBox(height: isLandscape ? 8 : 12),
+          SizedBox(height: style.sectionGapSmall + 4),
           const Divider(),
-          SizedBox(height: isLandscape ? 8 : 12),
+          SizedBox(height: style.sectionGapSmall + 4),
           ...results.asMap().entries.map((entry) {
             int index = entry.key;
             QuestionResult questionResult = entry.value;
             return Padding(
-              padding: EdgeInsets.only(top: isLandscape ? 16.0 : 32.0),
+              padding: EdgeInsets.only(top: style.sectionGapLarge),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -210,10 +215,10 @@ class _ResultsTable extends StatelessWidget {
                     '${index + 1}. ${questionResult.name}',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w900,
-                          fontSize: isLandscape ? null : 16,
+                          fontSize: style.isExtremeCompact ? null : 16,
                         ),
                   ),
-                  SizedBox(height: isLandscape ? 8 : 18),
+                  SizedBox(height: style.sectionGap),
                   _buildDataTable(context, questionResult, l10n),
                 ],
               ),
@@ -251,9 +256,10 @@ class _ResultsTable extends StatelessWidget {
 
     // --- ВИЗУАЛЬНЫЕ НАСТРОЙКИ ---
     // Portrait: more spacious cells
-    final cellPadding = isLandscape
-        ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
-        : const EdgeInsets.symmetric(horizontal: 16, vertical: 18);
+    final cellPadding = EdgeInsets.symmetric(
+      horizontal: style.tableCellHorizontalPadding,
+      vertical: style.tableCellVerticalPadding,
+    );
 
     // Вспомогательная функция для ячейки
     Widget buildCell(String text,
@@ -367,28 +373,57 @@ class _ResultsTable extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
+  final AdaptiveDetailLayoutStyle style;
 
-  const _InfoRow({required this.label, required this.value});
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    required this.style,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(color: Colors.black54)),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.bodyLarge,
+    return LayoutBuilder(builder: (context, constraints) {
+      final shouldStack = style.isExtremeCompact || constraints.maxWidth < 350;
+      if (shouldStack) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: Colors.black54)),
+            SizedBox(height: style.sectionGapSmall),
+            Text(
+              value,
+              textAlign: TextAlign.left,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: style.rowLabelWidth,
+            child: Text(label,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: Colors.black54)),
           ),
-        ),
-      ],
-    );
+          SizedBox(width: style.rowGap),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ],
+      );
+    });
   }
 }

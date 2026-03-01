@@ -48,7 +48,6 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     on<RefreshAllEventsSilent>(_onRefreshAllEventsSilent);
     on<RegisterForEvent>(_onRegisterForEvent);
     on<SubmitVote>(_onSubmitVote);
-    on<FetchResults>(_onFetchResults);
     on<VotingUpdated>(_onVotingUpdated);
     on<VotingListUpdated>(_onVotingListUpdated);
 
@@ -239,10 +238,36 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       model.VotingStatus.completed,
     ];
 
+    // Fetch all statuses in parallel.
+    final results = await Future.wait(statuses.map((status) async {
+      try {
+        final events = await _votingRepository.getEventsByStatus(status);
+        return (status: status, events: events, success: true);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'Silent refresh failed for $status: ${sanitizeObjectForLog(e)}',
+          );
+        }
+        return (
+          status: status,
+          events: <model.VotingEvent>[],
+          success: false,
+        );
+      }
+    }));
+
+    // Emit results sequentially (Emitter does not support concurrent emissions).
     var hasSuccess = false;
-    for (final status in statuses) {
-      final success = await _refreshStatusSilent(status, emit);
-      hasSuccess = hasSuccess || success;
+    for (final result in results) {
+      if (result.success) {
+        hasSuccess = true;
+        emit(VotingEventsLoadSuccess(
+          events: result.events,
+          status: result.status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ));
+      }
     }
 
     if (!hasSuccess) {
@@ -282,17 +307,6 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
       } else {
         emit(const VotingFailure(error: 'User already voted'));
       }
-    } catch (e) {
-      emit(VotingFailure(error: e.toString()));
-    }
-  }
-
-  Future<void> _onFetchResults(
-      FetchResults event, Emitter<VotingState> emit) async {
-    emit(VotingLoadInProgress());
-    try {
-      final results = await _votingRepository.getResultsForEvent(event.eventId);
-      emit(VotingResultsLoadSuccess(results: results));
     } catch (e) {
       emit(VotingFailure(error: e.toString()));
     }

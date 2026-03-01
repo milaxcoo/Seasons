@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:seasons/core/monthly_theme_data.dart';
+import 'package:seasons/core/layout/adaptive_layout.dart';
 import 'package:seasons/core/navigation/corporate_page_transition.dart';
 import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/core/services/notification_navigation_service.dart';
@@ -38,8 +39,8 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
     final currentLanguageCode = Localizations.localeOf(context).languageCode;
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final adaptive = context.adaptiveLayout;
+    final isLandscape = adaptive.isLandscape;
 
     String userLogin = 'User';
     if (authState is AuthAuthenticated) {
@@ -49,8 +50,9 @@ class _TopBar extends StatelessWidget {
     return Padding(
       // Reduced padding in landscape to save vertical space
       padding: EdgeInsets.symmetric(
-          horizontal: isLandscape ? 16.0 : 24.0,
-          vertical: isLandscape ? 0.0 : 8.0),
+        horizontal: adaptive.homeSectionHorizontalPadding,
+        vertical: isLandscape ? 0.0 : (adaptive.isExpanded ? 10.0 : 8.0),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -126,67 +128,40 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final adaptive = context.adaptiveLayout;
+    final headerStyle = adaptive.headerStyle;
 
     final headerContent = Padding(
       padding: EdgeInsets.symmetric(
-          vertical: isLandscape ? 2.0 : 4.0), // Reduced from 10.0
+        vertical: headerStyle.verticalPadding,
+      ),
       child: Column(
         children: [
           Text(
             'Seasons',
-            style: (isLandscape
-                    ? Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontSize: 20) // Very compact in landscape
-                    : Theme.of(context).textTheme.displayMedium)
-                ?.copyWith(
-              color: Colors.white,
-              shadows: [
-                const Shadow(
-                    blurRadius: 15,
-                    color: Colors.black87), // Stronger outer glow
-                const Shadow(
-                    blurRadius: 4, color: Colors.black), // Sharper inner shadow
-              ],
-              fontWeight: FontWeight.w900,
-            ),
+            style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                  fontSize: headerStyle.titleFontSize,
+                  height: 1.0,
+                  color: Colors.white,
+                  shadows: headerStyle.titleShadows,
+                  fontWeight: FontWeight.w900,
+                ),
           ),
-          if (!isLandscape)
-            Transform.translate(
-              offset:
-                  const Offset(0, -5), // Move slightly closer to Seasons title
-              child: Text(
-                'времена года',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      shadows: [
-                        const Shadow(blurRadius: 10, color: Colors.black87),
-                        const Shadow(blurRadius: 2, color: Colors.black),
-                      ],
-                      fontStyle: FontStyle.normal,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      letterSpacing: 5,
-                    ),
-              ),
-            )
-          else
-            Text(
+          Transform.translate(
+            offset: Offset(0, headerStyle.subtitleOffsetY),
+            child: Text(
               'времена года',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    shadows: [
-                      const Shadow(blurRadius: 6, color: Colors.black87),
-                    ],
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.94),
+                    shadows: headerStyle.subtitleShadows,
                     fontStyle: FontStyle.normal,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                    letterSpacing: 2,
+                    fontWeight: FontWeight.w900,
+                    fontSize: headerStyle.subtitleFontSize,
+                    letterSpacing: headerStyle.subtitleLetterSpacing,
+                    height: 1.0,
                   ),
             ),
+          ),
         ],
       ),
     );
@@ -214,6 +189,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   static const Duration _loaderFadeDuration = Duration(milliseconds: 120);
   static const Duration _minLoaderVisibleDuration = Duration(milliseconds: 180);
   static const Duration _sectionTransitionTimeout = Duration(seconds: 4);
+  static const Duration _metricsSyncDebounceDuration =
+      Duration(milliseconds: 320);
   static const double _sectionSqueezedScale = 0.92;
 
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
@@ -244,6 +221,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int? _debugThemeMonth;
   int? _resolvedThemeMonth;
   bool _isAppResumed = true;
+  Timer? _metricsSyncDebounceTimer;
+  AdaptiveFooterMode? _stableFooterMode;
+  HomeLayoutMode? _stableHomeLayoutMode;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -792,7 +772,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       },
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _metricsSyncDebounceTimer?.cancel();
+    _metricsSyncDebounceTimer = Timer(_metricsSyncDebounceDuration, () {
       if (!mounted) return;
       final targetIndex = context.read<HomeTabCubit>().state.index;
       _movePageToIndex(
@@ -828,6 +809,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _authInvalidSubscription?.cancel();
     _connectionStatusSubscription?.cancel();
     _postReconnectSectionRefreshTimer?.cancel();
+    _metricsSyncDebounceTimer?.cancel();
     _timeNotifier.dispose();
     super.dispose();
   }
@@ -843,8 +825,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final selectedPanelIndex =
         context.select((HomeTabCubit cubit) => cubit.state.index);
 
+    final adaptive = context.adaptiveLayout;
+    final navDimensions = adaptive.navDimensions;
+    final overlayDimensions = adaptive.overlayDimensions;
     final mediaQuery = MediaQuery.of(context);
-    final isLandscape = mediaQuery.orientation == Orientation.landscape;
+    final rawHomeLayoutMode = adaptive.homeLayoutMode;
+    final stableHomeLayoutMode = adaptive.resolveStableHomeLayoutMode(
+      previousMode: _stableHomeLayoutMode ?? rawHomeLayoutMode,
+    );
+    _stableHomeLayoutMode = stableHomeLayoutMode;
+    final useSplitLandscape = stableHomeLayoutMode == HomeLayoutMode.split;
+    final rawFooterMode = adaptive.footerMode;
+    final stableFooterMode = adaptive.resolveStableFooterMode(
+      previousMode: _stableFooterMode ?? rawFooterMode,
+    );
+    _stableFooterMode = stableFooterMode;
+    final footerStyle = adaptive.footerStyleForMode(stableFooterMode);
+    final shouldShowFooter = footerStyle.isVisible;
     final l10n = AppLocalizations.of(context)!;
     final overlayStatus = _connectionOverlayStatus;
     final overlayTitle = _connectionStatusTitleFor(overlayStatus, l10n);
@@ -863,6 +860,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           'orientation': mediaQuery.orientation.name,
           'size': '${mediaQuery.size.width.toStringAsFixed(1)}x'
               '${mediaQuery.size.height.toStringAsFixed(1)}',
+          'layout_mode_raw': rawHomeLayoutMode.name,
+          'layout_mode_stable': stableHomeLayoutMode.name,
+          'footer_mode_raw': rawFooterMode.name,
+          'footer_mode_stable': stableFooterMode.name,
+          'footer_budget':
+              adaptive.footerBudgetAfterContentProtection.toStringAsFixed(1),
+          'pane_primary_w':
+              adaptive.homePrimaryPaneWidthForSplit.toStringAsFixed(1),
+          'pane_secondary_w':
+              adaptive.homeSecondaryPaneWidthForSplit.toStringAsFixed(1),
           'selected_index': selectedPanelIndex,
           'tap_blocking_overlay': shouldBlockContentForConnection,
         },
@@ -875,64 +882,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final topBar = _TopBar(imagePath: theme.imagePath);
 
     // 2. Header (Seasons Title)
-    final Widget landscapeHeader = Stack(
-      alignment: Alignment.center,
-      children: [
-        IgnorePointer(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Seasons',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontSize:
-                            32, // Restored to much larger size for visibility (Original was ~34 in portrait)
-                        height: 1.0,
-                        color: Colors.white,
-                        shadows: [
-                          const Shadow(blurRadius: 10, color: Colors.black54),
-                          const Shadow(blurRadius: 2, color: Colors.black87)
-                        ],
-                        fontWeight: FontWeight.w900,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                Transform.translate(
-                  offset: const Offset(0, 0),
-                  child: Text(
-                    'времена года',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'HemiHead',
-                          color: Colors.white.withValues(alpha: 0.9),
-                          shadows: [
-                            const Shadow(blurRadius: 4, color: Colors.black87),
-                          ],
-                          fontStyle: FontStyle.normal,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12, // Larger subtext
-                          letterSpacing: 2,
-                          height: 1.0,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-    final Widget header = isLandscape
-        ? (debugThemeTapHandler == null
-            ? landscapeHeader
-            : GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: debugThemeTapHandler,
-                child: landscapeHeader,
-              ))
-        : _Header(onDebugTap: debugThemeTapHandler);
+    final Widget header = _Header(onDebugTap: debugThemeTapHandler);
 
     // 3. Navbar (Panel Selector)
     final navbar = BlocListener<VotingBloc, VotingState>(
@@ -975,195 +925,217 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         selectedIndex: selectedPanelIndex,
         onPanelSelected: _onPanelSelected,
         hasEvents: _actionableCount,
-        // Compact landscape navbar as requested to save space for poem
-        totalHeight: isLandscape ? 80.0 : 110.0,
-        barHeight: isLandscape ? 60.0 : 90.0,
-        buttonRadius: isLandscape ? 20.0 : 26.0,
-        verticalMargin: isLandscape ? 4.0 : 16.0,
+        totalHeight: navDimensions.totalHeight,
+        barHeight: navDimensions.barHeight,
+        bumpHeight: navDimensions.bumpHeight,
+        buttonRadius: navDimensions.buttonRadius,
+        verticalMargin: navDimensions.verticalMargin,
+        maxWidth: navDimensions.maxWidth,
+        internalHorizontalPadding: navDimensions.internalHorizontalPadding,
+        selectedScale: navDimensions.selectedScale,
+        unselectedScale: navDimensions.unselectedScale,
+        iconScaleFactor: navDimensions.iconScaleFactor,
       ),
     );
 
     // 4. Voting List (The Main Content) - WITHOUT Expanded wrapper here
     final votingListContent = Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 0.0, 24.0, 0.0),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26.0),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.2),
-              blurRadius: 8.0,
-              spreadRadius: 1.0,
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            AbsorbPointer(
-              key: ValueKey(
-                'connection_content_absorb_${shouldBlockContentForConnection ? 'on' : 'off'}',
+      padding: EdgeInsets.symmetric(
+          horizontal: adaptive.homeSectionHorizontalPadding),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: adaptive.homeListMaxWidth),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(26.0),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1.0,
               ),
-              absorbing: _transitionTargetIndex != null ||
-                  shouldBlockContentForConnection,
-              child: AnimatedScale(
-                scale: _sectionContentScale,
-                duration: _sectionFadeDuration,
-                curve: Curves.easeOutCubic,
-                child: AnimatedOpacity(
-                  opacity: shouldBlockContentForConnection
-                      ? 0.0
-                      : _sectionContentOpacity,
-                  duration: _sectionFadeDuration,
-                  curve: Curves.easeOut,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onHorizontalDragStart: _onVotingAreaHorizontalDragStart,
-                    onHorizontalDragUpdate: _onVotingAreaHorizontalDragUpdate,
-                    onHorizontalDragCancel: _onVotingAreaHorizontalDragCancel,
-                    onHorizontalDragEnd: _onVotingAreaHorizontalDragEnd,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      onPageChanged: _onPageChanged,
-                      itemCount: 3,
-                      itemBuilder: (context, index) {
-                        return _EventListPage(
-                          status: _statusForIndex(index),
-                          imagePath: theme.imagePath,
-                          onRefresh: () => _refreshCurrentPage(index),
-                          timeNotifier: _timeNotifier,
-                          suppressTransitions: _transitionTargetIndex != null ||
-                              _showSectionLoader,
-                        );
-                      },
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  blurRadius: 8.0,
+                  spreadRadius: 1.0,
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                AbsorbPointer(
+                  key: ValueKey(
+                    'connection_content_absorb_${shouldBlockContentForConnection ? 'on' : 'off'}',
+                  ),
+                  absorbing: _transitionTargetIndex != null ||
+                      shouldBlockContentForConnection,
+                  child: AnimatedScale(
+                    scale: _sectionContentScale,
+                    duration: _sectionFadeDuration,
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedOpacity(
+                      opacity: shouldBlockContentForConnection
+                          ? 0.0
+                          : _sectionContentOpacity,
+                      duration: _sectionFadeDuration,
+                      curve: Curves.easeOut,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onHorizontalDragStart: _onVotingAreaHorizontalDragStart,
+                        onHorizontalDragUpdate:
+                            _onVotingAreaHorizontalDragUpdate,
+                        onHorizontalDragCancel:
+                            _onVotingAreaHorizontalDragCancel,
+                        onHorizontalDragEnd: _onVotingAreaHorizontalDragEnd,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onPageChanged: _onPageChanged,
+                          itemCount: 3,
+                          itemBuilder: (context, index) {
+                            return _EventListPage(
+                              status: _statusForIndex(index),
+                              imagePath: theme.imagePath,
+                              onRefresh: () => _refreshCurrentPage(index),
+                              timeNotifier: _timeNotifier,
+                              suppressTransitions:
+                                  _transitionTargetIndex != null ||
+                                      _showSectionLoader,
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            AnimatedSwitcher(
-              duration: _loaderFadeDuration,
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              child: !_showSectionLoader || shouldShowOverlay
-                  ? const SizedBox.shrink(key: ValueKey('section_loader_off'))
-                  : IgnorePointer(
-                      key: const ValueKey('section_loader_on'),
-                      child: Container(
-                        color: Colors.transparent,
-                        child: const Center(
-                          child: SeasonsLoader(size: 64),
-                        ),
-                      ),
-                    ),
-            ),
-            IgnorePointer(
-              ignoring: true,
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 240),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    final squeezeAnimation = TweenSequence<double>([
-                      TweenSequenceItem(
-                        tween: Tween<double>(
-                          begin: _sectionSqueezedScale,
-                          end: 1.02,
-                        ).chain(
-                          CurveTween(curve: Curves.easeOutCubic),
-                        ),
-                        weight: 70,
-                      ),
-                      TweenSequenceItem(
-                        tween: Tween<double>(
-                          begin: 1.02,
-                          end: 1.0,
-                        ).chain(
-                          CurveTween(curve: Curves.easeInOutCubic),
-                        ),
-                        weight: 30,
-                      ),
-                    ]).animate(animation);
-                    return FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(
-                        scale: squeezeAnimation,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: !shouldShowOverlay
+                AnimatedSwitcher(
+                  duration: _loaderFadeDuration,
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: !_showSectionLoader || shouldShowOverlay
                       ? const SizedBox.shrink(
-                          key: ValueKey('connection_status_overlay_hidden'),
-                        )
-                      : Padding(
-                          key: ValueKey(
-                            'connection_status_overlay_${overlayStatus.name}',
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 340),
-                            child: SizedBox(
-                              key: const ValueKey(
-                                  'connection_status_overlay_content'),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const SizedBox(
-                                    key: ValueKey(
-                                        'connection_status_overlay_loader'),
-                                    width: 44,
-                                    height: 44,
-                                    child: SeasonsLoader(
-                                      size: 44,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    overlayTitle,
-                                    key: const ValueKey(
-                                        'connection_status_overlay_text'),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.copyWith(
-                                      color: Colors.white,
-                                      fontSize: 20.0,
-                                      shadows: [
-                                        const Shadow(
-                                          blurRadius: 6,
-                                          color: Colors.black87,
-                                        ),
-                                      ],
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
+                          key: ValueKey('section_loader_off'))
+                      : IgnorePointer(
+                          key: const ValueKey('section_loader_on'),
+                          child: Container(
+                            color: Colors.transparent,
+                            child: const Center(
+                              child: SeasonsLoader(size: 64),
                             ),
                           ),
                         ),
                 ),
-              ),
+                IgnorePointer(
+                  ignoring: true,
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 240),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final squeezeAnimation = TweenSequence<double>([
+                          TweenSequenceItem(
+                            tween: Tween<double>(
+                              begin: _sectionSqueezedScale,
+                              end: 1.02,
+                            ).chain(
+                              CurveTween(curve: Curves.easeOutCubic),
+                            ),
+                            weight: 70,
+                          ),
+                          TweenSequenceItem(
+                            tween: Tween<double>(
+                              begin: 1.02,
+                              end: 1.0,
+                            ).chain(
+                              CurveTween(curve: Curves.easeInOutCubic),
+                            ),
+                            weight: 30,
+                          ),
+                        ]).animate(animation);
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: squeezeAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: !shouldShowOverlay
+                          ? const SizedBox.shrink(
+                              key: ValueKey('connection_status_overlay_hidden'),
+                            )
+                          : Padding(
+                              key: ValueKey(
+                                'connection_status_overlay_${overlayStatus.name}',
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: overlayDimensions.horizontalPadding,
+                              ),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: overlayDimensions.maxWidth,
+                                ),
+                                child: SizedBox(
+                                  key: const ValueKey(
+                                      'connection_status_overlay_content'),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        key: const ValueKey(
+                                            'connection_status_overlay_loader'),
+                                        width: overlayDimensions.loaderSize,
+                                        height: overlayDimensions.loaderSize,
+                                        child: SeasonsLoader(
+                                          size: overlayDimensions.loaderSize,
+                                        ),
+                                      ),
+                                      SizedBox(height: overlayDimensions.gap),
+                                      Text(
+                                        overlayTitle,
+                                        key: const ValueKey(
+                                            'connection_status_overlay_text'),
+                                        maxLines: overlayDimensions.maxLines,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge
+                                            ?.copyWith(
+                                          color: Colors.white,
+                                          fontSize: overlayDimensions.textSize,
+                                          shadows: [
+                                            const Shadow(
+                                              blurRadius: 6,
+                                              color: Colors.black87,
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
 
     // 5. Footer (Poem)
-    // Pass isLandscape=false to footer when in split-view so it doesn't limit height
-    // Actually, we will just use the footer widget and rely on layout constraints
-    final footer = _Footer(poem: theme.poem, author: theme.author);
+    final footer = _Footer(
+      poem: theme.poem,
+      author: theme.author,
+      style: footerStyle,
+    );
 
     Widget content = BlocListener<VotingBloc, VotingState>(
       listenWhen: (previous, current) =>
@@ -1197,72 +1169,76 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     true, // Enable bottom safe area for Galaxy Fold / Android Gestures
                 left: true,
                 right: true,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: isLandscape
-                        // LANDSCAPE: Split Layout (50/50 Split)
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Left: Voting List (The "Detailed" content)
-                              Expanded(
-                                flex: 1, // 50% width
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8.0),
-                                  child: votingListContent,
-                                ),
-                              ),
-
-                              // Right: Sidebar (Header, Controls, Poem)
-                              Expanded(
-                                flex: 1, // 50% width
-                                child: Column(
-                                  children: [
-                                    topBar,
-                                    Expanded(
-                                      // Distribute space
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          header,
-                                          const SizedBox(
-                                              height:
-                                                  4), // Ultra compact spacing
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6.0),
-                                            child: navbar,
-                                          ),
-                                          const SizedBox(
-                                              height:
-                                                  4), // Ultra compact spacing
-                                          Expanded(
-                                              child:
-                                                  footer), // Force footer to fit in remaining space
-                                        ],
-                                      ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: adaptive.outerHorizontalPadding,
+                  ),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: adaptive.homeContentMaxWidth,
+                      ),
+                      child: useSplitLandscape
+                          // LANDSCAPE: Adaptive split layout
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  flex: adaptive.homeLandscapeListFlex,
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: adaptive
+                                          .homeListSectionVerticalPadding,
                                     ),
-                                  ],
+                                    child: votingListContent,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          )
-                        // PORTRAIT: Stacked Layout (Original)
-                        : Column(
-                            children: [
-                              topBar,
-                              header,
-                              navbar,
-                              Expanded(
-                                  child:
-                                      votingListContent), // Correctly applied Expanded inside Column
-                              footer,
-                            ],
-                          ),
+                                Expanded(
+                                  flex: adaptive.homeLandscapeSidebarFlex,
+                                  child: Column(
+                                    children: [
+                                      topBar,
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            header,
+                                            SizedBox(
+                                              height: adaptive.headerToNavGap,
+                                            ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 6.0,
+                                              ),
+                                              child: navbar,
+                                            ),
+                                            SizedBox(
+                                              height: adaptive.headerToNavGap,
+                                            ),
+                                            if (shouldShowFooter)
+                                              Expanded(child: footer),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          // PORTRAIT: Stacked Layout
+                          : Column(
+                              children: [
+                                topBar,
+                                header,
+                                navbar,
+                                Expanded(child: votingListContent),
+                                if (shouldShowFooter) footer,
+                              ],
+                            ),
+                    ),
                   ),
                 ),
               ),
@@ -1299,8 +1275,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 class _Footer extends StatefulWidget {
   final String poem;
   final String author;
+  final AdaptiveFooterStyle style;
 
-  const _Footer({required this.poem, required this.author});
+  const _Footer({
+    required this.poem,
+    required this.author,
+    required this.style,
+  });
 
   @override
   State<_Footer> createState() => _FooterState();
@@ -1480,17 +1461,19 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final adaptive = context.adaptiveLayout;
+    final style = widget.style;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        isLandscape ? 16.0 : 24.0,
-        isLandscape ? 4.0 : 4.0,
-        isLandscape ? 16.0 : 24.0,
-        isLandscape ? 8.0 : 24.0, // Increased bottom padding for safety
+        adaptive.homeSectionHorizontalPadding,
+        style.outerTopPadding,
+        adaptive.homeSectionHorizontalPadding,
+        style.outerBottomPadding,
       ),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         width: double.infinity, // Ensure full width frame
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(26.0),
@@ -1508,13 +1491,12 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
         ),
         clipBehavior: Clip.antiAlias,
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.all(style.contentPadding),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: isLandscape
-                    ? MediaQuery.of(context).size.height * 0.80
-                    : 140.0,
+                maxHeight: style.maxContentHeight,
+                maxWidth: style.maxTextWidth,
               ),
               child: NotificationListener<ScrollNotification>(
                 onNotification: (ScrollNotification notification) {
@@ -1565,14 +1547,14 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white,
-                            height: 1.5,
-                            fontSize: 15,
+                            height: style.poemLineHeight,
+                            fontSize: style.poemFontSize,
                             shadows: [
                               const Shadow(blurRadius: 6, color: Colors.black87)
                             ],
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: style.poemAuthorSpacing),
                         Text(
                           widget.author,
                           textAlign: TextAlign.left,
@@ -1580,7 +1562,7 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Colors.white,
                             fontStyle: FontStyle.italic,
-                            fontSize: 13,
+                            fontSize: style.authorFontSize,
                             shadows: [
                               const Shadow(blurRadius: 6, color: Colors.black87)
                             ],
@@ -1617,6 +1599,7 @@ class _EventListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final adaptive = context.adaptiveLayout;
     return BlocBuilder<VotingBloc, VotingState>(
       // Only rebuild if the state is for this section's status
       // This prevents the list from showing wrong data during background refresh of other sections
@@ -1658,16 +1641,23 @@ class _EventListPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(26.0),
               ),
               child: Center(
-                child: Text(
-                  AppLocalizations.of(context)!.noActiveVotings,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white,
-                    fontSize: 20.0,
-                    shadows: [
-                      const Shadow(blurRadius: 6, color: Colors.black87)
-                    ],
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: adaptive.emptyStateMaxWidth,
                   ),
-                  textAlign: TextAlign.center,
+                  child: Text(
+                    AppLocalizations.of(context)!.noActiveVotings,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white,
+                      fontSize: adaptive.emptyStateFontSize,
+                      height: adaptive.emptyStateLineHeight,
+                      fontWeight: FontWeight.w800,
+                      shadows: [
+                        const Shadow(blurRadius: 6, color: Colors.black87)
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             );

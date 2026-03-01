@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:seasons/core/layout/adaptive_layout.dart';
 import 'package:seasons/core/navigation/corporate_page_transition.dart';
 import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
@@ -121,6 +122,8 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final theme = context.read<MonthlyThemeService>().theme;
+    final adaptive = context.adaptiveLayout;
+    final authStyle = adaptive.authLayoutStyle;
     final l10n = AppLocalizations.of(context)!;
     final currentLanguageCode = Localizations.localeOf(context).languageCode;
     final authFailureState = context.select<AuthBloc, AuthState>((bloc) {
@@ -177,96 +180,119 @@ class _LoginScreenState extends State<LoginScreen>
                                 const Spacer(),
                                 // Main Content (Logo + Button)
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 24.0),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _SkewedContainer(
-                                        reverse: true,
-                                        color: const Color(0xFFD9D9D9),
-                                        child: Text(
-                                          'Seasons',
-                                          textAlign: TextAlign.center,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .displaySmall
-                                              ?.copyWith(
-                                                color: const Color(0xFF42445A),
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 40,
-                                              ),
-                                        ),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal:
+                                          authStyle.contentHorizontalPadding),
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: authStyle.contentMaxWidth,
                                       ),
-                                      const SizedBox(height: 10),
-                                      _SkewedContainer(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 10, horizontal: 30),
-                                        color: const Color(0xFF4A5C7A),
-                                        onTap: () => _startRudnAuth(context),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              AppLocalizations.of(context)!
-                                                  .login,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _SkewedContainer(
+                                            reverse: true,
+                                            color: const Color(0xFFD9D9D9),
+                                            child: Text(
+                                              'Seasons',
                                               textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                fontFamily: GoogleFonts
-                                                        .gentiumBookPlus()
-                                                    .fontFamily,
-                                                fontStyle: FontStyle.normal,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 26,
-                                                color: Colors.white,
-                                                shadows: [],
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .displaySmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        const Color(0xFF42445A),
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize:
+                                                        authStyle.titleFontSize,
+                                                  ),
+                                            ),
+                                          ),
+                                          SizedBox(height: authStyle.blockGap),
+                                          _SkewedContainer(
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: authStyle
+                                                  .buttonVerticalPadding,
+                                              horizontal: authStyle
+                                                  .buttonHorizontalPadding,
+                                            ),
+                                            color: const Color(0xFF4A5C7A),
+                                            onTap: () =>
+                                                _startRudnAuth(context),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  AppLocalizations.of(context)!
+                                                      .login,
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    fontFamily: GoogleFonts
+                                                            .gentiumBookPlus()
+                                                        .fontFamily,
+                                                    fontStyle: FontStyle.normal,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: authStyle
+                                                        .buttonFontSize,
+                                                    color: Colors.white,
+                                                    shadows: [],
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                    width:
+                                                        authStyle.blockGap + 2),
+                                                Icon(
+                                                  Icons.arrow_forward_ios,
+                                                  color: Colors.white,
+                                                  size:
+                                                      authStyle.buttonIconSize,
+                                                )
+                                              ],
+                                            ),
+                                          ),
+                                          if (authFailureMessage != null) ...[
+                                            SizedBox(
+                                                height: authStyle.errorTopGap),
+                                            Container(
+                                              width: double.infinity,
+                                              padding: EdgeInsets.all(
+                                                  authStyle.errorPadding),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.5),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: Colors.white54,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                authFailureMessage,
+                                                textAlign: TextAlign.center,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                  color: Colors.white,
+                                                  shadows: const [],
+                                                ),
                                               ),
                                             ),
-                                            const SizedBox(width: 12),
-                                            const Icon(
-                                              Icons.arrow_forward_ios,
-                                              color: Colors.white,
-                                              size: 24,
-                                            )
                                           ],
-                                        ),
+                                        ],
                                       ),
-                                      if (authFailureMessage != null) ...[
-                                        const SizedBox(height: 14),
-                                        Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black
-                                                .withValues(alpha: 0.5),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Colors.white54,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            authFailureMessage,
-                                            textAlign: TextAlign.center,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium
-                                                ?.copyWith(
-                                              color: Colors.white,
-                                              shadows: const [],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                                    ),
                                   ),
                                 ),
                                 const Spacer(),
                                 // Footer (Copyright + Email)
                                 Padding(
-                                  padding: const EdgeInsets.only(bottom: 24.0),
+                                  padding: EdgeInsets.only(
+                                      bottom: authStyle.footerBottomPadding),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -277,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             .bodyLarge
                                             ?.copyWith(color: Colors.white),
                                       ),
-                                      const SizedBox(height: 8),
+                                      SizedBox(height: authStyle.footerItemGap),
                                       Text(
                                         AppLocalizations.of(context)!.helpEmail,
                                         style: Theme.of(context)
@@ -300,7 +326,7 @@ class _LoginScreenState extends State<LoginScreen>
                       right: 0,
                       child: SafeArea(
                         child: Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: EdgeInsets.all(authStyle.topControlPadding),
                           child: PopupMenuButton<Locale>(
                             initialValue: Locale(
                               currentLanguageCode == 'en' ? 'en' : 'ru',
