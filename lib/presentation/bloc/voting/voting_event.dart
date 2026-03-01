@@ -51,14 +51,6 @@ class SubmitVote extends VotingEvent {
   List<Object> get props => [event, answers];
 }
 
-class FetchResults extends VotingEvent {
-  final String eventId;
-  const FetchResults({required this.eventId});
-
-  @override
-  List<Object> get props => [eventId];
-}
-
 class VotingUpdated extends VotingEvent {
   final model.VotingEvent event;
   const VotingUpdated({required this.event});
@@ -74,9 +66,3 @@ class VotingListUpdated extends VotingEvent {
   @override
   List<Object> get props => [events];
 }
-
-// Это событие больше не нужно, так как мы его не используем
-// class FetchEventDetails extends VotingEvent {
-//   final String eventId;
-//   const FetchEventDetails({required this.eventId});
-// }

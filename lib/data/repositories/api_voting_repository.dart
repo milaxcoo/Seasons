@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:seasons/core/utils/safe_log.dart';
-import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/data/models/user_profile.dart';
@@ -260,12 +259,6 @@ class ApiVotingRepository implements VotingRepository {
     } catch (e) {
       throw Exception(e.toString());
     }
-  }
-
-  @override
-  Future<List<QuestionResult>> getResultsForEvent(String eventId) async {
-    // Этот метод больше не используется
-    return [];
   }
 
   @override

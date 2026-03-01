@@ -1,4 +1,4 @@
-package com.example.votepfurapp
+package com.lebedev.seasons
 
 import io.flutter.embedding.android.FlutterActivity
 

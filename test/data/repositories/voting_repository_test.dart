@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:seasons/data/models/user_profile.dart';
-import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart';
 
 import '../../mocks.dart';
@@ -313,55 +312,6 @@ void main() {
         // Act & Assert
         expect(
           () => mockRepository.submitVote(event, {'q1': 'a1'}),
-          throwsA(isA<Exception>()),
-        );
-      });
-    });
-
-    group('Results', () {
-      test('getResultsForEvent returns vote results', () async {
-        // Arrange
-        final results = [
-          const QuestionResult(
-            name: 'Best App',
-            type: 'yes_no',
-            subjectResults: [
-              SubjectResult(name: 'App A', voteCounts: {'За': 10, 'Против': 5}),
-            ],
-          ),
-        ];
-        when(() => mockRepository.getResultsForEvent('event-01'))
-            .thenAnswer((_) async => results);
-
-        // Act
-        final result = await mockRepository.getResultsForEvent('event-01');
-
-        // Assert
-        expect(result, hasLength(1));
-        expect(result[0].name, 'Best App');
-        expect(result[0].subjectResults, hasLength(1));
-      });
-
-      test('getResultsForEvent returns empty list when no results', () async {
-        // Arrange
-        when(() => mockRepository.getResultsForEvent(any()))
-            .thenAnswer((_) async => []);
-
-        // Act
-        final result = await mockRepository.getResultsForEvent('event-01');
-
-        // Assert
-        expect(result, isEmpty);
-      });
-
-      test('getResultsForEvent throws exception on error', () async {
-        // Arrange
-        when(() => mockRepository.getResultsForEvent(any()))
-            .thenThrow(Exception('Failed to fetch results'));
-
-        // Act & Assert
-        expect(
-          () => mockRepository.getResultsForEvent('event-01'),
           throwsA(isA<Exception>()),
         );
       });

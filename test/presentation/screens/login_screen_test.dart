@@ -45,7 +45,6 @@ void main() {
         const FetchEventsByStatus(status: model.VotingStatus.active));
     registerFallbackValue(const RegisterForEvent(eventId: ''));
     registerFallbackValue(SubmitVote(event: fakeEvent, answers: const {}));
-    registerFallbackValue(const FetchResults(eventId: ''));
   });
 
   Widget createTestWidget() {

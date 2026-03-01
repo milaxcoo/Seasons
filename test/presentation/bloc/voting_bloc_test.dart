@@ -3,7 +3,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/question.dart';
-import 'package:seasons/data/models/vote_result.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/core/services/background_service.dart';
@@ -382,72 +381,6 @@ void main() {
         expect: () => [
           VotingLoadInProgress(),
           VotingSubmissionSuccess(),
-        ],
-      );
-    });
-
-    group('FetchResults', () {
-      final testResults = [
-        const QuestionResult(
-          name: 'Best App',
-          type: 'yes_no',
-          subjectResults: [
-            SubjectResult(
-              name: 'App A',
-              voteCounts: {'За': 10, 'Против': 5},
-            ),
-            SubjectResult(
-              name: 'App B',
-              voteCounts: {'За': 8, 'Против': 7},
-            ),
-          ],
-        ),
-      ];
-
-      blocTest<VotingBloc, VotingState>(
-        'emits [VotingLoadInProgress, VotingResultsLoadSuccess] when results are fetched successfully',
-        build: () {
-          when(() => mockVotingRepository.getResultsForEvent('event-1'))
-              .thenAnswer((_) async => testResults);
-          return votingBloc;
-        },
-        act: (bloc) => bloc.add(const FetchResults(eventId: 'event-1')),
-        expect: () => [
-          VotingLoadInProgress(),
-          VotingResultsLoadSuccess(results: testResults),
-        ],
-        verify: (_) {
-          verify(() => mockVotingRepository.getResultsForEvent('event-1'))
-              .called(1);
-        },
-      );
-
-      blocTest<VotingBloc, VotingState>(
-        'emits [VotingLoadInProgress, VotingResultsLoadSuccess] with empty list when no results',
-        build: () {
-          when(() => mockVotingRepository.getResultsForEvent('event-1'))
-              .thenAnswer((_) async => []);
-          return votingBloc;
-        },
-        act: (bloc) => bloc.add(const FetchResults(eventId: 'event-1')),
-        expect: () => [
-          VotingLoadInProgress(),
-          const VotingResultsLoadSuccess(results: []),
-        ],
-      );
-
-      blocTest<VotingBloc, VotingState>(
-        'emits [VotingLoadInProgress, VotingFailure] when fetch results fails',
-        build: () {
-          when(() => mockVotingRepository.getResultsForEvent(any()))
-              .thenThrow(Exception('Failed to fetch results'));
-          return votingBloc;
-        },
-        act: (bloc) => bloc.add(const FetchResults(eventId: 'event-1')),
-        expect: () => [
-          VotingLoadInProgress(),
-          isA<VotingFailure>().having(
-              (s) => s.error, 'error', contains('Failed to fetch results')),
         ],
       );
     });
