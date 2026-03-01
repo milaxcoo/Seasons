@@ -42,6 +42,9 @@ class _AppBackgroundState extends State<AppBackground> {
       });
       return;
     }
+    setState(() {
+      _readability = const BackgroundReadabilityProfile.neutral();
+    });
     BackgroundReadabilityAnalyzer.forAsset(imagePath).then((profile) {
       if (!mounted || _resolvedImagePath != imagePath) return;
       setState(() {
