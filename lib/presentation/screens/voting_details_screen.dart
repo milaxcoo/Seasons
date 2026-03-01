@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:seasons/core/layout/adaptive_layout.dart';
 import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/models/question.dart' as model;
 import 'package:seasons/data/models/subject.dart' as model;
@@ -33,6 +34,7 @@ class VotingDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final detailStyle = context.adaptiveLayout.detailLayoutStyle;
     return AppBackground(
       imagePath: imagePath,
       child: Scaffold(
@@ -49,7 +51,7 @@ class VotingDetailsScreen extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
-                  fontSize: 20,
+                  fontSize: detailStyle.appBarTitleFontSize,
                 ),
           ),
           centerTitle: true,
@@ -103,66 +105,80 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
 
   void _showConfirmationDialog() {
     final l10n = AppLocalizations.of(context)!;
+    final detailStyle = context.adaptiveLayout.detailLayoutStyle;
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          l10n.areYouSure,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                fontSize: 22, // Increased size
-              ),
-        ),
-        content: Text(
-          l10n.voteConfirmationMessage,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontSize: 18, // Increased size
-              ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        actions: <Widget>[
-          TextButton(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      builder: (dialogContext) => Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: detailStyle.dialogMaxWidth),
+          child: AlertDialog(
+            contentPadding: detailStyle.dialogContentPadding,
+            titlePadding: detailStyle.dialogTitlePadding,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              l10n.areYouSure,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    fontSize: detailStyle.titleFontSize + 1.0,
+                  ),
             ),
-            child: Text(
-              l10n.cancel,
-              style: const TextStyle(fontSize: 18), // Increased size
+            content: Text(
+              l10n.voteConfirmationMessage,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontSize: detailStyle.titleFontSize - 2.0,
+                  ),
             ),
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-            },
+            actionsPadding: detailStyle.dialogActionsPadding,
+            actions: <Widget>[
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: detailStyle.cardPadding,
+                    vertical: detailStyle.actionVerticalPadding,
+                  ),
+                ),
+                child: Text(
+                  l10n.cancel,
+                  style: TextStyle(fontSize: detailStyle.titleFontSize - 2.0),
+                ),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.rudnGreenColor,
+                  padding: EdgeInsets.symmetric(
+                    horizontal:
+                        detailStyle.cardPadding + detailStyle.sectionGap,
+                    vertical: detailStyle.actionVerticalPadding,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  l10n.vote,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: detailStyle.titleFontSize - 2.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  context.read<VotingBloc>().add(
+                        SubmitVote(
+                          event: widget.event,
+                          answers: _selectedAnswers,
+                        ),
+                      );
+                },
+              ),
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.rudnGreenColor,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Text(
-              l10n.vote,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18, // Increased size
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              context.read<VotingBloc>().add(
-                    SubmitVote(
-                      event: widget.event,
-                      answers: _selectedAnswers,
-                    ),
-                  );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -217,6 +233,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
         widget.event.votingStartDate!.isBefore(now) &&
         (widget.event.votingEndDate == null ||
             widget.event.votingEndDate!.isAfter(now));
+    final detailStyle = context.adaptiveLayout.detailLayoutStyle;
 
     return BlocConsumer<VotingBloc, VotingState>(
       listener: (context, state) async {
@@ -225,51 +242,57 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (dialogContext) => AlertDialog(
-              contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              title: Text(
-                l10n.voteAccepted,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 22,
-                    ),
-              ),
-              content: Text(
-                l10n.thankYou,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontSize: 18,
-                    ),
-              ),
-              actionsAlignment: MainAxisAlignment.center,
-              actionsPadding: const EdgeInsets.only(bottom: 24),
-              actions: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.rudnGreenColor,
-                    minimumSize: const Size(140, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+            builder: (dialogContext) => Center(
+              child: ConstrainedBox(
+                constraints:
+                    BoxConstraints(maxWidth: detailStyle.dialogMaxWidth),
+                child: AlertDialog(
+                  contentPadding: detailStyle.dialogContentPadding,
+                  titlePadding: detailStyle.dialogTitlePadding,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  title: Text(
+                    l10n.voteAccepted,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: detailStyle.titleFontSize + 1.0,
+                        ),
                   ),
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                    Navigator.of(context).pop(true);
-                  },
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  content: Text(
+                    l10n.thankYou,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontSize: detailStyle.titleFontSize - 2.0,
+                        ),
                   ),
+                  actionsAlignment: MainAxisAlignment.center,
+                  actionsPadding: detailStyle.dialogActionsPadding,
+                  actions: [
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.rudnGreenColor,
+                        minimumSize: Size(140, detailStyle.actionMinHeight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        Navigator.of(context).pop(true);
+                      },
+                      child: Text(
+                        'OK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: detailStyle.titleFontSize - 2.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         } else if (state is VotingFailure) {
@@ -313,252 +336,275 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
         }
 
         return LayoutBuilder(builder: (context, constraints) {
-          final bool isPinnedButton = constraints.maxHeight > 500;
-          final double bottomPadding = isPinnedButton ? 120.0 : 24.0;
-
-          // FIXED: Standardized scrollable area style (Window with internal scroll)
-          final isLandscape =
-              MediaQuery.of(context).orientation == Orientation.landscape;
+          final bool isPinnedButton = constraints.maxHeight >
+              (detailStyle.isExtremeCompact ? 420 : 500);
+          final double bottomPadding = isPinnedButton
+              ? (detailStyle.actionMinHeight +
+                  detailStyle.sectionGapLarge +
+                  20.0)
+              : detailStyle.sectionGapLarge;
           return SafeArea(
             child: Center(
               child: Padding(
-                // Responsive padding: Smaller margins in landscape to maximize card size
-                padding: isLandscape
-                    ? const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 4.0)
-                    : const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    // Voting screen usually handles its own background colors, but we need a container frame
-                    color: Colors.transparent,
-                    // However, the header is #e4dcc5. The body is transparent?
-                    // The body list items have their own cards.
-                    // The container frame should probably be transparent if the list items are cards.
-                    // BUT, the user wants the "scrollable area" to have round corners.
-                    // If we clip the whole NestedScrollView, corners will be rounded.
-                    borderRadius: BorderRadius.circular(26),
-                    // No shadow/border on the outer frame if we want transparency?
-                    // Let's keep it consistent. If the content is "floating", it needs a background or shadow?
-                    // Actually, VotingDetailsScreen has a transparent Scaffold background.
-                    // The list items are floating cards.
-                    // If we clip the viewport, the list items will be clipped at the edges.
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(26),
-                    child: Stack(
-                      children: [
-                        NestedScrollView(
-                          headerSliverBuilder:
-                              (BuildContext context, bool innerBoxIsScrolled) {
-                            return <Widget>[
-                              SliverToBoxAdapter(
-                                child: Padding(
-                                  // Remove outer padding since we are already inside a padded window?
-                                  // Or keep it for inner spacing.
-                                  padding:
-                                      const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFe4dcc5)
-                                          .withValues(alpha: 0.9),
-                                      // Use only bottom radius? Or all?
-                                      // The header looks like a card.
-                                      borderRadius: const BorderRadius.vertical(
-                                          bottom: Radius.circular(26)),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(20),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              if (widget.event.description
-                                                  .isNotEmpty) ...[
-                                                Text(
-                                                  widget.event.description,
-                                                  textAlign: TextAlign.left,
+                padding: detailStyle.outerPadding,
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(maxWidth: detailStyle.maxContentWidth),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(26),
+                      child: Stack(
+                        children: [
+                          NestedScrollView(
+                            headerSliverBuilder: (BuildContext context,
+                                bool innerBoxIsScrolled) {
+                              return <Widget>[
+                                SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: EdgeInsets.zero,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFe4dcc5)
+                                            .withValues(alpha: 0.9),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                bottom: Radius.circular(26)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: EdgeInsets.all(
+                                                detailStyle.cardPadding),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                if (widget.event.description
+                                                    .isNotEmpty) ...[
+                                                  Text(
+                                                    widget.event.description,
+                                                    textAlign: TextAlign.left,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyLarge
+                                                        ?.copyWith(
+                                                          color: Colors.black,
+                                                        ),
+                                                  ),
+                                                  SizedBox(
+                                                      height: detailStyle
+                                                          .sectionGap),
+                                                  const Divider(
+                                                      color: Colors.grey,
+                                                      height: 1),
+                                                  SizedBox(
+                                                      height: detailStyle
+                                                          .sectionGap),
+                                                ],
+                                                _InfoRow(
+                                                    label: l10n.votingStart,
+                                                    value: startDate,
+                                                    style: detailStyle),
+                                                SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap),
+                                                const Divider(
+                                                    color: Colors.grey,
+                                                    height: 1),
+                                                SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap),
+                                                _InfoRow(
+                                                    label: l10n.votingEnd,
+                                                    value: endDate,
+                                                    style: detailStyle),
+                                                SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap),
+                                                const Divider(
+                                                    color: Colors.grey,
+                                                    height: 1),
+                                                SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap),
+                                                _InfoRow(
+                                                  label: l10n.status,
+                                                  value: statusText,
+                                                  valueColor: statusColor,
+                                                  style: detailStyle,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (isOngoing &&
+                                              !widget.event.hasVoted)
+                                            Align(
+                                              alignment: Alignment.bottomLeft,
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                    horizontal: detailStyle
+                                                            .cardPadding -
+                                                        detailStyle
+                                                            .sectionGapSmall,
+                                                    vertical: detailStyle
+                                                            .sectionGapSmall +
+                                                        2.0),
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFF4a4a4a),
+                                                  borderRadius:
+                                                      BorderRadius.only(
+                                                    topRight:
+                                                        Radius.circular(26),
+                                                    bottomLeft: Radius.circular(
+                                                        26), // Match bottom corner
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  l10n.votingInProgress,
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .bodyLarge
                                                       ?.copyWith(
-                                                        color: Colors.black,
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w900,
                                                       ),
                                                 ),
-                                                const SizedBox(height: 16),
-                                                const Divider(
-                                                    color: Colors.grey,
-                                                    height: 1),
-                                                const SizedBox(height: 16),
-                                              ],
-                                              _InfoRow(
-                                                  label: l10n.votingStart,
-                                                  value: startDate),
-                                              const SizedBox(height: 16),
-                                              const Divider(
-                                                  color: Colors.grey,
-                                                  height: 1),
-                                              const SizedBox(height: 16),
-                                              _InfoRow(
-                                                  label: l10n.votingEnd,
-                                                  value: endDate),
-                                              const SizedBox(height: 16),
-                                              const Divider(
-                                                  color: Colors.grey,
-                                                  height: 1),
-                                              const SizedBox(height: 16),
-                                              _InfoRow(
-                                                label: l10n.status,
-                                                value: statusText,
-                                                valueColor: statusColor,
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ];
+                            },
+                            body: ListView.builder(
+                              padding: EdgeInsets.fromLTRB(
+                                  0,
+                                  detailStyle.sectionGapSmall,
+                                  0,
+                                  bottomPadding),
+                              itemCount: widget.event.questions.length +
+                                  (isPinnedButton ? 0 : 1),
+                              itemBuilder: (context, index) {
+                                if (index == widget.event.questions.length) {
+                                  // Button inside the list (for Landscape/Small screens)
+                                  return Padding(
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: detailStyle.sectionGapLarge),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          minimumSize: Size(double.infinity,
+                                              detailStyle.actionMinHeight),
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: detailStyle
+                                                  .actionVerticalPadding),
+                                          backgroundColor: widget.event.hasVoted
+                                              ? Colors.grey
+                                              : AppTheme.rudnGreenColor,
                                         ),
-                                        if (isOngoing && !widget.event.hasVoted)
-                                          Align(
-                                            alignment: Alignment.bottomLeft,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 8),
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xFF4a4a4a),
-                                                borderRadius: BorderRadius.only(
-                                                  topRight: Radius.circular(26),
-                                                  bottomLeft: Radius.circular(
-                                                      26), // Match bottom corner
-                                                ),
-                                              ),
-                                              child: Text(
-                                                l10n.votingInProgress,
+                                        onPressed:
+                                            (state is VotingLoadInProgress ||
+                                                    _selectedAnswers.isEmpty ||
+                                                    widget.event.hasVoted)
+                                                ? null
+                                                : _submitVote,
+                                        child: state is VotingLoadInProgress
+                                            ? const SeasonsLoader(
+                                                size: 24, color: Colors.white)
+                                            : Text(
+                                                widget.event.hasVoted
+                                                    ? l10n.alreadyVoted
+                                                    : l10n.vote,
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodyLarge
                                                     ?.copyWith(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w900,
-                                                    ),
+                                                        color: Colors.white,
+                                                        fontWeight:
+                                                            FontWeight.w900),
                                               ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ];
-                          },
-                          body: ListView.builder(
-                            padding: EdgeInsets.fromLTRB(0, 8, 0,
-                                bottomPadding), // Remove side padding as window is padded
-                            itemCount: widget.event.questions.length +
-                                (isPinnedButton ? 0 : 1),
-                            itemBuilder: (context, index) {
-                              if (index == widget.event.questions.length) {
-                                // Button inside the list (for Landscape/Small screens)
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 24.0),
-                                  child: SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 16),
-                                        backgroundColor: widget.event.hasVoted
-                                            ? Colors.grey
-                                            : AppTheme.rudnGreenColor,
                                       ),
-                                      onPressed:
-                                          (state is VotingLoadInProgress ||
-                                                  _selectedAnswers.isEmpty ||
-                                                  widget.event.hasVoted)
-                                              ? null
-                                              : _submitVote,
-                                      child: state is VotingLoadInProgress
-                                          ? const SeasonsLoader(
-                                              size: 24, color: Colors.white)
-                                          : Text(
-                                              widget.event.hasVoted
-                                                  ? l10n.alreadyVoted
-                                                  : l10n.vote,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyLarge
-                                                  ?.copyWith(
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w900),
-                                            ),
                                     ),
-                                  ),
+                                  );
+                                }
+                                final question = widget.event.questions[index];
+                                return _QuestionCard(
+                                  question: question,
+                                  selectedAnswers: _selectedAnswers,
+                                  onAnswerSelected: (key, answerId) {
+                                    setState(() {
+                                      _selectedAnswers[key] = answerId;
+                                    });
+                                    _saveDraft();
+                                  },
+                                  hasVoted: widget.event.hasVoted,
+                                  isLoadingDraft: _isLoadingDraft,
                                 );
-                              }
-                              final question = widget.event.questions[index];
-                              return _QuestionCard(
-                                question: question,
-                                selectedAnswers: _selectedAnswers,
-                                onAnswerSelected: (key, answerId) {
-                                  setState(() {
-                                    _selectedAnswers[key] = answerId;
-                                  });
-                                  _saveDraft();
-                                },
-                                hasVoted: widget.event.hasVoted,
-                                isLoadingDraft: _isLoadingDraft,
-                              );
-                            },
+                              },
+                            ),
                           ),
-                        ),
 
-                        // Pinned Button (for Portrait/Large screens)
-                        if (isPinnedButton)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    backgroundColor: widget.event.hasVoted
-                                        ? Colors.grey
-                                        : AppTheme.rudnGreenColor,
+                          // Pinned Button (for Portrait/Large screens)
+                          if (isPinnedButton)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                    detailStyle.cardPadding,
+                                    detailStyle.sectionGap,
+                                    detailStyle.cardPadding,
+                                    detailStyle.sectionGapSmall + 2.0),
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      minimumSize: Size(double.infinity,
+                                          detailStyle.actionMinHeight),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: detailStyle
+                                              .actionVerticalPadding),
+                                      backgroundColor: widget.event.hasVoted
+                                          ? Colors.grey
+                                          : AppTheme.rudnGreenColor,
+                                    ),
+                                    onPressed: (state is VotingLoadInProgress ||
+                                            _selectedAnswers.isEmpty ||
+                                            widget.event.hasVoted)
+                                        ? null
+                                        : _submitVote,
+                                    child: state is VotingLoadInProgress
+                                        ? const SeasonsLoader(
+                                            size: 24, color: Colors.white)
+                                        : Text(
+                                            widget.event.hasVoted
+                                                ? l10n.alreadyVoted
+                                                : l10n.vote,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge
+                                                ?.copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.w900),
+                                          ),
                                   ),
-                                  onPressed: (state is VotingLoadInProgress ||
-                                          _selectedAnswers.isEmpty ||
-                                          widget.event.hasVoted)
-                                      ? null
-                                      : _submitVote,
-                                  child: state is VotingLoadInProgress
-                                      ? const SeasonsLoader(
-                                          size: 24, color: Colors.white)
-                                      : Text(
-                                          widget.event.hasVoted
-                                              ? l10n.alreadyVoted
-                                              : l10n.vote,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyLarge
-                                              ?.copyWith(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w900),
-                                        ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -588,16 +634,17 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final detailStyle = context.adaptiveLayout.detailLayoutStyle;
     final bool isSimpleQuestion =
         question.subjects.isEmpty && question.answers.isNotEmpty;
     final bool isDisabled = hasVoted || isLoadingDraft;
 
     return Card(
       color: const Color(0xFFe4dcc5),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: EdgeInsets.symmetric(vertical: detailStyle.sectionGapSmall),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(detailStyle.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -605,10 +652,10 @@ class _QuestionCard extends StatelessWidget {
               question.name,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontWeight: FontWeight.w900,
-                    fontSize: 20,
+                    fontSize: detailStyle.titleFontSize,
                   ),
             ),
-            const Divider(height: 24, color: Colors.grey),
+            Divider(height: detailStyle.sectionGapLarge, color: Colors.grey),
             if (isSimpleQuestion)
               ...question.answers.map((answer) {
                 return _CustomCheckboxTile(
@@ -657,8 +704,9 @@ class _SubjectWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final detailStyle = context.adaptiveLayout.detailLayoutStyle;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: EdgeInsets.symmetric(vertical: detailStyle.sectionGapSmall),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -689,40 +737,66 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
+  final AdaptiveDetailLayoutStyle style;
   const _InfoRow({
     required this.label,
     required this.value,
     this.valueColor,
+    required this.style,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  fontWeight: FontWeight.w900,
-                ),
+    return LayoutBuilder(builder: (context, constraints) {
+      final shouldStack = style.isExtremeCompact || constraints.maxWidth < 350;
+      if (shouldStack) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            SizedBox(height: style.sectionGapSmall),
+            Text(
+              value,
+              textAlign: TextAlign.left,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: valueColor ?? Colors.black,
+                  ),
+            ),
+          ],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: style.rowLabelWidth,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: valueColor ?? Colors.black,
-                ),
+          SizedBox(width: style.rowGap),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: valueColor ?? Colors.black,
+                  ),
+            ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 }
 
@@ -739,11 +813,13 @@ class _CustomCheckboxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final detailStyle = context.adaptiveLayout.detailLayoutStyle;
+    final iconSize = detailStyle.isExtremeCompact ? 24.0 : 28.0;
     return InkWell(
       onTap: onChanged != null ? () => onChanged!(!value) : null,
       splashColor: AppTheme.rudnGreenColor.withValues(alpha: 0.2),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: EdgeInsets.symmetric(vertical: detailStyle.sectionGapSmall),
         child: Row(
           children: [
             Icon(
@@ -754,9 +830,9 @@ class _CustomCheckboxTile extends StatelessWidget {
                       ? AppTheme.rudnGreenColor
                       : Theme.of(context).textTheme.bodyLarge?.color ??
                           Colors.black),
-              size: 28,
+              size: iconSize,
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: detailStyle.rowGap),
             Expanded(
               child: Text(
                 title,

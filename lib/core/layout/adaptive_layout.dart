@@ -6,11 +6,22 @@ enum AdaptiveSizeClass {
   expanded,
 }
 
+enum HomeLayoutMode {
+  stacked,
+  split,
+}
+
 enum AdaptiveFooterMode {
   full,
   compact,
   minimal,
   hidden,
+}
+
+enum AdaptiveDensityMode {
+  regular,
+  compact,
+  extremeCompact,
 }
 
 @immutable
@@ -110,6 +121,92 @@ class AdaptiveFooterStyle {
 }
 
 @immutable
+class AdaptiveDetailLayoutStyle {
+  final AdaptiveDensityMode densityMode;
+  final EdgeInsets outerPadding;
+  final double maxContentWidth;
+  final double cardPadding;
+  final double sectionGap;
+  final double sectionGapLarge;
+  final double sectionGapSmall;
+  final double titleFontSize;
+  final double appBarTitleFontSize;
+  final double rowLabelWidth;
+  final double rowGap;
+  final double actionVerticalPadding;
+  final double actionMinHeight;
+  final double tableCellHorizontalPadding;
+  final double tableCellVerticalPadding;
+  final double dialogMaxWidth;
+  final EdgeInsets dialogContentPadding;
+  final EdgeInsets dialogTitlePadding;
+  final EdgeInsets dialogActionsPadding;
+
+  const AdaptiveDetailLayoutStyle({
+    required this.densityMode,
+    required this.outerPadding,
+    required this.maxContentWidth,
+    required this.cardPadding,
+    required this.sectionGap,
+    required this.sectionGapLarge,
+    required this.sectionGapSmall,
+    required this.titleFontSize,
+    required this.appBarTitleFontSize,
+    required this.rowLabelWidth,
+    required this.rowGap,
+    required this.actionVerticalPadding,
+    required this.actionMinHeight,
+    required this.tableCellHorizontalPadding,
+    required this.tableCellVerticalPadding,
+    required this.dialogMaxWidth,
+    required this.dialogContentPadding,
+    required this.dialogTitlePadding,
+    required this.dialogActionsPadding,
+  });
+
+  bool get isExtremeCompact =>
+      densityMode == AdaptiveDensityMode.extremeCompact;
+}
+
+@immutable
+class AdaptiveAuthLayoutStyle {
+  final AdaptiveDensityMode densityMode;
+  final double contentMaxWidth;
+  final double contentHorizontalPadding;
+  final double titleFontSize;
+  final double buttonFontSize;
+  final double buttonIconSize;
+  final double buttonVerticalPadding;
+  final double buttonHorizontalPadding;
+  final double blockGap;
+  final double errorTopGap;
+  final double errorPadding;
+  final double footerBottomPadding;
+  final double footerItemGap;
+  final double topControlPadding;
+
+  const AdaptiveAuthLayoutStyle({
+    required this.densityMode,
+    required this.contentMaxWidth,
+    required this.contentHorizontalPadding,
+    required this.titleFontSize,
+    required this.buttonFontSize,
+    required this.buttonIconSize,
+    required this.buttonVerticalPadding,
+    required this.buttonHorizontalPadding,
+    required this.blockGap,
+    required this.errorTopGap,
+    required this.errorPadding,
+    required this.footerBottomPadding,
+    required this.footerItemGap,
+    required this.topControlPadding,
+  });
+
+  bool get isExtremeCompact =>
+      densityMode == AdaptiveDensityMode.extremeCompact;
+}
+
+@immutable
 class AdaptiveLayoutData {
   static const double compactWidthBreakpoint = 600;
   static const double mediumWidthBreakpoint = 840;
@@ -169,6 +266,312 @@ class AdaptiveLayoutData {
 
   bool get isPhoneLikeLandscape {
     return isLandscape && availableHeight < 500 && availableWidth < 980;
+  }
+
+  AdaptiveDensityMode get appDensityMode {
+    final bool extremelyConstrained =
+        availableWidth < 360 || availableHeight < 460;
+    if (extremelyConstrained) return AdaptiveDensityMode.extremeCompact;
+
+    final bool compactConstraint =
+        availableWidth < 460 || availableHeight < 660;
+    if (compactConstraint) return AdaptiveDensityMode.compact;
+
+    return AdaptiveDensityMode.regular;
+  }
+
+  AdaptiveDetailLayoutStyle get detailLayoutStyle {
+    final density = appDensityMode;
+    final double verticalPadding;
+    if (isLandscape) {
+      verticalPadding = switch (density) {
+        AdaptiveDensityMode.regular => 10.0,
+        AdaptiveDensityMode.compact => 6.0,
+        AdaptiveDensityMode.extremeCompact => 4.0,
+      };
+    } else {
+      verticalPadding = switch (density) {
+        AdaptiveDensityMode.regular => 24.0,
+        AdaptiveDensityMode.compact => 16.0,
+        AdaptiveDensityMode.extremeCompact => 12.0,
+      };
+    }
+    final double horizontalPadding = switch (density) {
+      AdaptiveDensityMode.regular => isLandscape ? 18.0 : 14.0,
+      AdaptiveDensityMode.compact => 12.0,
+      AdaptiveDensityMode.extremeCompact => 8.0,
+    };
+    final double cardPadding = switch (density) {
+      AdaptiveDensityMode.regular => 20.0,
+      AdaptiveDensityMode.compact => 16.0,
+      AdaptiveDensityMode.extremeCompact => 12.0,
+    };
+    final double sectionGap = switch (density) {
+      AdaptiveDensityMode.regular => 16.0,
+      AdaptiveDensityMode.compact => 12.0,
+      AdaptiveDensityMode.extremeCompact => 10.0,
+    };
+    final double sectionGapLarge = switch (density) {
+      AdaptiveDensityMode.regular => 28.0,
+      AdaptiveDensityMode.compact => 22.0,
+      AdaptiveDensityMode.extremeCompact => 18.0,
+    };
+    final double sectionGapSmall = switch (density) {
+      AdaptiveDensityMode.regular => 8.0,
+      AdaptiveDensityMode.compact => 6.0,
+      AdaptiveDensityMode.extremeCompact => 4.0,
+    };
+    final double titleFontSize = switch (density) {
+      AdaptiveDensityMode.regular => isLandscape ? 20.0 : 21.0,
+      AdaptiveDensityMode.compact => 19.0,
+      AdaptiveDensityMode.extremeCompact => 17.5,
+    };
+    final double appBarTitleFontSize = switch (density) {
+      AdaptiveDensityMode.regular => 20.0,
+      AdaptiveDensityMode.compact => 18.5,
+      AdaptiveDensityMode.extremeCompact => 17.0,
+    };
+    final double rowLabelWidth =
+        ((availableWidth * 0.33).clamp(104.0, 190.0)).toDouble();
+    final double tableCellHorizontalPadding = switch (density) {
+      AdaptiveDensityMode.regular => isLandscape ? 12.0 : 16.0,
+      AdaptiveDensityMode.compact => isLandscape ? 10.0 : 12.0,
+      AdaptiveDensityMode.extremeCompact => 8.0,
+    };
+    final double tableCellVerticalPadding = switch (density) {
+      AdaptiveDensityMode.regular => isLandscape ? 10.0 : 18.0,
+      AdaptiveDensityMode.compact => isLandscape ? 8.0 : 12.0,
+      AdaptiveDensityMode.extremeCompact => 7.0,
+    };
+    final double maxContentWidth = switch (sizeClass) {
+      AdaptiveSizeClass.compact => isLandscape ? 700.0 : 620.0,
+      AdaptiveSizeClass.medium => 840.0,
+      AdaptiveSizeClass.expanded => 980.0,
+    };
+
+    return AdaptiveDetailLayoutStyle(
+      densityMode: density,
+      outerPadding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding, vertical: verticalPadding),
+      maxContentWidth: maxContentWidth,
+      cardPadding: cardPadding,
+      sectionGap: sectionGap,
+      sectionGapLarge: sectionGapLarge,
+      sectionGapSmall: sectionGapSmall,
+      titleFontSize: titleFontSize,
+      appBarTitleFontSize: appBarTitleFontSize,
+      rowLabelWidth: rowLabelWidth,
+      rowGap: switch (density) {
+        AdaptiveDensityMode.regular => 16.0,
+        AdaptiveDensityMode.compact => 12.0,
+        AdaptiveDensityMode.extremeCompact => 10.0,
+      },
+      actionVerticalPadding: switch (density) {
+        AdaptiveDensityMode.regular => 16.0,
+        AdaptiveDensityMode.compact => 14.0,
+        AdaptiveDensityMode.extremeCompact => 12.0,
+      },
+      actionMinHeight: switch (density) {
+        AdaptiveDensityMode.regular => 52.0,
+        AdaptiveDensityMode.compact => 48.0,
+        AdaptiveDensityMode.extremeCompact => 44.0,
+      },
+      tableCellHorizontalPadding: tableCellHorizontalPadding,
+      tableCellVerticalPadding: tableCellVerticalPadding,
+      dialogMaxWidth: switch (sizeClass) {
+        AdaptiveSizeClass.compact => 420.0,
+        AdaptiveSizeClass.medium => 520.0,
+        AdaptiveSizeClass.expanded => 580.0,
+      },
+      dialogContentPadding: switch (density) {
+        AdaptiveDensityMode.regular =>
+          const EdgeInsets.fromLTRB(24, 20, 24, 24),
+        AdaptiveDensityMode.compact =>
+          const EdgeInsets.fromLTRB(20, 18, 20, 20),
+        AdaptiveDensityMode.extremeCompact =>
+          const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      },
+      dialogTitlePadding: switch (density) {
+        AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        AdaptiveDensityMode.extremeCompact =>
+          const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      },
+      dialogActionsPadding: switch (density) {
+        AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        AdaptiveDensityMode.extremeCompact =>
+          const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      },
+    );
+  }
+
+  AdaptiveAuthLayoutStyle get authLayoutStyle {
+    final density = appDensityMode;
+    final double maxWidth = switch (sizeClass) {
+      AdaptiveSizeClass.compact => 460.0,
+      AdaptiveSizeClass.medium => 560.0,
+      AdaptiveSizeClass.expanded => 640.0,
+    };
+    return AdaptiveAuthLayoutStyle(
+      densityMode: density,
+      contentMaxWidth: maxWidth,
+      contentHorizontalPadding: switch (density) {
+        AdaptiveDensityMode.regular => 24.0,
+        AdaptiveDensityMode.compact => 18.0,
+        AdaptiveDensityMode.extremeCompact => 12.0,
+      },
+      titleFontSize: switch (density) {
+        AdaptiveDensityMode.regular => 40.0,
+        AdaptiveDensityMode.compact => 35.0,
+        AdaptiveDensityMode.extremeCompact => 30.0,
+      },
+      buttonFontSize: switch (density) {
+        AdaptiveDensityMode.regular => 26.0,
+        AdaptiveDensityMode.compact => 23.0,
+        AdaptiveDensityMode.extremeCompact => 20.0,
+      },
+      buttonIconSize: switch (density) {
+        AdaptiveDensityMode.regular => 24.0,
+        AdaptiveDensityMode.compact => 21.0,
+        AdaptiveDensityMode.extremeCompact => 19.0,
+      },
+      buttonVerticalPadding: switch (density) {
+        AdaptiveDensityMode.regular => 10.0,
+        AdaptiveDensityMode.compact => 9.0,
+        AdaptiveDensityMode.extremeCompact => 8.0,
+      },
+      buttonHorizontalPadding: switch (density) {
+        AdaptiveDensityMode.regular => 30.0,
+        AdaptiveDensityMode.compact => 24.0,
+        AdaptiveDensityMode.extremeCompact => 18.0,
+      },
+      blockGap: switch (density) {
+        AdaptiveDensityMode.regular => 10.0,
+        AdaptiveDensityMode.compact => 8.0,
+        AdaptiveDensityMode.extremeCompact => 6.0,
+      },
+      errorTopGap: switch (density) {
+        AdaptiveDensityMode.regular => 14.0,
+        AdaptiveDensityMode.compact => 12.0,
+        AdaptiveDensityMode.extremeCompact => 10.0,
+      },
+      errorPadding: switch (density) {
+        AdaptiveDensityMode.regular => 12.0,
+        AdaptiveDensityMode.compact => 10.0,
+        AdaptiveDensityMode.extremeCompact => 8.0,
+      },
+      footerBottomPadding: switch (density) {
+        AdaptiveDensityMode.regular => 24.0,
+        AdaptiveDensityMode.compact => 18.0,
+        AdaptiveDensityMode.extremeCompact => 14.0,
+      },
+      footerItemGap: switch (density) {
+        AdaptiveDensityMode.regular => 8.0,
+        AdaptiveDensityMode.compact => 6.0,
+        AdaptiveDensityMode.extremeCompact => 4.0,
+      },
+      topControlPadding: switch (density) {
+        AdaptiveDensityMode.regular => 16.0,
+        AdaptiveDensityMode.compact => 12.0,
+        AdaptiveDensityMode.extremeCompact => 8.0,
+      },
+    );
+  }
+
+  double get homeUsableContentWidth {
+    final afterOuterPadding = availableWidth - (outerHorizontalPadding * 2);
+    final clampedToViewport = afterOuterPadding < 0 ? 0.0 : afterOuterPadding;
+    if (homeContentMaxWidth.isInfinite) return clampedToViewport;
+    return clampedToViewport > homeContentMaxWidth
+        ? homeContentMaxWidth
+        : clampedToViewport;
+  }
+
+  double get homeMinPrimaryPaneWidth {
+    if (isExpanded) return 440.0;
+    if (isMedium) return 400.0;
+    return 360.0;
+  }
+
+  double get homeMinSecondaryPaneWidth {
+    if (isExpanded) return 320.0;
+    if (isMedium) return 300.0;
+    return 280.0;
+  }
+
+  double get homeMinSplitTotalWidth {
+    return homeMinPrimaryPaneWidth + homeMinSecondaryPaneWidth;
+  }
+
+  double get homePrimaryPaneWidthForSplit {
+    final totalFlex = homeLandscapeListFlex + homeLandscapeSidebarFlex;
+    if (totalFlex <= 0) return 0.0;
+    return homeUsableContentWidth * (homeLandscapeListFlex / totalFlex);
+  }
+
+  double get homeSecondaryPaneWidthForSplit {
+    final totalFlex = homeLandscapeListFlex + homeLandscapeSidebarFlex;
+    if (totalFlex <= 0) return 0.0;
+    return homeUsableContentWidth * (homeLandscapeSidebarFlex / totalFlex);
+  }
+
+  double get _homeSplitEnterBuffer {
+    if (isExpanded) return 28.0;
+    if (isMedium) return 24.0;
+    return 18.0;
+  }
+
+  double get _homeSplitExitBuffer {
+    if (isExpanded) return 14.0;
+    if (isMedium) return 12.0;
+    return 10.0;
+  }
+
+  bool _isSplitValidWithBuffer(double buffer) {
+    if (!isLandscape) return false;
+    if (homeUsableContentWidth < (homeMinSplitTotalWidth + buffer)) {
+      return false;
+    }
+    if (homePrimaryPaneWidthForSplit < (homeMinPrimaryPaneWidth + buffer)) {
+      return false;
+    }
+    if (homeSecondaryPaneWidthForSplit < (homeMinSecondaryPaneWidth + buffer)) {
+      return false;
+    }
+    return true;
+  }
+
+  bool get shouldUseHomeLandscapeSplit {
+    if (!isLandscape) return false;
+    if (homeUsableContentWidth < homeMinSplitTotalWidth) return false;
+    if (homePrimaryPaneWidthForSplit < homeMinPrimaryPaneWidth) return false;
+    if (homeSecondaryPaneWidthForSplit < homeMinSecondaryPaneWidth) {
+      return false;
+    }
+    return true;
+  }
+
+  HomeLayoutMode get homeLayoutMode {
+    return shouldUseHomeLandscapeSplit
+        ? HomeLayoutMode.split
+        : HomeLayoutMode.stacked;
+  }
+
+  HomeLayoutMode resolveStableHomeLayoutMode({
+    required HomeLayoutMode previousMode,
+  }) {
+    if (!isLandscape) return HomeLayoutMode.stacked;
+
+    if (previousMode == HomeLayoutMode.split) {
+      return _isSplitValidWithBuffer(-_homeSplitExitBuffer)
+          ? HomeLayoutMode.split
+          : HomeLayoutMode.stacked;
+    }
+
+    return _isSplitValidWithBuffer(_homeSplitEnterBuffer)
+        ? HomeLayoutMode.split
+        : HomeLayoutMode.stacked;
   }
 
   double get _phoneLandscapeWidthT {
@@ -273,6 +676,13 @@ class AdaptiveLayoutData {
 
   double get _footerMinimalMinBudget => _footerFullMinBudget * 0.52;
 
+  double get _footerModeStabilityBuffer {
+    if (isLandscape) {
+      return isExpanded ? 12.0 : 10.0;
+    }
+    return isExpanded ? 16.0 : 14.0;
+  }
+
   AdaptiveFooterMode get footerMode {
     final budget = footerBudgetAfterContentProtection;
     if (budget >= _footerFullMinBudget) return AdaptiveFooterMode.full;
@@ -285,8 +695,52 @@ class AdaptiveLayoutData {
     return footerMode == AdaptiveFooterMode.hidden;
   }
 
-  AdaptiveFooterStyle get footerStyle {
-    final mode = footerMode;
+  AdaptiveFooterMode resolveStableFooterMode({
+    required AdaptiveFooterMode previousMode,
+  }) {
+    final budget = footerBudgetAfterContentProtection;
+    final buffer = _footerModeStabilityBuffer;
+
+    switch (previousMode) {
+      case AdaptiveFooterMode.full:
+        if (budget >= (_footerFullMinBudget - buffer)) {
+          return AdaptiveFooterMode.full;
+        }
+        if (budget >= (_footerCompactMinBudget - buffer)) {
+          return AdaptiveFooterMode.compact;
+        }
+        if (budget >= (_footerMinimalMinBudget - buffer)) {
+          return AdaptiveFooterMode.minimal;
+        }
+        return AdaptiveFooterMode.hidden;
+      case AdaptiveFooterMode.compact:
+        if (budget >= (_footerFullMinBudget + buffer)) {
+          return AdaptiveFooterMode.full;
+        }
+        if (budget >= (_footerCompactMinBudget - buffer)) {
+          return AdaptiveFooterMode.compact;
+        }
+        if (budget >= (_footerMinimalMinBudget - buffer)) {
+          return AdaptiveFooterMode.minimal;
+        }
+        return AdaptiveFooterMode.hidden;
+      case AdaptiveFooterMode.minimal:
+        if (budget >= (_footerCompactMinBudget + buffer)) {
+          return AdaptiveFooterMode.compact;
+        }
+        if (budget >= (_footerMinimalMinBudget - buffer)) {
+          return AdaptiveFooterMode.minimal;
+        }
+        return AdaptiveFooterMode.hidden;
+      case AdaptiveFooterMode.hidden:
+        if (budget >= (_footerMinimalMinBudget + buffer)) {
+          return AdaptiveFooterMode.minimal;
+        }
+        return AdaptiveFooterMode.hidden;
+    }
+  }
+
+  AdaptiveFooterStyle footerStyleForMode(AdaptiveFooterMode mode) {
     if (mode == AdaptiveFooterMode.hidden) {
       return const AdaptiveFooterStyle(
         mode: AdaptiveFooterMode.hidden,
@@ -354,6 +808,8 @@ class AdaptiveLayoutData {
           .toDouble(),
     );
   }
+
+  AdaptiveFooterStyle get footerStyle => footerStyleForMode(footerMode);
 
   double get outerHorizontalPadding {
     if (isPhoneLikeLandscape) {

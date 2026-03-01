@@ -189,6 +189,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   static const Duration _loaderFadeDuration = Duration(milliseconds: 120);
   static const Duration _minLoaderVisibleDuration = Duration(milliseconds: 180);
   static const Duration _sectionTransitionTimeout = Duration(seconds: 4);
+  static const Duration _metricsSyncDebounceDuration =
+      Duration(milliseconds: 320);
   static const double _sectionSqueezedScale = 0.92;
 
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
@@ -219,6 +221,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int? _debugThemeMonth;
   int? _resolvedThemeMonth;
   bool _isAppResumed = true;
+  Timer? _metricsSyncDebounceTimer;
+  AdaptiveFooterMode? _stableFooterMode;
+  HomeLayoutMode? _stableHomeLayoutMode;
 
   void _updateActionableCount(model.VotingStatus status, int count) {
     setState(() {
@@ -767,7 +772,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       },
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _metricsSyncDebounceTimer?.cancel();
+    _metricsSyncDebounceTimer = Timer(_metricsSyncDebounceDuration, () {
       if (!mounted) return;
       final targetIndex = context.read<HomeTabCubit>().state.index;
       _movePageToIndex(
@@ -803,6 +809,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _authInvalidSubscription?.cancel();
     _connectionStatusSubscription?.cancel();
     _postReconnectSectionRefreshTimer?.cancel();
+    _metricsSyncDebounceTimer?.cancel();
     _timeNotifier.dispose();
     super.dispose();
   }
@@ -822,8 +829,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final navDimensions = adaptive.navDimensions;
     final overlayDimensions = adaptive.overlayDimensions;
     final mediaQuery = MediaQuery.of(context);
-    final isLandscape = mediaQuery.orientation == Orientation.landscape;
-    final footerStyle = adaptive.footerStyle;
+    final rawHomeLayoutMode = adaptive.homeLayoutMode;
+    final stableHomeLayoutMode = adaptive.resolveStableHomeLayoutMode(
+      previousMode: _stableHomeLayoutMode ?? rawHomeLayoutMode,
+    );
+    _stableHomeLayoutMode = stableHomeLayoutMode;
+    final useSplitLandscape = stableHomeLayoutMode == HomeLayoutMode.split;
+    final rawFooterMode = adaptive.footerMode;
+    final stableFooterMode = adaptive.resolveStableFooterMode(
+      previousMode: _stableFooterMode ?? rawFooterMode,
+    );
+    _stableFooterMode = stableFooterMode;
+    final footerStyle = adaptive.footerStyleForMode(stableFooterMode);
     final shouldShowFooter = footerStyle.isVisible;
     final l10n = AppLocalizations.of(context)!;
     final overlayStatus = _connectionOverlayStatus;
@@ -843,6 +860,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           'orientation': mediaQuery.orientation.name,
           'size': '${mediaQuery.size.width.toStringAsFixed(1)}x'
               '${mediaQuery.size.height.toStringAsFixed(1)}',
+          'layout_mode_raw': rawHomeLayoutMode.name,
+          'layout_mode_stable': stableHomeLayoutMode.name,
+          'footer_mode_raw': rawFooterMode.name,
+          'footer_mode_stable': stableFooterMode.name,
+          'footer_budget':
+              adaptive.footerBudgetAfterContentProtection.toStringAsFixed(1),
+          'pane_primary_w':
+              adaptive.homePrimaryPaneWidthForSplit.toStringAsFixed(1),
+          'pane_secondary_w':
+              adaptive.homeSecondaryPaneWidthForSplit.toStringAsFixed(1),
           'selected_index': selectedPanelIndex,
           'tap_blocking_overlay': shouldBlockContentForConnection,
         },
@@ -1152,7 +1179,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       constraints: BoxConstraints(
                         maxWidth: adaptive.homeContentMaxWidth,
                       ),
-                      child: isLandscape
+                      child: useSplitLandscape
                           // LANDSCAPE: Adaptive split layout
                           ? Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
