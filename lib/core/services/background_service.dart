@@ -345,7 +345,9 @@ void onStart(ServiceInstance service) async {
             'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
       };
 
-      if (kDebugMode) debugPrint("BackgroundService: Negotiating WS connection...");
+      if (kDebugMode) {
+        debugPrint("BackgroundService: Negotiating WS connection...");
+      }
 
       // Step 1: Get the actual WebSocket URL
       final response = await http
@@ -444,7 +446,9 @@ void onStart(ServiceInstance service) async {
         },
         onDone: () {
           if (isStopped) return;
-          if (kDebugMode) debugPrint("BackgroundService: WS Connection closed");
+          if (kDebugMode) {
+            debugPrint("BackgroundService: WS Connection closed");
+          }
           isConnected = false;
           channel = null;
           emitConnectionAction(
