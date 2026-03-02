@@ -835,12 +835,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     _stableHomeLayoutMode = stableHomeLayoutMode;
     final useSplitLandscape = stableHomeLayoutMode == HomeLayoutMode.split;
-    final rawFooterMode = adaptive.footerMode;
+    final rawFooterMode = adaptive.footerModeForLayout(
+      homeLayoutMode: stableHomeLayoutMode,
+    );
     final stableFooterMode = adaptive.resolveStableFooterMode(
       previousMode: _stableFooterMode ?? rawFooterMode,
+      layoutMode: stableHomeLayoutMode,
     );
     _stableFooterMode = stableFooterMode;
-    final footerStyle = adaptive.footerStyleForMode(stableFooterMode);
+    final footerStyle = adaptive.footerStyleForModeWithLayout(
+      mode: stableFooterMode,
+      homeLayoutMode: stableHomeLayoutMode,
+    );
     final shouldShowFooter = footerStyle.isVisible;
     final l10n = AppLocalizations.of(context)!;
     final overlayStatus = _connectionOverlayStatus;
@@ -864,8 +870,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           'layout_mode_stable': stableHomeLayoutMode.name,
           'footer_mode_raw': rawFooterMode.name,
           'footer_mode_stable': stableFooterMode.name,
-          'footer_budget':
-              adaptive.footerBudgetAfterContentProtection.toStringAsFixed(1),
+          'footer_budget': adaptive
+              .footerBudgetAfterContentProtectionForLayout(stableHomeLayoutMode)
+              .toStringAsFixed(1),
+          'footer_cap_h': adaptive
+              .footerReservedHeightCapForLayout(stableHomeLayoutMode)
+              .toStringAsFixed(1),
+          'voting_h': adaptive
+              .votingContentHeightForLayout(stableHomeLayoutMode)
+              .toStringAsFixed(1),
           'pane_primary_w':
               adaptive.homePrimaryPaneWidthForSplit.toStringAsFixed(1),
           'pane_secondary_w':
@@ -1464,111 +1477,123 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
     final adaptive = context.adaptiveLayout;
     final style = widget.style;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        adaptive.homeSectionHorizontalPadding,
-        style.outerTopPadding,
-        adaptive.homeSectionHorizontalPadding,
-        style.outerBottomPadding,
-      ),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        width: double.infinity, // Ensure full width frame
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26.0),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.2),
-              blurRadius: 8.0,
-              spreadRadius: 1.0,
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: style.maxTotalHeight),
         child: Padding(
-          padding: EdgeInsets.all(style.contentPadding),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: style.maxContentHeight,
-                maxWidth: style.maxTextWidth,
+          padding: EdgeInsets.fromLTRB(
+            adaptive.homeSectionHorizontalPadding,
+            style.outerTopPadding,
+            adaptive.homeSectionHorizontalPadding,
+            style.outerBottomPadding,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: double.infinity, // Ensure full width frame
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(26.0),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1.0,
               ),
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (ScrollNotification notification) {
-                  if (notification is ScrollStartNotification &&
-                      notification.dragDetails != null) {
-                    _isUserScrolling = true;
-                    _isAutoScrollAnimating = false;
-                    _resumeTimer?.cancel();
-                  } else if (notification is UserScrollNotification &&
-                      notification.direction != ScrollDirection.idle) {
-                    _isUserScrolling = true;
-                    _resumeTimer?.cancel();
-                  } else if (notification is UserScrollNotification &&
-                      notification.direction == ScrollDirection.idle) {
-                    _isUserScrolling = false;
-                    _resumeAutoScroll(delay: const Duration(seconds: 3));
-                  } else if (notification is ScrollEndNotification) {
-                    _isUserScrolling = false;
-                    _resumeAutoScroll(delay: const Duration(seconds: 3));
-                  }
-                  return false;
-                },
-                child: ShaderMask(
-                  blendMode: BlendMode.dstIn,
-                  shaderCallback: (Rect bounds) {
-                    return LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        _showTopFade ? Colors.transparent : Colors.white,
-                        Colors.white,
-                        Colors.white,
-                        _showBottomFade ? Colors.transparent : Colors.white,
-                      ],
-                      stops: const [0.0, 0.10, 0.90, 1.0],
-                    ).createShader(bounds);
-                  },
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.poem,
-                          textAlign: TextAlign.left,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white,
-                            height: style.poemLineHeight,
-                            fontSize: style.poemFontSize,
-                            shadows: [
-                              const Shadow(blurRadius: 6, color: Colors.black87)
-                            ],
-                          ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  blurRadius: 8.0,
+                  spreadRadius: 1.0,
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: EdgeInsets.all(style.contentPadding),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: style.maxContentHeight,
+                    maxWidth: style.maxTextWidth,
+                  ),
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification notification) {
+                      if (notification is ScrollStartNotification &&
+                          notification.dragDetails != null) {
+                        _isUserScrolling = true;
+                        _isAutoScrollAnimating = false;
+                        _resumeTimer?.cancel();
+                      } else if (notification is UserScrollNotification &&
+                          notification.direction != ScrollDirection.idle) {
+                        _isUserScrolling = true;
+                        _resumeTimer?.cancel();
+                      } else if (notification is UserScrollNotification &&
+                          notification.direction == ScrollDirection.idle) {
+                        _isUserScrolling = false;
+                        _resumeAutoScroll(delay: const Duration(seconds: 3));
+                      } else if (notification is ScrollEndNotification) {
+                        _isUserScrolling = false;
+                        _resumeAutoScroll(delay: const Duration(seconds: 3));
+                      }
+                      return false;
+                    },
+                    child: ShaderMask(
+                      blendMode: BlendMode.dstIn,
+                      shaderCallback: (Rect bounds) {
+                        return LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            _showTopFade ? Colors.transparent : Colors.white,
+                            Colors.white,
+                            Colors.white,
+                            _showBottomFade ? Colors.transparent : Colors.white,
+                          ],
+                          stops: const [0.0, 0.10, 0.90, 1.0],
+                        ).createShader(bounds);
+                      },
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.poem,
+                              textAlign: TextAlign.left,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                color: Colors.white,
+                                height: style.poemLineHeight,
+                                fontSize: style.poemFontSize,
+                                shadows: [
+                                  const Shadow(
+                                      blurRadius: 6, color: Colors.black87)
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: style.poemAuthorSpacing),
+                            Text(
+                              widget.author,
+                              textAlign: TextAlign.left,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                color: Colors.white,
+                                fontStyle: FontStyle.italic,
+                                fontSize: style.authorFontSize,
+                                shadows: [
+                                  const Shadow(
+                                      blurRadius: 6, color: Colors.black87)
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: style.poemAuthorSpacing),
-                        Text(
-                          widget.author,
-                          textAlign: TextAlign.left,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white,
-                            fontStyle: FontStyle.italic,
-                            fontSize: style.authorFontSize,
-                            shadows: [
-                              const Shadow(blurRadius: 6, color: Colors.black87)
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

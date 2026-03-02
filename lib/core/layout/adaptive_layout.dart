@@ -11,6 +11,12 @@ enum HomeLayoutMode {
   split,
 }
 
+enum HomeLandscapeGeometryClass {
+  phoneLandscape,
+  crampedWindowLandscape,
+  regularTabletLandscape,
+}
+
 enum AdaptiveFooterMode {
   full,
   compact,
@@ -102,6 +108,7 @@ class AdaptiveFooterStyle {
   final double outerTopPadding;
   final double outerBottomPadding;
   final double maxContentHeight;
+  final double maxTotalHeight;
   final double maxTextWidth;
 
   const AdaptiveFooterStyle({
@@ -114,6 +121,7 @@ class AdaptiveFooterStyle {
     required this.outerTopPadding,
     required this.outerBottomPadding,
     required this.maxContentHeight,
+    required this.maxTotalHeight,
     required this.maxTextWidth,
   });
 
@@ -266,6 +274,32 @@ class AdaptiveLayoutData {
 
   bool get isPhoneLikeLandscape {
     return isLandscape && availableHeight < 500 && availableWidth < 980;
+  }
+
+  double get _landscapeAspectRatio {
+    final safeHeight = availableHeight <= 0 ? 1.0 : availableHeight;
+    return availableWidth / safeHeight;
+  }
+
+  HomeLandscapeGeometryClass get homeLandscapeGeometryClass {
+    if (!isLandscape) {
+      return HomeLandscapeGeometryClass.regularTabletLandscape;
+    }
+
+    final bool phoneLandscapeGeometry = availableHeight <= 460 &&
+        availableWidth <= 1100 &&
+        _landscapeAspectRatio >= 1.45;
+    if (phoneLandscapeGeometry) {
+      return HomeLandscapeGeometryClass.phoneLandscape;
+    }
+
+    final bool crampedWindowGeometry =
+        homeUsableContentWidth < 860 || availableHeight < 700;
+    if (crampedWindowGeometry) {
+      return HomeLandscapeGeometryClass.crampedWindowLandscape;
+    }
+
+    return HomeLandscapeGeometryClass.regularTabletLandscape;
   }
 
   AdaptiveDensityMode get appDensityMode {
@@ -504,6 +538,35 @@ class AdaptiveLayoutData {
     return homeMinPrimaryPaneWidth + homeMinSecondaryPaneWidth;
   }
 
+  double get _homeSplitDecisionMinPrimaryPaneWidth {
+    if (homeLandscapeGeometryClass ==
+        HomeLandscapeGeometryClass.phoneLandscape) {
+      return switch (sizeClass) {
+        AdaptiveSizeClass.compact => 308.0,
+        AdaptiveSizeClass.medium => 346.0,
+        AdaptiveSizeClass.expanded => 388.0,
+      };
+    }
+    return homeMinPrimaryPaneWidth;
+  }
+
+  double get _homeSplitDecisionMinSecondaryPaneWidth {
+    if (homeLandscapeGeometryClass ==
+        HomeLandscapeGeometryClass.phoneLandscape) {
+      return switch (sizeClass) {
+        AdaptiveSizeClass.compact => 240.0,
+        AdaptiveSizeClass.medium => 256.0,
+        AdaptiveSizeClass.expanded => 286.0,
+      };
+    }
+    return homeMinSecondaryPaneWidth;
+  }
+
+  double get _homeSplitDecisionMinTotalWidth {
+    return _homeSplitDecisionMinPrimaryPaneWidth +
+        _homeSplitDecisionMinSecondaryPaneWidth;
+  }
+
   double get homePrimaryPaneWidthForSplit {
     final totalFlex = homeLandscapeListFlex + homeLandscapeSidebarFlex;
     if (totalFlex <= 0) return 0.0;
@@ -517,12 +580,20 @@ class AdaptiveLayoutData {
   }
 
   double get _homeSplitEnterBuffer {
+    if (homeLandscapeGeometryClass ==
+        HomeLandscapeGeometryClass.phoneLandscape) {
+      return 6.0;
+    }
     if (isExpanded) return 28.0;
     if (isMedium) return 24.0;
     return 18.0;
   }
 
   double get _homeSplitExitBuffer {
+    if (homeLandscapeGeometryClass ==
+        HomeLandscapeGeometryClass.phoneLandscape) {
+      return 4.0;
+    }
     if (isExpanded) return 14.0;
     if (isMedium) return 12.0;
     return 10.0;
@@ -530,13 +601,15 @@ class AdaptiveLayoutData {
 
   bool _isSplitValidWithBuffer(double buffer) {
     if (!isLandscape) return false;
-    if (homeUsableContentWidth < (homeMinSplitTotalWidth + buffer)) {
+    if (homeUsableContentWidth < (_homeSplitDecisionMinTotalWidth + buffer)) {
       return false;
     }
-    if (homePrimaryPaneWidthForSplit < (homeMinPrimaryPaneWidth + buffer)) {
+    if (homePrimaryPaneWidthForSplit <
+        (_homeSplitDecisionMinPrimaryPaneWidth + buffer)) {
       return false;
     }
-    if (homeSecondaryPaneWidthForSplit < (homeMinSecondaryPaneWidth + buffer)) {
+    if (homeSecondaryPaneWidthForSplit <
+        (_homeSplitDecisionMinSecondaryPaneWidth + buffer)) {
       return false;
     }
     return true;
@@ -544,9 +617,12 @@ class AdaptiveLayoutData {
 
   bool get shouldUseHomeLandscapeSplit {
     if (!isLandscape) return false;
-    if (homeUsableContentWidth < homeMinSplitTotalWidth) return false;
-    if (homePrimaryPaneWidthForSplit < homeMinPrimaryPaneWidth) return false;
-    if (homeSecondaryPaneWidthForSplit < homeMinSecondaryPaneWidth) {
+    if (homeUsableContentWidth < _homeSplitDecisionMinTotalWidth) return false;
+    if (homePrimaryPaneWidthForSplit < _homeSplitDecisionMinPrimaryPaneWidth) {
+      return false;
+    }
+    if (homeSecondaryPaneWidthForSplit <
+        _homeSplitDecisionMinSecondaryPaneWidth) {
       return false;
     }
     return true;
@@ -651,10 +727,68 @@ class AdaptiveLayoutData {
     return availableHeight - _coreVerticalChromeHeight - minFooterVisibleHeight;
   }
 
+  double get homeMainContentRegionHeight {
+    final height = availableHeight - _coreVerticalChromeHeight;
+    return height <= 0 ? 0.0 : height;
+  }
+
+  double get _footerSplitContentReserve {
+    return switch (homeLandscapeGeometryClass) {
+      HomeLandscapeGeometryClass.phoneLandscape => 28.0,
+      HomeLandscapeGeometryClass.crampedWindowLandscape => 36.0,
+      HomeLandscapeGeometryClass.regularTabletLandscape => 44.0,
+    };
+  }
+
+  double _votingContentProtectionForLayout(HomeLayoutMode layoutMode) {
+    final bool splitSidebarFlow =
+        isLandscape && layoutMode == HomeLayoutMode.split;
+    if (splitSidebarFlow) {
+      return _footerSplitContentReserve;
+    }
+    return minVotingListUsableHeight;
+  }
+
+  double get _splitVotingContentReferenceHeight {
+    final votingHeight = availableHeight - (homeListSectionVerticalPadding * 2);
+    return votingHeight <= 0 ? 0.0 : votingHeight;
+  }
+
+  double _footerNormalBudgetForLayout(HomeLayoutMode layoutMode) {
+    final contentRegion = homeMainContentRegionHeight;
+    if (contentRegion <= 0) return 0.0;
+    final normalBudget =
+        contentRegion - _votingContentProtectionForLayout(layoutMode);
+    return normalBudget <= 0 ? 0.0 : normalBudget;
+  }
+
+  double footerReservedHeightCapForLayout(HomeLayoutMode layoutMode) {
+    final bool splitSidebarFlow =
+        isLandscape && layoutMode == HomeLayoutMode.split;
+    if (splitSidebarFlow) {
+      return _splitVotingContentReferenceHeight;
+    }
+    return homeMainContentRegionHeight * 0.5;
+  }
+
+  double votingContentHeightForLayout(HomeLayoutMode layoutMode) {
+    final bool splitSidebarFlow =
+        isLandscape && layoutMode == HomeLayoutMode.split;
+    if (splitSidebarFlow) {
+      return _splitVotingContentReferenceHeight;
+    }
+    final footerReserved = footerReservedHeightCapForLayout(layoutMode);
+    final votingHeight = homeMainContentRegionHeight - footerReserved;
+    return votingHeight <= 0 ? 0.0 : votingHeight;
+  }
+
+  double footerBudgetAfterContentProtectionForLayout(
+      HomeLayoutMode layoutMode) {
+    return _footerNormalBudgetForLayout(layoutMode);
+  }
+
   double get footerBudgetAfterContentProtection {
-    return availableHeight -
-        _coreVerticalChromeHeight -
-        minVotingListUsableHeight;
+    return footerBudgetAfterContentProtectionForLayout(homeLayoutMode);
   }
 
   double get _footerFullMinBudget {
@@ -683,12 +817,22 @@ class AdaptiveLayoutData {
     return isExpanded ? 16.0 : 14.0;
   }
 
-  AdaptiveFooterMode get footerMode {
-    final budget = footerBudgetAfterContentProtection;
+  AdaptiveFooterMode _footerModeFromBudget(double budget) {
     if (budget >= _footerFullMinBudget) return AdaptiveFooterMode.full;
     if (budget >= _footerCompactMinBudget) return AdaptiveFooterMode.compact;
     if (budget >= _footerMinimalMinBudget) return AdaptiveFooterMode.minimal;
     return AdaptiveFooterMode.hidden;
+  }
+
+  AdaptiveFooterMode footerModeForLayout({
+    required HomeLayoutMode homeLayoutMode,
+  }) {
+    final budget = footerBudgetAfterContentProtectionForLayout(homeLayoutMode);
+    return _footerModeFromBudget(budget);
+  }
+
+  AdaptiveFooterMode get footerMode {
+    return footerModeForLayout(homeLayoutMode: homeLayoutMode);
   }
 
   bool get shouldCollapseFooterForContent {
@@ -697,8 +841,11 @@ class AdaptiveLayoutData {
 
   AdaptiveFooterMode resolveStableFooterMode({
     required AdaptiveFooterMode previousMode,
+    HomeLayoutMode? layoutMode,
   }) {
-    final budget = footerBudgetAfterContentProtection;
+    final resolvedLayoutMode = layoutMode ?? homeLayoutMode;
+    final budget =
+        footerBudgetAfterContentProtectionForLayout(resolvedLayoutMode);
     final buffer = _footerModeStabilityBuffer;
 
     switch (previousMode) {
@@ -741,6 +888,16 @@ class AdaptiveLayoutData {
   }
 
   AdaptiveFooterStyle footerStyleForMode(AdaptiveFooterMode mode) {
+    return footerStyleForModeWithLayout(
+      mode: mode,
+      homeLayoutMode: homeLayoutMode,
+    );
+  }
+
+  AdaptiveFooterStyle footerStyleForModeWithLayout({
+    required AdaptiveFooterMode mode,
+    required HomeLayoutMode homeLayoutMode,
+  }) {
     if (mode == AdaptiveFooterMode.hidden) {
       return const AdaptiveFooterStyle(
         mode: AdaptiveFooterMode.hidden,
@@ -752,6 +909,7 @@ class AdaptiveLayoutData {
         outerTopPadding: 0.0,
         outerBottomPadding: 0.0,
         maxContentHeight: 0.0,
+        maxTotalHeight: 0.0,
         maxTextWidth: 0.0,
       );
     }
@@ -785,6 +943,39 @@ class AdaptiveLayoutData {
       AdaptiveFooterMode.minimal => 0.60,
       AdaptiveFooterMode.hidden => 0.0,
     };
+    final outerTopPadding = isLandscape ? 4.0 : 4.0;
+    final outerBottomPadding = (baseBottomPadding * spacingScale)
+        .clamp(isLandscape ? 4.0 : 10.0, baseBottomPadding)
+        .toDouble();
+    final contentPadding = (20.0 * spacingScale).clamp(10.0, 20.0).toDouble();
+    final minContentHeightFloor = isLandscape ? 74.0 : 98.0;
+    final resolvedContentFloor = baseMaxHeight < minContentHeightFloor
+        ? baseMaxHeight
+        : minContentHeightFloor;
+    final normalDesiredContentHeight =
+        (baseMaxHeight * (0.72 + (modeScale * 0.28)))
+            .clamp(resolvedContentFloor, baseMaxHeight)
+            .toDouble();
+    final normalDesiredTotalHeight = outerTopPadding +
+        outerBottomPadding +
+        (contentPadding * 2) +
+        normalDesiredContentHeight;
+    final maxAllowedTotalHeight =
+        footerReservedHeightCapForLayout(homeLayoutMode);
+    final resolvedMaxTotalHeight =
+        normalDesiredTotalHeight > maxAllowedTotalHeight
+            ? maxAllowedTotalHeight
+            : normalDesiredTotalHeight;
+    final maxInnerContentByInvariant = (resolvedMaxTotalHeight -
+            outerTopPadding -
+            outerBottomPadding -
+            (contentPadding * 2))
+        .clamp(0.0, resolvedMaxTotalHeight)
+        .toDouble();
+    final maxContentHeight =
+        normalDesiredContentHeight > maxInnerContentByInvariant
+            ? maxInnerContentByInvariant
+            : normalDesiredContentHeight;
 
     return AdaptiveFooterStyle(
       mode: mode,
@@ -794,22 +985,20 @@ class AdaptiveLayoutData {
           .toDouble(),
       authorFontSize:
           (baseAuthor * modeScale).clamp(10.8, baseAuthor).toDouble(),
-      contentPadding: (20.0 * spacingScale).clamp(10.0, 20.0).toDouble(),
+      contentPadding: contentPadding,
       poemAuthorSpacing: (8.0 * spacingScale).clamp(4.0, 8.0).toDouble(),
-      outerTopPadding: isLandscape ? 4.0 : 4.0,
-      outerBottomPadding: (baseBottomPadding * spacingScale)
-          .clamp(isLandscape ? 4.0 : 10.0, baseBottomPadding)
-          .toDouble(),
-      maxContentHeight: (baseMaxHeight * (0.72 + (modeScale * 0.28)))
-          .clamp(isLandscape ? 74.0 : 98.0, baseMaxHeight)
-          .toDouble(),
+      outerTopPadding: outerTopPadding,
+      outerBottomPadding: outerBottomPadding,
+      maxContentHeight: maxContentHeight,
+      maxTotalHeight: resolvedMaxTotalHeight,
       maxTextWidth: (baseMaxTextWidth * (0.90 + (modeScale * 0.10)))
           .clamp(220.0, baseMaxTextWidth)
           .toDouble(),
     );
   }
 
-  AdaptiveFooterStyle get footerStyle => footerStyleForMode(footerMode);
+  AdaptiveFooterStyle get footerStyle => footerStyleForModeWithLayout(
+      mode: footerMode, homeLayoutMode: homeLayoutMode);
 
   double get outerHorizontalPadding {
     if (isPhoneLikeLandscape) {
@@ -840,12 +1029,22 @@ class AdaptiveLayoutData {
   }
 
   int get homeLandscapeListFlex {
+    if (homeLandscapeGeometryClass ==
+            HomeLandscapeGeometryClass.phoneLandscape &&
+        isCompact) {
+      return 6;
+    }
     if (isExpanded) return 7;
     if (isMedium) return 6;
     return 1;
   }
 
   int get homeLandscapeSidebarFlex {
+    if (homeLandscapeGeometryClass ==
+            HomeLandscapeGeometryClass.phoneLandscape &&
+        isCompact) {
+      return 5;
+    }
     if (isExpanded) return 5;
     if (isMedium) return 5;
     return 1;
