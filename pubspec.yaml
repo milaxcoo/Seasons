@@ -65,6 +65,15 @@ flutter:
       fonts:
         - asset: assets/fonts/Hemi Head Bd It.otf
 
+# ------------- DEPENDENCY OVERRIDES -------------
+# path_provider_foundation 2.6.0 introduced an objective_c FFI hook that crashes
+# inside Xcode 26.x build phase context (xcrun returns no output from the hook
+# runner subprocess). 2.5.1 is the explicit stable revert to the plugin-based
+# implementation per the package's own changelog ("while FFI issues are
+# investigated"). Remove this override once a fixed 2.6.x+ is published.
+dependency_overrides:
+  path_provider_foundation: 2.5.1
+
 # ------------- LAUNCHER ICON CONFIG -------------
 flutter_launcher_icons:
   image_path: "icon.png"
