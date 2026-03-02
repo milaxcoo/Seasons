@@ -17,7 +17,7 @@ AuthBackgroundServiceAction backgroundServiceActionForAuthTransition({
   }
 
   final isStopTransition =
-      previous is AuthAuthenticated && current is AuthUnauthenticated;
+      previous is AuthAuthenticated && current is! AuthAuthenticated;
   if (isStopTransition) {
     return AuthBackgroundServiceAction.stop;
   }

@@ -22,6 +22,15 @@ void main() {
       expect(action, AuthBackgroundServiceAction.stop);
     });
 
+    test('returns stop on authenticated to failure transition', () {
+      final action = backgroundServiceActionForAuthTransition(
+        previous: const AuthAuthenticated(userLogin: 'user'),
+        current: const AuthFailure(error: 'logout_failed'),
+      );
+
+      expect(action, AuthBackgroundServiceAction.stop);
+    });
+
     test('returns none on initial to unauthenticated transition', () {
       final action = backgroundServiceActionForAuthTransition(
         previous: AuthInitial(),

@@ -259,6 +259,7 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
 
     // Emit results sequentially (Emitter does not support concurrent emissions).
     var hasSuccess = false;
+    var hasFailure = false;
     for (final result in results) {
       if (result.success) {
         hasSuccess = true;
@@ -267,10 +268,17 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
           status: result.status,
           timestamp: DateTime.now().millisecondsSinceEpoch,
         ));
+      } else {
+        hasFailure = true;
       }
     }
 
     if (!hasSuccess) {
+      _emitConnectionStatus(VotingConnectionStatus.disconnected);
+      return;
+    }
+
+    if (hasFailure) {
       _emitConnectionStatus(VotingConnectionStatus.disconnected);
       return;
     }

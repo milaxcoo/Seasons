@@ -297,7 +297,7 @@ void onStart(ServiceInstance service) async {
   // Initialize notifications plugin for this isolate
   final notificationsPlugin = FlutterLocalNotificationsPlugin();
   await notificationsPlugin.initialize(
-    const InitializationSettings(
+    settings: const InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
     ),
@@ -633,10 +633,10 @@ Future<void> _showAlertNotification(
   }
 
   await plugin.show(
-    DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    title,
-    body,
-    const NotificationDetails(
+    id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title: title,
+    body: body,
+    notificationDetails: const NotificationDetails(
       android: AndroidNotificationDetails(
         BackgroundService.alertChannelId,
         'Уведомления о голосованиях',

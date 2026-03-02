@@ -138,6 +138,29 @@ void main() {
       expect(find.byType(ResultsIcon), findsWidgets);
     });
 
+    testWidgets('top bar ellipsizes long username without overflow',
+        (tester) async {
+      const longLogin =
+          'very.long.user.login.with.many.sections.and.extra.characters@example.rudn.ru';
+      when(() => mockAuthBloc.state)
+          .thenReturn(const AuthAuthenticated(userLogin: longLogin));
+      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
+          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final usernameText = tester.widget<Text>(find.text(longLogin));
+      expect(usernameText.maxLines, 1);
+      expect(usernameText.overflow, TextOverflow.ellipsis);
+      expect(find.byIcon(Icons.exit_to_app), findsOneWidget);
+    });
+
     testWidgets('shows centered connection overlay for degraded/syncing states',
         (tester) async {
       final connectionStatusController =

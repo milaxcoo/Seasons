@@ -149,7 +149,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ErrorReportingService().reportEvent('auth_bloc_name_fetched');
       }
     }).catchError((e) {
-      debugPrint('Failed to fetch user login: ${sanitizeObjectForLog(e)}');
+      if (kDebugMode) {
+        debugPrint('Failed to fetch user login: ${sanitizeObjectForLog(e)}');
+      }
       ErrorReportingService()
           .reportEvent('auth_bloc_name_fetch_failed', details: {
         'exception_type': e.runtimeType.toString(),

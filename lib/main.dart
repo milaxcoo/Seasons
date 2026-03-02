@@ -58,12 +58,18 @@ void main() async {
       // Post-launch initialization
       await _initializeNotifications();
     } catch (e, stackTrace) {
-      debugPrint('Не удалось инициализировать приложение: $e');
+      if (kDebugMode) {
+        debugPrint(
+          'App initialization failed: ${sanitizeObjectForLog(e)}',
+        );
+      }
       ErrorReportingService().reportCrash(e, stackTrace);
     }
   }, (error, stackTrace) {
     // Catch any unhandled async errors
-    debugPrint('Unhandled error: $error');
+    if (kDebugMode) {
+      debugPrint('Unhandled error: ${sanitizeObjectForLog(error)}');
+    }
     ErrorReportingService().reportCrash(error, stackTrace);
   });
 }
@@ -83,7 +89,7 @@ Future<void> _initializeNotifications() async {
   );
 
   await flutterLocalNotificationsPlugin.initialize(
-    initSettings,
+    settings: initSettings,
     onDidReceiveNotificationResponse: _onNotificationTapped,
   );
 
@@ -137,6 +143,19 @@ String authScreenKeyForState(AuthState state) {
     return 'auth-home';
   }
   return 'auth-login';
+}
+
+@visibleForTesting
+bool shouldStartBackgroundServiceForState(AuthState state) {
+  return state is AuthAuthenticated;
+}
+
+@visibleForTesting
+String backgroundServiceTransitionReasonForState(AuthState state) {
+  if (state is AuthAuthenticated) {
+    return 'auth_transition:not_authenticated->authenticated';
+  }
+  return 'auth_transition:authenticated->${state.runtimeType}';
 }
 
 class SeasonsApp extends StatelessWidget {
@@ -200,18 +219,18 @@ class SeasonsApp extends StatelessWidget {
                   return action != AuthBackgroundServiceAction.none;
                 },
                 listener: (context, state) {
-                  if (state is AuthAuthenticated) {
+                  if (shouldStartBackgroundServiceForState(state)) {
                     unawaited(
                       BackgroundService().startService(
                         reason:
-                            'auth_transition:not_authenticated->authenticated',
+                            backgroundServiceTransitionReasonForState(state),
                       ),
                     );
-                  } else if (state is AuthUnauthenticated) {
+                  } else {
                     unawaited(
                       BackgroundService().stopService(
                         reason:
-                            'auth_transition:authenticated->unauthenticated',
+                            backgroundServiceTransitionReasonForState(state),
                       ),
                     );
                   }
