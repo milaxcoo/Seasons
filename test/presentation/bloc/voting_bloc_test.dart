@@ -146,6 +146,35 @@ void main() {
       verify(() => mockVotingRepository.getEventsByStatus(any())).called(3);
     });
 
+    test('marks connection disconnected when only part of silent refresh fails',
+        () async {
+      when(
+        () => mockVotingRepository
+            .getEventsByStatus(model.VotingStatus.registration),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockVotingRepository.getEventsByStatus(model.VotingStatus.active),
+      ).thenThrow(Exception('temporary failure'));
+      when(
+        () => mockVotingRepository
+            .getEventsByStatus(model.VotingStatus.completed),
+      ).thenAnswer((_) async => []);
+
+      final statuses = <VotingConnectionStatus>[];
+      final subscription =
+          votingBloc.connectionStatusStream.listen(statuses.add);
+
+      votingBloc.add(const RefreshAllEventsSilent());
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(statuses, equals([VotingConnectionStatus.disconnected]));
+      expect(
+        votingBloc.currentConnectionStatus,
+        VotingConnectionStatus.disconnected,
+      );
+      await subscription.cancel();
+    });
+
     group('FetchEventsByStatus', () {
       final testEvents = [
         model.VotingEvent(

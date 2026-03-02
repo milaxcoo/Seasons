@@ -102,8 +102,9 @@ CodeQL security scanning ([workflow](.github/workflows/codeql.yml)) currently ru
 lib/
 ├── core/               # Theme, services, utilities
 │   └── services/       # Background service, error reporting
-├── data/               # Repositories, data sources
-├── domain/             # Models
+├── data/               # Repositories and models
+│   ├── models/         # API/domain model classes
+│   └── repositories/   # Repository implementations
 ├── l10n/               # Localization (RU/EN)
 └── presentation/       # UI
     ├── bloc/           # State management

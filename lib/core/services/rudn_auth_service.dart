@@ -47,11 +47,7 @@ class RudnAuthService {
   // Singleton instance with default storage
   static final RudnAuthService _instance = RudnAuthService._internal(
     FlutterSecureStorageAdapter(
-      const FlutterSecureStorage(
-        aOptions: AndroidOptions(
-          encryptedSharedPreferences: true,
-        ),
-      ),
+      const FlutterSecureStorage(),
     ),
   );
 
@@ -71,17 +67,23 @@ class RudnAuthService {
       final persisted = await _storage.read(key: _cookieKey).timeout(
         _storageTimeout,
         onTimeout: () {
-          debugPrint('Storage verification timed out on saveCookie');
+          if (kDebugMode) {
+            debugPrint('Storage verification timed out on saveCookie');
+          }
           return null;
         },
       );
       final isPersisted = persisted == cookie;
       if (!isPersisted) {
-        debugPrint('saveCookie verification failed');
+        if (kDebugMode) {
+          debugPrint('saveCookie verification failed');
+        }
       }
       return isPersisted;
     } catch (e) {
-      debugPrint('Error saving cookie: $e');
+      if (kDebugMode) {
+        debugPrint('Error saving cookie: $e');
+      }
       return false;
     }
   }
@@ -93,12 +95,16 @@ class RudnAuthService {
       return await _storage.read(key: _cookieKey).timeout(
         _storageTimeout,
         onTimeout: () {
-          debugPrint('Storage read timed out');
+          if (kDebugMode) {
+            debugPrint('Storage read timed out');
+          }
           return null;
         },
       );
     } catch (e) {
-      debugPrint('Error reading cookie: $e');
+      if (kDebugMode) {
+        debugPrint('Error reading cookie: $e');
+      }
       return null;
     }
   }
@@ -110,17 +116,23 @@ class RudnAuthService {
       final remaining = await _storage.read(key: _cookieKey).timeout(
         _storageTimeout,
         onTimeout: () {
-          debugPrint('Storage verification timed out on logout');
+          if (kDebugMode) {
+            debugPrint('Storage verification timed out on logout');
+          }
           return null;
         },
       );
       if (remaining == null || remaining.isEmpty) {
         return true;
       }
-      debugPrint('logout verification failed: cookie is still present');
+      if (kDebugMode) {
+        debugPrint('logout verification failed: cookie is still present');
+      }
       return false;
     } catch (e) {
-      debugPrint('Error deleting cookie: $e');
+      if (kDebugMode) {
+        debugPrint('Error deleting cookie: $e');
+      }
       return false;
     }
   }
@@ -136,7 +148,9 @@ class RudnAuthService {
     try {
       await _storage.deleteAll();
     } catch (e) {
-      debugPrint('Error clearing secure data: $e');
+      if (kDebugMode) {
+        debugPrint('Error clearing secure data: $e');
+      }
     }
   }
 }

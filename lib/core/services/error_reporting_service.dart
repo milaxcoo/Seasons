@@ -336,7 +336,10 @@ class ErrorReportingService {
   /// Send error report to Telegram bot (with single retry on transient errors).
   Future<void> _sendToTelegram(ErrorReport report) async {
     if (kReleaseMode || kProfileMode) {
-      debugPrint('ErrorReportingService: Telegram disabled in release/profile');
+      if (kDebugMode) {
+        debugPrint(
+            'ErrorReportingService: Telegram disabled in release/profile');
+      }
       return;
     }
 

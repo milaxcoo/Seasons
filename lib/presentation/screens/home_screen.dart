@@ -54,7 +54,6 @@ class _TopBar extends StatelessWidget {
         vertical: isLandscape ? 0.0 : (adaptive.isExpanded ? 10.0 : 8.0),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Language switcher button (moved to left)
           PopupMenuButton<Locale>(
@@ -90,30 +89,48 @@ class _TopBar extends StatelessWidget {
               ),
             ],
           ),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    buildCorporatePageRoute(
-                        ProfileScreen(imagePathOverride: imagePath)),
-                  );
-                },
-                child: Text(userLogin,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: Colors.white)),
-              ),
-              IconButton(
-                icon: const Icon(Icons.exit_to_app, color: Colors.white),
-                onPressed: () {
-                  context.read<AuthBloc>().add(LoggedOut());
-                  // BlocBuilder in main.dart handles switching to LoginScreen
-                  // when AuthUnauthenticated is emitted. No manual navigation needed.
-                },
-              ),
-            ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        buildCorporatePageRoute(
+                            ProfileScreen(imagePathOverride: imagePath)),
+                      );
+                    },
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        userLogin,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.exit_to_app, color: Colors.white),
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints.tightFor(width: 40, height: 40),
+                  visualDensity: VisualDensity.compact,
+                  splashRadius: 20,
+                  onPressed: () {
+                    context.read<AuthBloc>().add(LoggedOut());
+                    // BlocBuilder in main.dart handles switching to LoginScreen
+                    // when AuthUnauthenticated is emitted. No manual navigation needed.
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),

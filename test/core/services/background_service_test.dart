@@ -177,10 +177,10 @@ void main() {
       mockHttpClient = MockHttpClient();
       when(() => mockInstance.invoke(any(), any())).thenReturn(null);
       when(() => mockNotifications.show(
-            any(),
-            any(),
-            any(),
-            any(),
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
             payload: any(named: 'payload'),
           )).thenAnswer((_) async {});
     });
@@ -198,10 +198,10 @@ void main() {
             'data': {'id': 1},
           })).called(1);
       verify(() => mockNotifications.show(
-            any(),
-            'Голосование началось!',
-            'Нажмите, чтобы проголосовать',
-            any(),
+            id: any(named: 'id'),
+            title: 'Голосование началось!',
+            body: 'Нажмите, чтобы проголосовать',
+            notificationDetails: any(named: 'notificationDetails'),
             payload: 'Navigate:VotingList:1',
           )).called(1);
     });
@@ -215,10 +215,10 @@ void main() {
             'raw': 'not a json',
           })).called(1);
       verifyNever(() => mockNotifications.show(
-            any(),
-            any(),
-            any(),
-            any(),
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
             payload: any(named: 'payload'),
           ));
     });
@@ -234,10 +234,10 @@ void main() {
 
       verifyNever(() => mockInstance.invoke(any(), any()));
       verifyNever(() => mockNotifications.show(
-            any(),
-            any(),
-            any(),
-            any(),
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
             payload: any(named: 'payload'),
           ));
     });
@@ -247,10 +247,10 @@ void main() {
           mockNotifications, 'UNSUPPORTED_ACTION');
 
       verifyNever(() => mockNotifications.show(
-            any(),
-            any(),
-            any(),
-            any(),
+            id: any(named: 'id'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationDetails: any(named: 'notificationDetails'),
             payload: any(named: 'payload'),
           ));
     });
