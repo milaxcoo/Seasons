@@ -131,6 +131,13 @@ jobs:
           test -z "${TELEGRAM_BOT_TOKEN:-}" || { echo "::error::TELEGRAM_BOT_TOKEN must not be set for release/profile builds"; exit 1; }
           test -z "${TELEGRAM_CHAT_ID:-}" || { echo "::error::TELEGRAM_CHAT_ID must not be set for release/profile builds"; exit 1; }
 
+      - name: 🛡️ Verify merged release manifest hardening
+        run: |
+          pushd android
+          ./gradlew :app:processReleaseMainManifest --no-daemon
+          popd
+          bash tool/check_release_manifest_security.sh
+
       # Cache Gradle for faster builds
       - name: 🗄️ Cache Gradle
         uses: actions/cache@v4

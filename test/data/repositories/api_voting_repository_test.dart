@@ -151,6 +151,41 @@ void main() {
       expect(capturedBody['voting_id'], 'event-77');
     });
 
+    test('registerForEvent accepts status with whitespace and extra fields',
+        () async {
+      when(() => client.post(
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            '{ "meta": {"request":"ok"}, "status" : "registered", "extra": 1 }',
+            200,
+          ));
+
+      await repository.registerForEvent('event-77');
+    });
+
+    test('registerForEvent throws on malformed response shape', () async {
+      when(() => client.post(
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response('{"result":"ok"}', 200));
+
+      expect(
+        () => repository.registerForEvent('event-77'),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Ошибка регистрации'),
+          ),
+        ),
+      );
+    });
+
     test('registerForEvent wraps timeout exceptions', () async {
       when(() => client.post(
             Uri.parse(
@@ -249,6 +284,61 @@ void main() {
       final ok = await repository.submitVote(event, const {});
 
       expect(ok, isFalse);
+    });
+
+    test('submitVote accepts voted status with extra fields', () async {
+      const event = VotingEvent(
+        id: 'vote-3',
+        title: 'Vote',
+        description: 'Desc',
+        status: VotingStatus.active,
+        isRegistered: true,
+        questions: [],
+        hasVoted: false,
+        results: [],
+      );
+
+      when(() => client.post(
+            Uri.parse('https://seasons.rudn.ru/api/v1/voter/vote'),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            '{ "payload": {"id":"vote-3"}, "status" : "voted", "version": 2 }',
+            200,
+          ));
+
+      final ok = await repository.submitVote(event, const {});
+      expect(ok, isTrue);
+    });
+
+    test('submitVote throws when response shape is malformed', () async {
+      const event = VotingEvent(
+        id: 'vote-4',
+        title: 'Vote',
+        description: 'Desc',
+        status: VotingStatus.active,
+        isRegistered: true,
+        questions: [],
+        hasVoted: false,
+        results: [],
+      );
+
+      when(() => client.post(
+            Uri.parse('https://seasons.rudn.ru/api/v1/voter/vote'),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response('{"ok":true}', 200));
+
+      expect(
+        () => repository.submitVote(event, const {}),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Ошибка при отправке голоса'),
+          ),
+        ),
+      );
     });
 
     test('getUserLogin parses HTML and formats FIO', () async {

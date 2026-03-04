@@ -52,6 +52,19 @@
             tools:replace="android:exported"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Keep watchdog receiver internal-only; external broadcasts must not
+             be able to trigger service lifecycle actions. -->
+        <receiver
+            android:name="id.flutter.flutter_background_service.WatchdogReceiver"
+            tools:replace="android:exported"
+            android:exported="false" />
+
+        <!-- Boot auto-start is disabled in app config, so remove plugin boot
+             receiver from merged manifest to eliminate external trigger surface. -->
+        <receiver
+            android:name="id.flutter.flutter_background_service.BootReceiver"
+            tools:node="remove" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

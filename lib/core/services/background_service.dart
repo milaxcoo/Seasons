@@ -87,6 +87,8 @@ class BackgroundService {
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,
         autoStart: false, // Don't start until user is logged in
+        // Keep startup auth-driven; prevents unnecessary boot auto-start paths.
+        autoStartOnBoot: false,
         isForegroundMode: true,
         notificationChannelId: serviceChannelId,
         initialNotificationTitle: 'Seasons',
@@ -97,7 +99,6 @@ class BackgroundService {
       iosConfiguration: IosConfiguration(
         autoStart: false,
         onForeground: onStart,
-        onBackground: onIosBackground,
       ),
     );
 

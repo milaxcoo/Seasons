@@ -177,8 +177,9 @@ class ApiVotingRepository implements VotingRepository {
       final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
-      if (response.statusCode != 200 ||
-          !response.body.contains('"status":"registered"')) {
+      final responseJson = _tryDecodeJsonObject(response.body);
+      final status = _readResponseStatus(responseJson);
+      if (response.statusCode != 200 || status != 'registered') {
         throw Exception('Ошибка регистрации. Сервер ответил: ${response.body}');
       }
     } catch (e) {
@@ -240,16 +241,16 @@ class ApiVotingRepository implements VotingRepository {
           'Vote submit response: status=${response.statusCode}, body=${redactSensitive(response.body)}',
         );
       }
+      final responseJson = _tryDecodeJsonObject(response.body);
+      final status = _readResponseStatus(responseJson);
 
       // Успешный ответ
-      if (response.statusCode == 200 &&
-          response.body.contains('"status":"voted"')) {
+      if (response.statusCode == 200 && status == 'voted') {
         return true; // Голос УСПЕШНО принят
       }
 
-      // Ошибка "Уже проголосовал"
-      if (response.statusCode == 409 &&
-          response.body.contains("User already voted")) {
+      // Backend uses HTTP 409 to indicate the user already voted.
+      if (response.statusCode == 409) {
         return false; // Голос НЕ принят (но это не ошибка)
       }
 
@@ -421,6 +422,22 @@ class ApiVotingRepository implements VotingRepository {
       }
     }
     return null;
+  }
+
+  Map<String, dynamic>? _tryDecodeJsonObject(String rawBody) {
+    try {
+      final decoded = jsonDecode(rawBody);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _readResponseStatus(Map<String, dynamic>? decodedBody) {
+    if (decodedBody == null) return null;
+    final status = decodedBody['status'];
+    if (status is! String) return null;
+    return status.trim().toLowerCase();
   }
 
   // Formats "Ivanov Ivan Ivanovich" -> "Ivanov I.I."
