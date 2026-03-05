@@ -84,10 +84,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get jobTitle => 'Должность';
 
   @override
-  String get registrationStart => 'Начало\nрегистрации';
+  String get registrationStart => 'Начало регистрации';
 
   @override
-  String get registrationEnd => 'Завершение\nрегистрации';
+  String get registrationEnd => 'Завершение регистрации';
 
   @override
   String get status => 'Статус';
@@ -162,10 +162,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get description => 'Описание';
 
   @override
-  String get votingStartLabel => 'Начало\nголосования';
+  String get votingStartLabel => 'Начало голосования';
 
   @override
-  String get votingEndLabel => 'Завершение\nголосования';
+  String get votingEndLabel => 'Завершение голосования';
 
   @override
   String get sessionCompleted => 'Заседание завершено';

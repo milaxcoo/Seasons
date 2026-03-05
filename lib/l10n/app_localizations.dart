@@ -239,13 +239,13 @@ abstract class AppLocalizations {
   /// Registration start label
   ///
   /// In ru, this message translates to:
-  /// **'Начало\nрегистрации'**
+  /// **'Начало регистрации'**
   String get registrationStart;
 
   /// Registration end label
   ///
   /// In ru, this message translates to:
-  /// **'Завершение\nрегистрации'**
+  /// **'Завершение регистрации'**
   String get registrationEnd;
 
   /// Status label
@@ -383,13 +383,13 @@ abstract class AppLocalizations {
   /// Voting start label for results screen
   ///
   /// In ru, this message translates to:
-  /// **'Начало\nголосования'**
+  /// **'Начало голосования'**
   String get votingStartLabel;
 
   /// Voting end label for results screen
   ///
   /// In ru, this message translates to:
-  /// **'Завершение\nголосования'**
+  /// **'Завершение голосования'**
   String get votingEndLabel;
 
   /// Session completed message
