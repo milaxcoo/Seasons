@@ -11,13 +11,19 @@ fi
 
 FLAT_MANIFEST="$(tr '\n' ' ' < "$MANIFEST_PATH")"
 
+escape_ere() {
+  sed 's/[][(){}.^$*+?|\\]/\\&/g' <<< "$1"
+}
+
 assert_no_exported_component() {
   local component="$1"
   local type="$2"
-  local pattern_a="<$type[^>]*android:name=\"$component\"[^>]*android:exported=\"true\""
-  local pattern_b="<$type[^>]*android:exported=\"true\"[^>]*android:name=\"$component\""
+  local escaped_component
+  escaped_component="$(escape_ere "$component")"
+  local pattern_a="<$type[^>]*android:name=\"$escaped_component\"[^>]*android:exported=\"true\""
+  local pattern_b="<$type[^>]*android:exported=\"true\"[^>]*android:name=\"$escaped_component\""
 
-  if echo "$FLAT_MANIFEST" | grep -Eq "$pattern_a|$pattern_b"; then
+  if printf '%s\n' "$FLAT_MANIFEST" | grep -Eq "$pattern_a|$pattern_b"; then
     echo "ERROR: forbidden exported $type found in release manifest: $component" >&2
     exit 1
   fi
