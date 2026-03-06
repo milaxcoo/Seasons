@@ -25,9 +25,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({
     required VotingRepository votingRepository,
     DraftService? draftService,
-  }) : _draftService = draftService ?? DraftService(),
-       _votingRepository = votingRepository,
-       super(AuthInitial()) {
+  })  : _draftService = draftService ?? DraftService(),
+        _votingRepository = votingRepository,
+        super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoggedIn>(_onLoggedIn);
     on<LoggedOut>(_onLoggedOut);
@@ -142,11 +142,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ErrorReportingService().reportEvent('auth_bloc_logged_in_received');
     emit(AuthChecking());
 
-    for (
-      var attempt = 1;
-      attempt <= _maxPostLoginValidationAttempts;
-      attempt++
-    ) {
+    for (var attempt = 1;
+        attempt <= _maxPostLoginValidationAttempts;
+        attempt++) {
       try {
         final userLogin = await _votingRepository.getUserLogin();
         if (userLogin != null && userLogin.isNotEmpty) {

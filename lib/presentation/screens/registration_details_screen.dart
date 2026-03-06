@@ -138,7 +138,9 @@ class _RegistrationDetailsView extends StatelessWidget {
                               Text(
                                 event.title,
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodyLarge
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
                                     ?.copyWith(
                                       fontWeight: FontWeight.w900,
                                       fontSize: detailStyle.titleFontSize,
@@ -218,22 +220,20 @@ class _RegistrationDetailsView extends StatelessWidget {
 
                               final isRegistrationClosed =
                                   event.registrationEndDate != null &&
-                                  DateTime.now().isAfter(
-                                    event.registrationEndDate!,
-                                  );
+                                      DateTime.now().isAfter(
+                                        event.registrationEndDate!,
+                                      );
 
                               return ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   side: BorderSide(
-                                    color:
-                                        (event.isRegistered ||
+                                    color: (event.isRegistered ||
                                             isRegistrationClosed)
                                         ? Colors.grey
                                         : const Color(0xFF6A9457),
                                     width: 2,
                                   ),
-                                  backgroundColor:
-                                      (event.isRegistered ||
+                                  backgroundColor: (event.isRegistered ||
                                           isRegistrationClosed)
                                       ? Colors.grey.shade300
                                       : Colors.transparent,
@@ -251,22 +251,24 @@ class _RegistrationDetailsView extends StatelessWidget {
                                 ),
                                 onPressed:
                                     (event.isRegistered || isRegistrationClosed)
-                                    ? null
-                                    : () {
-                                        context.read<VotingBloc>().add(
-                                          RegisterForEvent(eventId: event.id),
-                                        );
-                                      },
+                                        ? null
+                                        : () {
+                                            context.read<VotingBloc>().add(
+                                                  RegisterForEvent(
+                                                      eventId: event.id),
+                                                );
+                                          },
                                 child: Text(
                                   event.isRegistered
                                       ? l10n.alreadyRegistered
                                       : (isRegistrationClosed
-                                            ? l10n.registrationClosed
-                                            : l10n.registerButton),
-                                  style: Theme.of(context).textTheme.bodyLarge
+                                          ? l10n.registrationClosed
+                                          : l10n.registerButton),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
                                       ?.copyWith(
-                                        color:
-                                            (event.isRegistered ||
+                                        color: (event.isRegistered ||
                                                 isRegistrationClosed)
                                             ? Colors.black54
                                             : const Color(0xFF6A9457),
@@ -323,9 +325,9 @@ class _InfoRow extends StatelessWidget {
                 value,
                 textAlign: TextAlign.left,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: valueColor ?? Colors.black,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: valueColor ?? Colors.black,
+                    ),
               ),
             ],
           );
@@ -349,9 +351,9 @@ class _InfoRow extends StatelessWidget {
                 value,
                 textAlign: TextAlign.right,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: valueColor ?? Colors.black,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: valueColor ?? Colors.black,
+                    ),
               ),
             ),
           ],

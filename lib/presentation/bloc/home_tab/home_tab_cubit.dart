@@ -14,7 +14,8 @@ class HomeTabState extends Equatable {
 
 class HomeTabCubit extends Cubit<HomeTabState> {
   HomeTabCubit({int initialIndex = 0})
-    : super(HomeTabState(index: _normalizeIndex(initialIndex), source: 'init'));
+      : super(
+            HomeTabState(index: _normalizeIndex(initialIndex), source: 'init'));
 
   static int _normalizeIndex(int index) {
     if (index < 0) return 0;

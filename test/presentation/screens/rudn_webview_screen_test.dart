@@ -51,8 +51,8 @@ void main() {
     test(
       'phase A keeps waiting without error until timeout, then shows timeout error',
       () {
-        final waiting = const WebViewFinalizationState.initial()
-            .onCallbackDetected();
+        final waiting =
+            const WebViewFinalizationState.initial().onCallbackDetected();
         final timedOut = waiting.onPhaseATimeout();
 
         expect(waiting.hasError, isFalse);
@@ -161,8 +161,8 @@ void main() {
     test(
       'cookie polling can succeed before callback onPageFinished is observed',
       () async {
-        final waitingState = const WebViewFinalizationState.initial()
-            .onCallbackDetected();
+        final waitingState =
+            const WebViewFinalizationState.initial().onCallbackDetected();
         var readAttempts = 0;
         var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
 
@@ -261,8 +261,8 @@ void main() {
     test('failure is emitted only after overall timeout elapses', () async {
       var now = DateTime.utc(2026, 2, 22, 12, 0, 0);
       var readAttempts = 0;
-      final waiting = const WebViewFinalizationState.initial()
-          .onCallbackDetected();
+      final waiting =
+          const WebViewFinalizationState.initial().onCallbackDetected();
 
       final cookie = await pollForSessionCookie(
         readCookie: () async {
@@ -724,7 +724,8 @@ void main() {
       );
     });
 
-    test('navigation replay shows callback-only upgrade avoids reload loops', () {
+    test('navigation replay shows callback-only upgrade avoids reload loops',
+        () {
       const sequence = <String>[
         'https://seasons.rudn.ru/?lang=ru',
         'https://id.rudn.ru/sign-in?redirect_uri=http%3A%2F%2Fseasons.rudn.ru%2Foauth%2Flogin_callback',

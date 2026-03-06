@@ -47,10 +47,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: Text(
             AppLocalizations.of(context)!.userData,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white,
-              fontSize: detailStyle.appBarTitleFontSize,
-              fontWeight: FontWeight.w900,
-            ),
+                  color: Colors.white,
+                  fontSize: detailStyle.appBarTitleFontSize,
+                  fontWeight: FontWeight.w900,
+                ),
           ),
         ),
         body: FutureBuilder<UserProfile?>(
@@ -117,7 +117,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 _UserInfoRow(
                                   label: AppLocalizations.of(
                                     context,
-                                  )!.patronymic,
+                                  )!
+                                      .patronymic,
                                   value: profile.patronymic,
                                   style: detailStyle,
                                 ),
@@ -212,9 +213,9 @@ class _UserInfoRow extends StatelessWidget {
                   softWrap: true,
                   overflow: TextOverflow.fade,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w600,
-                  ),
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ),
             ],
@@ -242,9 +243,9 @@ class _UserInfoRow extends StatelessWidget {
                   softWrap: false,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w600,
-                  ),
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ),
             ),

@@ -20,9 +20,9 @@ class ApiVotingRepository implements VotingRepository {
     String baseUrl = 'https://seasons.rudn.ru',
     http.Client? httpClient,
     RudnAuthService? authService,
-  }) : _baseUri = Uri.parse(baseUrl),
-       _httpClient = httpClient ?? http.Client(),
-       _authService = authService ?? RudnAuthService();
+  })  : _baseUri = Uri.parse(baseUrl),
+        _httpClient = httpClient ?? http.Client(),
+        _authService = authService ?? RudnAuthService();
   // No longer needed internal state given we use the service
   // String? _userLogin;
   // String? _authToken;
@@ -476,10 +476,8 @@ class ApiVotingRepository implements VotingRepository {
 
   // Formats "Ivanov Ivan Ivanovich" -> "Ivanov I.I."
   String _formatFio(String fullName) {
-    final parts = fullName
-        .split(RegExp(r'\s+'))
-        .where((s) => s.isNotEmpty)
-        .toList();
+    final parts =
+        fullName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
     if (parts.isEmpty) return fullName;
 
     // If we have at least Surname and Name

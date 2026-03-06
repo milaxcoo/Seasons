@@ -102,25 +102,24 @@ class _EdgeSwipeBackWrapperState extends State<_EdgeSwipeBackWrapper> {
       gestures: {
         _EdgeHorizontalDragGestureRecognizer:
             GestureRecognizerFactoryWithHandlers<
-              _EdgeHorizontalDragGestureRecognizer
-            >(
-              () => _EdgeHorizontalDragGestureRecognizer(
-                edgeWidth: _backSwipeEdgeWidth,
-              ),
-              (recognizer) {
-                recognizer.onStart = (_) {
-                  _dragDistance = 0;
-                };
-                recognizer.onUpdate = (details) {
-                  _dragDistance = (_dragDistance + details.delta.dx).clamp(
-                    0.0,
-                    10000.0,
-                  );
-                };
-                recognizer.onCancel = _resetDrag;
-                recognizer.onEnd = _handleDragEnd;
-              },
-            ),
+                _EdgeHorizontalDragGestureRecognizer>(
+          () => _EdgeHorizontalDragGestureRecognizer(
+            edgeWidth: _backSwipeEdgeWidth,
+          ),
+          (recognizer) {
+            recognizer.onStart = (_) {
+              _dragDistance = 0;
+            };
+            recognizer.onUpdate = (details) {
+              _dragDistance = (_dragDistance + details.delta.dx).clamp(
+                0.0,
+                10000.0,
+              );
+            };
+            recognizer.onCancel = _resetDrag;
+            recognizer.onEnd = _handleDragEnd;
+          },
+        ),
       },
       child: widget.child,
     );

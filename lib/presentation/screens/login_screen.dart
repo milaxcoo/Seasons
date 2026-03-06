@@ -61,11 +61,11 @@ class _LoginScreenState extends State<LoginScreen>
     );
     _contentSlideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _entryAnimationController,
-            curve: const Interval(0.12, 1, curve: Curves.easeOutCubic),
-          ),
-        );
+      CurvedAnimation(
+        parent: _entryAnimationController,
+        curve: const Interval(0.12, 1, curve: Curves.easeOutCubic),
+      ),
+    );
     _entryAnimationController.forward();
   }
 
@@ -222,12 +222,13 @@ class _LoginScreenState extends State<LoginScreen>
                                                 Text(
                                                   AppLocalizations.of(
                                                     context,
-                                                  )!.login,
+                                                  )!
+                                                      .login,
                                                   textAlign: TextAlign.center,
                                                   style: TextStyle(
-                                                    fontFamily:
-                                                        GoogleFonts.gentiumBookPlus()
-                                                            .fontFamily,
+                                                    fontFamily: GoogleFonts
+                                                            .gentiumBookPlus()
+                                                        .fontFamily,
                                                     fontStyle: FontStyle.normal,
                                                     fontWeight: FontWeight.w900,
                                                     fontSize: authStyle
@@ -274,9 +275,9 @@ class _LoginScreenState extends State<LoginScreen>
                                                     .textTheme
                                                     .bodyMedium
                                                     ?.copyWith(
-                                                      color: Colors.white,
-                                                      shadows: const [],
-                                                    ),
+                                                  color: Colors.white,
+                                                  shadows: const [],
+                                                ),
                                               ),
                                             ),
                                           ],
@@ -336,8 +337,8 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             onSelected: (Locale locale) {
                               context.read<LocaleBloc>().add(
-                                ChangeLocale(locale),
-                              );
+                                    ChangeLocale(locale),
+                                  );
                             },
                             itemBuilder: (BuildContext context) => [
                               CheckedPopupMenuItem<Locale>(
@@ -350,7 +351,8 @@ class _LoginScreenState extends State<LoginScreen>
                                     Text(
                                       AppLocalizations.of(
                                         context,
-                                      )!.languageRussian,
+                                      )!
+                                          .languageRussian,
                                     ),
                                   ],
                                 ),
@@ -365,7 +367,8 @@ class _LoginScreenState extends State<LoginScreen>
                                     Text(
                                       AppLocalizations.of(
                                         context,
-                                      )!.languageEnglish,
+                                      )!
+                                          .languageEnglish,
                                     ),
                                   ],
                                 ),

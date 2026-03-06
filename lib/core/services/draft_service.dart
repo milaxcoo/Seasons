@@ -22,8 +22,8 @@ class DraftService {
   DraftService({
     SecureStorageInterface? secureStorage,
     Future<SharedPreferences> Function()? prefsFactory,
-  }) : _secureStorage = secureStorage ?? FlutterSecureStorageAdapter(),
-       _prefsFactory = prefsFactory ?? SharedPreferences.getInstance;
+  })  : _secureStorage = secureStorage ?? FlutterSecureStorageAdapter(),
+        _prefsFactory = prefsFactory ?? SharedPreferences.getInstance;
 
   String _secureDraftKey(String votingId) => '$_secureDraftPrefix$votingId';
 
@@ -82,12 +82,11 @@ class DraftService {
     final alreadyMigrated = prefs.getBool(_migrationDoneFlag) ?? false;
     if (alreadyMigrated) return;
 
-    final legacyKeys =
-        prefs
-            .getKeys()
-            .where((key) => key.startsWith(_legacyDraftPrefix))
-            .toList()
-          ..sort();
+    final legacyKeys = prefs
+        .getKeys()
+        .where((key) => key.startsWith(_legacyDraftPrefix))
+        .toList()
+      ..sort();
 
     for (final legacyKey in legacyKeys) {
       final legacyPayload = prefs.getString(legacyKey);
@@ -197,17 +196,15 @@ class DraftService {
 
   Future<String?> _secureRead(String key) async {
     try {
-      return await _secureStorage
-          .read(key: key)
-          .timeout(
-            _secureReadTimeout,
-            onTimeout: () {
-              if (kDebugMode) {
-                debugPrint('DraftService secure read timed out for key=$key');
-              }
-              return null;
-            },
-          );
+      return await _secureStorage.read(key: key).timeout(
+        _secureReadTimeout,
+        onTimeout: () {
+          if (kDebugMode) {
+            debugPrint('DraftService secure read timed out for key=$key');
+          }
+          return null;
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('DraftService secure read failed for key=$key: $e');

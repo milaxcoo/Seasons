@@ -20,18 +20,18 @@ class BackgroundService {
     FlutterBackgroundService? service,
     FlutterLocalNotificationsPlugin? notificationsPlugin,
     Future<void> Function(FlutterLocalNotificationsPlugin plugin)?
-    notificationsInitializer,
-  }) : _service = service ?? FlutterBackgroundService(),
-       _notificationsPlugin =
-           notificationsPlugin ?? FlutterLocalNotificationsPlugin(),
-       _notificationsInitializer = notificationsInitializer;
+        notificationsInitializer,
+  })  : _service = service ?? FlutterBackgroundService(),
+        _notificationsPlugin =
+            notificationsPlugin ?? FlutterLocalNotificationsPlugin(),
+        _notificationsInitializer = notificationsInitializer;
 
   @visibleForTesting
   factory BackgroundService.forTesting({
     required FlutterBackgroundService service,
     FlutterLocalNotificationsPlugin? notificationsPlugin,
     Future<void> Function(FlutterLocalNotificationsPlugin plugin)?
-    notificationsInitializer,
+        notificationsInitializer,
   }) {
     return BackgroundService._internal(
       service: service,
@@ -43,7 +43,7 @@ class BackgroundService {
   final FlutterBackgroundService _service;
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
   final Future<void> Function(FlutterLocalNotificationsPlugin plugin)?
-  _notificationsInitializer;
+      _notificationsInitializer;
 
   // Notification channel IDs
   static const String serviceChannelId = 'seasons_service';
@@ -133,21 +133,18 @@ class BackgroundService {
 
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(serviceChannel);
 
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(alertChannel);
 
     // Explicitly request permission for Android 13+
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
   }
 
@@ -377,9 +374,8 @@ void onStart(ServiceInstance service) async {
       }
 
       final data = jsonDecode(response.body);
-      final realWsUrl = data is Map<String, dynamic>
-          ? data['url'] as String?
-          : null;
+      final realWsUrl =
+          data is Map<String, dynamic> ? data['url'] as String? : null;
 
       if (!isAllowedNegotiatedWebSocketUrl(realWsUrl)) {
         if (kDebugMode) {

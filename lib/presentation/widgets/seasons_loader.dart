@@ -49,8 +49,7 @@ class _SeasonsLoaderState extends State<SeasonsLoader>
           return Stack(
             children: List.generate(4, (index) {
               // Calculate angle for each dot (0, 90, 180, 270 degrees) + rotation
-              final angle =
-                  (index * 90.0 * (math.pi / 180.0)) +
+              final angle = (index * 90.0 * (math.pi / 180.0)) +
                   (_controller.value * 2 * math.pi);
 
               // Variable radius for breathing effect
@@ -59,12 +58,10 @@ class _SeasonsLoaderState extends State<SeasonsLoader>
               final radius = (widget.size / 3) + (breathing * 2.0);
 
               return Positioned(
-                left:
-                    (widget.size / 2) +
+                left: (widget.size / 2) +
                     (radius * math.cos(angle)) -
                     (widget.size / 8),
-                top:
-                    (widget.size / 2) +
+                top: (widget.size / 2) +
                     (radius * math.sin(angle)) -
                     (widget.size / 8),
                 child: Container(

@@ -38,7 +38,7 @@ class ErrorReportingService {
   /// injectable [http.Client] so network calls can be stubbed in unit tests.
   @visibleForTesting
   ErrorReportingService.withHttpClient(http.Client httpClient)
-    : _httpClient = httpClient;
+      : _httpClient = httpClient;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CONFIGURATION
@@ -204,9 +204,8 @@ class ErrorReportingService {
   Future<void> reportEvent(String event, {Map<String, String>? details}) async {
     final sanitizedEvent = sanitizeTelemetryText(event, maxLength: 120);
     final sanitizedDetails = sanitizeTelemetryDetails(details);
-    final detailStr = sanitizedDetails.entries
-        .map((e) => '${e.key}=${e.value}')
-        .join(', ');
+    final detailStr =
+        sanitizedDetails.entries.map((e) => '${e.key}=${e.value}').join(', ');
 
     if (kDebugMode) {
       debugPrint(
@@ -734,26 +733,26 @@ class ErrorReport {
   });
 
   Map<String, dynamic> toJson() => {
-    'type': type,
-    'message': message,
-    if (stackTrace != null) 'stackTrace': stackTrace,
-    if (context != null) 'context': context,
-    'timestamp': timestamp,
-    'appVersion': appVersion,
-    'platform': platform,
-    'osVersion': osVersion,
-    'screenName': screenName,
-  };
+        'type': type,
+        'message': message,
+        if (stackTrace != null) 'stackTrace': stackTrace,
+        if (context != null) 'context': context,
+        'timestamp': timestamp,
+        'appVersion': appVersion,
+        'platform': platform,
+        'osVersion': osVersion,
+        'screenName': screenName,
+      };
 
   factory ErrorReport.fromJson(Map<String, dynamic> json) => ErrorReport(
-    type: json['type'] as String,
-    message: json['message'] as String,
-    stackTrace: json['stackTrace'] as String?,
-    context: json['context'] as String?,
-    timestamp: json['timestamp'] as String,
-    appVersion: json['appVersion'] as String,
-    platform: json['platform'] as String,
-    osVersion: json['osVersion'] as String,
-    screenName: json['screenName'] as String,
-  );
+        type: json['type'] as String,
+        message: json['message'] as String,
+        stackTrace: json['stackTrace'] as String?,
+        context: json['context'] as String?,
+        timestamp: json['timestamp'] as String,
+        appVersion: json['appVersion'] as String,
+        platform: json['platform'] as String,
+        osVersion: json['osVersion'] as String,
+        screenName: json['screenName'] as String,
+      );
 }

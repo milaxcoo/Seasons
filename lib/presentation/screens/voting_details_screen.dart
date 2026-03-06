@@ -49,10 +49,10 @@ class VotingDetailsScreen extends StatelessWidget {
           title: Text(
             event.title,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: detailStyle.appBarTitleFontSize,
-            ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: detailStyle.appBarTitleFontSize,
+                ),
           ),
           centerTitle: true,
         ),
@@ -114,15 +114,15 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             title: Text(
               l10n.areYouSure,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                fontSize: detailStyle.titleFontSize + 1.0,
-              ),
+                    fontWeight: FontWeight.w900,
+                    fontSize: detailStyle.titleFontSize + 1.0,
+                  ),
             ),
             content: Text(
               l10n.voteConfirmationMessage,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontSize: detailStyle.titleFontSize - 2.0,
-              ),
+                    fontSize: detailStyle.titleFontSize - 2.0,
+                  ),
             ),
             actionsPadding: detailStyle.dialogActionsPadding,
             actions: <Widget>[
@@ -164,8 +164,9 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
                   context.read<VotingBloc>().add(
-                    SubmitVote(event: widget.event, answers: _selectedAnswers),
-                  );
+                        SubmitVote(
+                            event: widget.event, answers: _selectedAnswers),
+                      );
                 },
               ),
             ],
@@ -221,13 +222,11 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
         : l10n.notSet;
 
     final statusText = widget.event.hasVoted ? l10n.voted : l10n.notVoted;
-    final statusColor = widget.event.hasVoted
-        ? AppTheme.rudnGreenColor
-        : AppTheme.rudnRedColor;
+    final statusColor =
+        widget.event.hasVoted ? AppTheme.rudnGreenColor : AppTheme.rudnRedColor;
 
     final now = DateTime.now();
-    final bool isOngoing =
-        widget.event.votingStartDate != null &&
+    final bool isOngoing = widget.event.votingStartDate != null &&
         widget.event.votingStartDate!.isBefore(now) &&
         (widget.event.votingEndDate == null ||
             widget.event.votingEndDate!.isAfter(now));
@@ -255,16 +254,16 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                     l10n.voteAccepted,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: detailStyle.titleFontSize + 1.0,
-                    ),
+                          fontWeight: FontWeight.w900,
+                          fontSize: detailStyle.titleFontSize + 1.0,
+                        ),
                   ),
                   content: Text(
                     l10n.thankYou,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontSize: detailStyle.titleFontSize - 2.0,
-                    ),
+                          fontSize: detailStyle.titleFontSize - 2.0,
+                        ),
                   ),
                   actionsAlignment: MainAxisAlignment.center,
                   actionsPadding: detailStyle.dialogActionsPadding,
@@ -340,13 +339,12 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final bool isPinnedButton =
-                constraints.maxHeight >
+            final bool isPinnedButton = constraints.maxHeight >
                 (detailStyle.isExtremeCompact ? 420 : 500);
             final double bottomPadding = isPinnedButton
                 ? (detailStyle.actionMinHeight +
-                      detailStyle.sectionGapLarge +
-                      20.0)
+                    detailStyle.sectionGapLarge +
+                    20.0)
                 : detailStyle.sectionGapLarge;
             return SafeArea(
               child: Center(
@@ -366,7 +364,8 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                         child: Stack(
                           children: [
                             NestedScrollView(
-                              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                              headerSliverBuilder: (BuildContext context,
+                                  bool innerBoxIsScrolled) {
                                 return <Widget>[
                                   SliverToBoxAdapter(
                                     child: Padding(
@@ -378,8 +377,8 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                           ).withValues(alpha: 0.9),
                                           borderRadius:
                                               const BorderRadius.vertical(
-                                                bottom: Radius.circular(26),
-                                              ),
+                                            bottom: Radius.circular(26),
+                                          ),
                                         ),
                                         child: Column(
                                           crossAxisAlignment:
@@ -393,9 +392,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.start,
                                                 children: [
-                                                  if (widget
-                                                      .event
-                                                      .description
+                                                  if (widget.event.description
                                                       .isNotEmpty) ...[
                                                     Text(
                                                       widget.event.description,
@@ -469,23 +466,24 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                                 alignment: Alignment.bottomLeft,
                                                 child: Container(
                                                   padding: EdgeInsets.symmetric(
-                                                    horizontal:
-                                                        detailStyle
+                                                    horizontal: detailStyle
                                                             .cardPadding -
                                                         detailStyle
                                                             .sectionGapSmall,
-                                                    vertical:
-                                                        detailStyle
+                                                    vertical: detailStyle
                                                             .sectionGapSmall +
                                                         2.0,
                                                   ),
-                                                  decoration: const BoxDecoration(
+                                                  decoration:
+                                                      const BoxDecoration(
                                                     color: Color(0xFF4a4a4a),
-                                                    borderRadius: BorderRadius.only(
+                                                    borderRadius:
+                                                        BorderRadius.only(
                                                       topRight: Radius.circular(
                                                         26,
                                                       ),
-                                                      bottomLeft: Radius.circular(
+                                                      bottomLeft:
+                                                          Radius.circular(
                                                         26,
                                                       ), // Match bottom corner
                                                     ),
@@ -517,8 +515,7 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                   0,
                                   bottomPadding,
                                 ),
-                                itemCount:
-                                    widget.event.questions.length +
+                                itemCount: widget.event.questions.length +
                                     (isPinnedButton ? 0 : 1),
                                 itemBuilder: (context, index) {
                                   if (index == widget.event.questions.length) {
@@ -541,11 +538,11 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                             ),
                                             backgroundColor:
                                                 widget.event.hasVoted
-                                                ? Colors.grey
-                                                : AppTheme.rudnGreenColor,
+                                                    ? Colors.grey
+                                                    : AppTheme.rudnGreenColor,
                                           ),
-                                          onPressed:
-                                              (state is VotingLoadInProgress ||
+                                          onPressed: (state
+                                                      is VotingLoadInProgress ||
                                                   _selectedAnswers.isEmpty ||
                                                   widget.event.hasVoted)
                                               ? null
@@ -621,10 +618,10 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                       ),
                                       onPressed:
                                           (state is VotingLoadInProgress ||
-                                              _selectedAnswers.isEmpty ||
-                                              widget.event.hasVoted)
-                                          ? null
-                                          : _submitVote,
+                                                  _selectedAnswers.isEmpty ||
+                                                  widget.event.hasVoted)
+                                              ? null
+                                              : _submitVote,
                                       child: state is VotingLoadInProgress
                                           ? const SeasonsLoader(
                                               size: 24,
@@ -695,9 +692,9 @@ class _QuestionCard extends StatelessWidget {
             Text(
               question.name,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                fontSize: detailStyle.titleFontSize,
-              ),
+                    fontWeight: FontWeight.w900,
+                    fontSize: detailStyle.titleFontSize,
+                  ),
             ),
             Divider(height: detailStyle.sectionGapLarge, color: Colors.grey),
             if (isSimpleQuestion)
@@ -799,17 +796,17 @@ class _InfoRow extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  fontWeight: FontWeight.w900,
-                ),
+                      color: Colors.black.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.w900,
+                    ),
               ),
               SizedBox(height: style.sectionGapSmall),
               Text(
                 value,
                 textAlign: TextAlign.left,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: valueColor ?? Colors.black,
-                ),
+                      color: valueColor ?? Colors.black,
+                    ),
               ),
             ],
           );
@@ -822,9 +819,9 @@ class _InfoRow extends StatelessWidget {
               child: Text(
                 label,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  fontWeight: FontWeight.w900,
-                ),
+                      color: Colors.black.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.w900,
+                    ),
               ),
             ),
             SizedBox(width: style.rowGap),
@@ -833,8 +830,8 @@ class _InfoRow extends StatelessWidget {
                 value,
                 textAlign: TextAlign.right,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: valueColor ?? Colors.black,
-                ),
+                      color: valueColor ?? Colors.black,
+                    ),
               ),
             ),
           ],
@@ -871,9 +868,9 @@ class _CustomCheckboxTile extends StatelessWidget {
               color: onChanged == null
                   ? Colors.grey
                   : (value
-                        ? AppTheme.rudnGreenColor
-                        : Theme.of(context).textTheme.bodyLarge?.color ??
-                              Colors.black),
+                      ? AppTheme.rudnGreenColor
+                      : Theme.of(context).textTheme.bodyLarge?.color ??
+                          Colors.black),
               size: iconSize,
             ),
             SizedBox(width: detailStyle.rowGap),
@@ -881,11 +878,11 @@ class _CustomCheckboxTile extends StatelessWidget {
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: onChanged == null
-                      ? Colors.grey
-                      : (Theme.of(context).textTheme.bodyLarge?.color ??
-                            Colors.black),
-                ),
+                      color: onChanged == null
+                          ? Colors.grey
+                          : (Theme.of(context).textTheme.bodyLarge?.color ??
+                              Colors.black),
+                    ),
               ),
             ),
           ],

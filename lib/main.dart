@@ -95,8 +95,8 @@ Future<void> _initializeNotifications() async {
   );
 
   // Check if app was launched from notification
-  final launchDetails = await flutterLocalNotificationsPlugin
-      .getNotificationAppLaunchDetails();
+  final launchDetails =
+      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
   if (launchDetails?.didNotificationLaunchApp ?? false) {
     final payload = launchDetails?.notificationResponse?.payload;
     if (payload != null) {
@@ -126,8 +126,8 @@ void _handleNotificationPayload(String payload) {
       final parsedIndex = int.tryParse(parts[2]);
       final tabIndex =
           (parsedIndex != null && parsedIndex >= 0 && parsedIndex <= 2)
-          ? parsedIndex
-          : 0;
+              ? parsedIndex
+              : 0;
       // Signal HomeScreen to navigate to this tab and refresh
       NotificationNavigationService().navigateToTab(
         tabIndex,

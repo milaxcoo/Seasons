@@ -155,26 +155,26 @@ class _Header extends StatelessWidget {
           Text(
             'Seasons',
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              fontSize: headerStyle.titleFontSize,
-              height: 1.0,
-              color: Colors.white,
-              shadows: headerStyle.titleShadows,
-              fontWeight: FontWeight.w900,
-            ),
+                  fontSize: headerStyle.titleFontSize,
+                  height: 1.0,
+                  color: Colors.white,
+                  shadows: headerStyle.titleShadows,
+                  fontWeight: FontWeight.w900,
+                ),
           ),
           Transform.translate(
             offset: Offset(0, headerStyle.subtitleOffsetY),
             child: Text(
               'времена года',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.94),
-                shadows: headerStyle.subtitleShadows,
-                fontStyle: FontStyle.normal,
-                fontWeight: FontWeight.w900,
-                fontSize: headerStyle.subtitleFontSize,
-                letterSpacing: headerStyle.subtitleLetterSpacing,
-                height: 1.0,
-              ),
+                    color: Colors.white.withValues(alpha: 0.94),
+                    shadows: headerStyle.subtitleShadows,
+                    fontStyle: FontStyle.normal,
+                    fontWeight: FontWeight.w900,
+                    fontSize: headerStyle.subtitleFontSize,
+                    letterSpacing: headerStyle.subtitleLetterSpacing,
+                    height: 1.0,
+                  ),
             ),
           ),
         ],
@@ -398,8 +398,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
-    final currentPage = (_pageController.page ?? _pageController.initialPage)
-        .round();
+    final currentPage =
+        (_pageController.page ?? _pageController.initialPage).round();
     if (currentPage == index) {
       if (source == 'user_tap') {
         _refreshCurrentPage(index);
@@ -601,8 +601,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _handleConnectionStatus(VotingConnectionStatus status) {
     if (!mounted) return;
 
-    final isDegraded =
-        status == VotingConnectionStatus.waitingForNetwork ||
+    final isDegraded = status == VotingConnectionStatus.waitingForNetwork ||
         status == VotingConnectionStatus.reconnecting ||
         status == VotingConnectionStatus.syncing ||
         status == VotingConnectionStatus.disconnected;
@@ -679,8 +678,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     _authInvalidSubscription = context.read<VotingBloc>().onAuthInvalid.listen(
-      (_) => _handleAuthInvalid(),
-    );
+          (_) => _handleAuthInvalid(),
+        );
     final votingBloc = context.read<VotingBloc>();
     _handleConnectionStatus(votingBloc.currentConnectionStatus);
     _connectionStatusSubscription = votingBloc.connectionStatusStream.listen(
@@ -703,14 +702,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Fetch initial data for all sections to populate button colors
     context.read<VotingBloc>().add(
-      FetchEventsByStatus(status: model.VotingStatus.registration),
-    );
+          FetchEventsByStatus(status: model.VotingStatus.registration),
+        );
     context.read<VotingBloc>().add(
-      RefreshEventsSilent(status: model.VotingStatus.active),
-    );
+          RefreshEventsSilent(status: model.VotingStatus.active),
+        );
     context.read<VotingBloc>().add(
-      RefreshEventsSilent(status: model.VotingStatus.completed),
-    );
+          RefreshEventsSilent(status: model.VotingStatus.completed),
+        );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -730,8 +729,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         : Orientation.portrait;
     _debugLog('metrics_changed', {
       'orientation': orientation.name,
-      'size':
-          '${logicalSize.width.toStringAsFixed(1)}x'
+      'size': '${logicalSize.width.toStringAsFixed(1)}x'
           '${logicalSize.height.toStringAsFixed(1)}',
     });
 
@@ -779,9 +777,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final theme = (kDebugMode && _debugThemeMonth != null)
         ? (monthlyThemes[_debugThemeMonth!] ?? themeService.theme)
         : themeService.theme;
-    final VoidCallback? debugThemeTapHandler = kDebugMode
-        ? _cycleDebugThemeMonth
-        : null;
+    final VoidCallback? debugThemeTapHandler =
+        kDebugMode ? _cycleDebugThemeMonth : null;
     final selectedPanelIndex = context.select(
       (HomeTabCubit cubit) => cubit.state.index,
     );
@@ -823,8 +820,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _lastLoggedSize = mediaQuery.size;
       _debugLog('build_orientation_snapshot', {
         'orientation': mediaQuery.orientation.name,
-        'size':
-            '${mediaQuery.size.width.toStringAsFixed(1)}x'
+        'size': '${mediaQuery.size.width.toStringAsFixed(1)}x'
             '${mediaQuery.size.height.toStringAsFixed(1)}',
         'layout_mode_raw': rawHomeLayoutMode.name,
         'layout_mode_stable': stableHomeLayoutMode.name,
@@ -842,8 +838,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         'pane_primary_w': adaptive.homePrimaryPaneWidthForSplit.toStringAsFixed(
           1,
         ),
-        'pane_secondary_w': adaptive.homeSecondaryPaneWidthForSplit
-            .toStringAsFixed(1),
+        'pane_secondary_w':
+            adaptive.homeSecondaryPaneWidthForSplit.toStringAsFixed(1),
         'selected_index': selectedPanelIndex,
         'tap_blocking_overlay': shouldBlockContentForConnection,
       });
@@ -947,8 +943,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   key: ValueKey(
                     'connection_content_absorb_${shouldBlockContentForConnection ? 'on' : 'off'}',
                   ),
-                  absorbing:
-                      _transitionTargetIndex != null ||
+                  absorbing: _transitionTargetIndex != null ||
                       shouldBlockContentForConnection,
                   child: AnimatedScale(
                     scale: _sectionContentScale,
@@ -981,7 +976,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               timeNotifier: _timeNotifier,
                               suppressTransitions:
                                   _transitionTargetIndex != null ||
-                                  _showSectionLoader,
+                                      _showSectionLoader,
                             );
                           },
                         ),
@@ -1081,16 +1076,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                             .textTheme
                                             .bodyLarge
                                             ?.copyWith(
-                                              color: Colors.white,
-                                              fontSize:
-                                                  overlayDimensions.textSize,
-                                              shadows: [
-                                                const Shadow(
-                                                  blurRadius: 6,
-                                                  color: Colors.black87,
-                                                ),
-                                              ],
+                                          color: Colors.white,
+                                          fontSize: overlayDimensions.textSize,
+                                          shadows: [
+                                            const Shadow(
+                                              blurRadius: 6,
+                                              color: Colors.black87,
                                             ),
+                                          ],
+                                        ),
                                         textAlign: TextAlign.center,
                                       ),
                                     ],
@@ -1189,8 +1183,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                             Padding(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 6.0,
-                                                  ),
+                                                horizontal: 6.0,
+                                              ),
                                               child: navbar,
                                             ),
                                             SizedBox(
@@ -1391,30 +1385,29 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
           .animateTo(maxScroll, duration: duration, curve: Curves.linear)
           .catchError((_) {})
           .then((_) {
-            if (!mounted ||
-                _isUserScrolling ||
-                !_scrollController.hasClients ||
-                _scrollGeneration != generation) {
-              return;
+        if (!mounted ||
+            _isUserScrolling ||
+            !_scrollController.hasClients ||
+            _scrollGeneration != generation) {
+          return;
+        }
+        if (_scrollController.offset >=
+            _scrollController.position.maxScrollExtent) {
+          _resumeTimer?.cancel();
+          _resumeTimer = Timer(const Duration(seconds: 5), () {
+            if (mounted &&
+                !_isUserScrolling &&
+                _scrollController.hasClients &&
+                _scrollGeneration == generation) {
+              _scrollController.jumpTo(0);
+              _resumeAutoScroll(delay: const Duration(seconds: 1));
             }
-            if (_scrollController.offset >=
-                _scrollController.position.maxScrollExtent) {
-              _resumeTimer?.cancel();
-              _resumeTimer = Timer(const Duration(seconds: 5), () {
-                if (mounted &&
-                    !_isUserScrolling &&
-                    _scrollController.hasClients &&
-                    _scrollGeneration == generation) {
-                  _scrollController.jumpTo(0);
-                  _resumeAutoScroll(delay: const Duration(seconds: 1));
-                }
-              });
-            }
-          })
-          .whenComplete(() {
-            _isAutoScrollAnimating = false;
-            _ensureAutoScrollRunning();
           });
+        }
+      }).whenComplete(() {
+        _isAutoScrollAnimating = false;
+        _ensureAutoScrollRunning();
+      });
     } else {
       _resumeTimer?.cancel();
       _resumeTimer = Timer(const Duration(seconds: 5), () {
@@ -1518,35 +1511,39 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
                             Text(
                               widget.poem,
                               textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.bodyMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
                                   ?.copyWith(
-                                    color: Colors.white,
-                                    height: style.poemLineHeight,
-                                    fontSize: style.poemFontSize,
-                                    shadows: [
-                                      const Shadow(
-                                        blurRadius: 6,
-                                        color: Colors.black87,
-                                      ),
-                                    ],
+                                color: Colors.white,
+                                height: style.poemLineHeight,
+                                fontSize: style.poemFontSize,
+                                shadows: [
+                                  const Shadow(
+                                    blurRadius: 6,
+                                    color: Colors.black87,
                                   ),
+                                ],
+                              ),
                             ),
                             SizedBox(height: style.poemAuthorSpacing),
                             Text(
                               widget.author,
                               textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.bodyMedium
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
                                   ?.copyWith(
-                                    color: Colors.white,
-                                    fontStyle: FontStyle.italic,
-                                    fontSize: style.authorFontSize,
-                                    shadows: [
-                                      const Shadow(
-                                        blurRadius: 6,
-                                        color: Colors.black87,
-                                      ),
-                                    ],
+                                color: Colors.white,
+                                fontStyle: FontStyle.italic,
+                                fontSize: style.authorFontSize,
+                                shadows: [
+                                  const Shadow(
+                                    blurRadius: 6,
+                                    color: Colors.black87,
                                   ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -1702,9 +1699,9 @@ class _EventListPage extends StatelessWidget {
                     Text(
                       AppLocalizations.of(context)!.tapToRetry,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white60,
-                        fontSize: 14.0,
-                      ),
+                            color: Colors.white60,
+                            fontSize: 14.0,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -1804,9 +1801,9 @@ class _VotingEventCard extends StatelessWidget {
           child: Text(
             event.title,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.black87,
-              fontWeight: FontWeight.w900,
-            ),
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w900,
+                ),
           ),
         ),
         subtitle: Column(
@@ -1827,20 +1824,20 @@ class _VotingEventCard extends StatelessWidget {
                   return Text(
                     sectionStatus == model.VotingStatus.registration
                         ? (event.isRegistered
-                              ? AppLocalizations.of(context)!.registered
-                              : AppLocalizations.of(context)!.notRegistered)
+                            ? AppLocalizations.of(context)!.registered
+                            : AppLocalizations.of(context)!.notRegistered)
                         : (event.hasVoted
-                              ? AppLocalizations.of(context)!.voted
-                              : AppLocalizations.of(context)!.notVoted),
+                            ? AppLocalizations.of(context)!.voted
+                            : AppLocalizations.of(context)!.notVoted),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color:
-                          (sectionStatus == model.VotingStatus.registration
-                              ? event.isRegistered
-                              : event.hasVoted)
-                          ? AppTheme.rudnGreenColor
-                          : AppTheme.rudnRedColor,
-                      fontWeight: FontWeight.w500,
-                    ),
+                          color:
+                              (sectionStatus == model.VotingStatus.registration
+                                      ? event.isRegistered
+                                      : event.hasVoted)
+                                  ? AppTheme.rudnGreenColor
+                                  : AppTheme.rudnRedColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                   );
                 },
               ),

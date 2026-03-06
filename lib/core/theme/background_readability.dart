@@ -19,10 +19,10 @@ class BackgroundBrightnessSnapshot {
   });
 
   const BackgroundBrightnessSnapshot.neutral()
-    : overall = 0.5,
-      top = 0.5,
-      center = 0.5,
-      bottom = 0.5;
+      : overall = 0.5,
+        top = 0.5,
+        center = 0.5,
+        bottom = 0.5;
 }
 
 @immutable
@@ -44,12 +44,12 @@ class BackgroundReadabilityProfile {
   });
 
   const BackgroundReadabilityProfile.neutral()
-    : brightness = const BackgroundBrightnessSnapshot.neutral(),
-      level = BackgroundReadabilityLevel.normal,
-      globalLiftAlpha = 0.0,
-      topLiftAlpha = 0.0,
-      centerLiftAlpha = 0.0,
-      bottomLiftAlpha = 0.0;
+      : brightness = const BackgroundBrightnessSnapshot.neutral(),
+        level = BackgroundReadabilityLevel.normal,
+        globalLiftAlpha = 0.0,
+        topLiftAlpha = 0.0,
+        centerLiftAlpha = 0.0,
+        bottomLiftAlpha = 0.0;
 
   bool get hasOverlays =>
       globalLiftAlpha > 0 ||
@@ -117,18 +117,16 @@ class BackgroundReadabilityAnalyzer {
       return running;
     }
 
-    final future = _analyzeAsset(imagePath)
-        .then((profile) {
-          _cache[imagePath] = profile;
-          _pending.remove(imagePath);
-          return profile;
-        })
-        .catchError((_) {
-          _pending.remove(imagePath);
-          const fallback = BackgroundReadabilityProfile.neutral();
-          _cache[imagePath] = fallback;
-          return fallback;
-        });
+    final future = _analyzeAsset(imagePath).then((profile) {
+      _cache[imagePath] = profile;
+      _pending.remove(imagePath);
+      return profile;
+    }).catchError((_) {
+      _pending.remove(imagePath);
+      const fallback = BackgroundReadabilityProfile.neutral();
+      _cache[imagePath] = fallback;
+      return fallback;
+    });
 
     _pending[imagePath] = future;
     return future;
@@ -206,9 +204,8 @@ class BackgroundReadabilityAnalyzer {
         final b = rgba[offset + 2] / 255.0;
         offset += 4;
 
-        final luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b)
-            .clamp(0.0, 1.0)
-            .toDouble();
+        final luminance =
+            (0.2126 * r + 0.7152 * g + 0.0722 * b).clamp(0.0, 1.0).toDouble();
 
         overallSum += luminance;
         overallCount++;

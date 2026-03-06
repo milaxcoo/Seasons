@@ -95,9 +95,9 @@ class _ResultsView extends StatelessWidget {
                         event.title,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: detailStyle.titleFontSize,
-                        ),
+                              fontWeight: FontWeight.w900,
+                              fontSize: detailStyle.titleFontSize,
+                            ),
                       ),
                       SizedBox(height: detailStyle.sectionGap),
                       const Divider(color: Colors.grey, height: 1),
@@ -139,7 +139,9 @@ class _ResultsView extends StatelessWidget {
                         child: Center(
                           child: Text(
                             l10n.sessionCompleted,
-                            style: Theme.of(context).textTheme.bodyLarge
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
                                 ?.copyWith(color: Colors.white),
                           ),
                         ),
@@ -170,11 +172,9 @@ class _ResultsTable extends StatelessWidget {
     }
 
     final containerPadding = EdgeInsets.symmetric(
-      horizontal:
-          style.cardPadding +
+      horizontal: style.cardPadding +
           (style.isExtremeCompact ? 0.0 : style.sectionGapSmall),
-      vertical:
-          style.cardPadding +
+      vertical: style.cardPadding +
           (style.isExtremeCompact ? 0.0 : style.sectionGapSmall),
     );
 
@@ -191,9 +191,9 @@ class _ResultsTable extends StatelessWidget {
             l10n.votingResults,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-              fontSize: style.isExtremeCompact ? null : 18,
-            ),
+                  fontWeight: FontWeight.w900,
+                  fontSize: style.isExtremeCompact ? null : 18,
+                ),
           ),
           SizedBox(height: style.sectionGapSmall + 4),
           const Divider(),
@@ -209,9 +209,9 @@ class _ResultsTable extends StatelessWidget {
                   Text(
                     '${index + 1}. ${questionResult.name}',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: style.isExtremeCompact ? null : 16,
-                    ),
+                          fontWeight: FontWeight.w900,
+                          fontSize: style.isExtremeCompact ? null : 16,
+                        ),
                   ),
                   SizedBox(height: style.sectionGap),
                   _buildDataTable(context, questionResult, l10n),

@@ -13,8 +13,7 @@ class MonthlyTheme {
 final Map<int, MonthlyTheme> monthlyThemes = {
   1: MonthlyTheme(
     imagePath: 'assets/backgrounds/january.jpg',
-    poem:
-        "Январь, за окнами зима\n"
+    poem: "Январь, за окнами зима\n"
         "Снег серебрится белый-белый…\n"
         "Мороз трещит, рисует мелом…\n"
         "На речках строит терема…",
@@ -22,8 +21,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   2: MonthlyTheme(
     imagePath: 'assets/backgrounds/february.jpg',
-    poem:
-        "Дуют ветры в феврале,\n"
+    poem: "Дуют ветры в феврале,\n"
         "Воют в трубах громко.\n"
         "Змейкой мчится по земле\n"
         "Легкая поземка.",
@@ -31,8 +29,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   3: MonthlyTheme(
     imagePath: 'assets/backgrounds/march.jpg',
-    poem:
-        "Март капризный, Март безумный, Итальянцы говорят,\n"
+    poem: "Март капризный, Март безумный, Итальянцы говорят,\n"
         "Месяц тот, что пред Апрелем – так его, боясь, крестят.\n"
         "Входит в кровь и в сновиденья, влажным делает наш взгляд,\n"
         "Март безумный, Март безумный, Итальянцы говорят.",
@@ -40,8 +37,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   4: MonthlyTheme(
     imagePath: 'assets/backgrounds/april.jpg',
-    poem:
-        "Прошли дожди, апрель теплеет,\n"
+    poem: "Прошли дожди, апрель теплеет,\n"
         "Всю ночь — туман, а поутру\n"
         "Весенний воздух точно млеет\n"
         "И мягкой дымкою синеет\n"
@@ -55,8 +51,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   5: MonthlyTheme(
     imagePath: 'assets/backgrounds/may.jpg',
-    poem:
-        "Еще в полях белеет снег,\n"
+    poem: "Еще в полях белеет снег,\n"
         "А воды уж весной шумят —\n"
         "Бегут и будят сонный брег,\n"
         "Бегут, и блещут, и гласят…\n"
@@ -72,8 +67,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   6: MonthlyTheme(
     imagePath: 'assets/backgrounds/june.jpg',
-    poem:
-        "Одари, июнь, меня прохладой,\n"
+    poem: "Одари, июнь, меня прохладой,\n"
         "Надоела вечная жара,\n"
         "Только затяжных дождей не надо,\n"
         "Подойдет июньская гроза!",
@@ -81,8 +75,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   7: MonthlyTheme(
     imagePath: 'assets/backgrounds/july.jpg',
-    poem:
-        "Июль - макушка лета,\n"
+    poem: "Июль - макушка лета,\n"
         "Напомнила газета,\n"
         "А с липового цвета\n"
         "Считай, что песня спета,\n"
@@ -92,8 +85,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   8: MonthlyTheme(
     imagePath: 'assets/backgrounds/august.jpg',
-    poem:
-        "Как ясен август, нежный и спокойный,\n"
+    poem: "Как ясен август, нежный и спокойный,\n"
         "Сознавший мимолетность красоты.\n"
         "Позолотив древесные листы,\n"
         "Он чувства заключил в порядок стройный.\n"
@@ -105,8 +97,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   9: MonthlyTheme(
     imagePath: 'assets/backgrounds/september.jpg',
-    poem:
-        "Сентябрь, уж листья в поле пожелтели,\n"
+    poem: "Сентябрь, уж листья в поле пожелтели,\n"
         "И кружатся, и летят;\n"
         "Лишь в бору поникши ели\n"
         "Зелень мрачную хранят.\n"
@@ -118,8 +109,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   10: MonthlyTheme(
     imagePath: 'assets/backgrounds/october.jpg',
-    poem:
-        "Октябрь уж наступил — уж роща отряхает\n"
+    poem: "Октябрь уж наступил — уж роща отряхает\n"
         "Последние листы с нагих своих ветвей;\n"
         "Дохнул осенний хлад — дорога промерзает.\n"
         "Журча еще бежит за мельницу ручей,\n"
@@ -131,8 +121,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   11: MonthlyTheme(
     imagePath: 'assets/backgrounds/november.jpg',
-    poem:
-        "Уж небо осенью дышало,\n"
+    poem: "Уж небо осенью дышало,\n"
         "Уж реже солнышко блистало,\n"
         "Короче становился день,\n"
         "Лесов таинственная сень\n"
@@ -146,8 +135,7 @@ final Map<int, MonthlyTheme> monthlyThemes = {
   ),
   12: MonthlyTheme(
     imagePath: 'assets/backgrounds/december.jpg',
-    poem:
-        "Нарастают снега. Сокращается день.\n"
+    poem: "Нарастают снега. Сокращается день.\n"
         "Год проходит. Зима настаёт.\n"
         "Даже в полдень за мною гигантская тень\n"
         "Синим шагом по снегу идёт.\n"

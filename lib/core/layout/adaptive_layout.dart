@@ -270,8 +270,7 @@ class AdaptiveLayoutData {
       return HomeLandscapeGeometryClass.regularTabletLandscape;
     }
 
-    final bool phoneLandscapeGeometry =
-        availableHeight <= 460 &&
+    final bool phoneLandscapeGeometry = availableHeight <= 460 &&
         availableWidth <= 1100 &&
         _landscapeAspectRatio >= 1.45;
     if (phoneLandscapeGeometry) {
@@ -408,43 +407,43 @@ class AdaptiveLayoutData {
       },
       dialogContentPadding: switch (density) {
         AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(
-          24,
-          20,
-          24,
-          24,
-        ),
+            24,
+            20,
+            24,
+            24,
+          ),
         AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(
-          20,
-          18,
-          20,
-          20,
-        ),
+            20,
+            18,
+            20,
+            20,
+          ),
         AdaptiveDensityMode.extremeCompact => const EdgeInsets.fromLTRB(
-          16,
-          14,
-          16,
-          16,
-        ),
+            16,
+            14,
+            16,
+            16,
+          ),
       },
       dialogTitlePadding: switch (density) {
         AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(24, 24, 24, 0),
         AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(20, 20, 20, 0),
         AdaptiveDensityMode.extremeCompact => const EdgeInsets.fromLTRB(
-          16,
-          16,
-          16,
-          0,
-        ),
+            16,
+            16,
+            16,
+            0,
+          ),
       },
       dialogActionsPadding: switch (density) {
         AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(24, 0, 24, 24),
         AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(20, 0, 20, 20),
         AdaptiveDensityMode.extremeCompact => const EdgeInsets.fromLTRB(
-          16,
-          0,
-          16,
-          16,
-        ),
+            16,
+            0,
+            16,
+            16,
+          ),
       },
     );
   }
@@ -928,16 +927,15 @@ class AdaptiveLayoutData {
     final basePoem = footerPoemFontSize;
     final baseAuthor = footerAuthorFontSize;
     final baseLineHeight = footerPoemLineHeight;
-    final baseBottomPadding = isLandscape
-        ? (isExpanded ? 12.0 : 8.0)
-        : (isExpanded ? 30.0 : 24.0);
+    final baseBottomPadding =
+        isLandscape ? (isExpanded ? 12.0 : 8.0) : (isExpanded ? 30.0 : 24.0);
     final baseMaxHeight = isLandscape
         ? availableHeight * 0.80
         : (isExpanded
-              ? 170.0
-              : isMedium
-              ? 155.0
-              : 140.0);
+            ? 170.0
+            : isMedium
+                ? 155.0
+                : 140.0);
     final baseMaxTextWidth = (availableWidth * 0.94).clamp(
       250.0,
       isLandscape ? 720.0 : 640.0,
@@ -968,8 +966,7 @@ class AdaptiveLayoutData {
         (baseMaxHeight * (0.72 + (modeScale * 0.28)))
             .clamp(resolvedContentFloor, baseMaxHeight)
             .toDouble();
-    final normalDesiredTotalHeight =
-        outerTopPadding +
+    final normalDesiredTotalHeight = outerTopPadding +
         outerBottomPadding +
         (contentPadding * 2) +
         normalDesiredContentHeight;
@@ -978,19 +975,18 @@ class AdaptiveLayoutData {
     );
     final resolvedMaxTotalHeight =
         normalDesiredTotalHeight > maxAllowedTotalHeight
-        ? maxAllowedTotalHeight
-        : normalDesiredTotalHeight;
-    final maxInnerContentByInvariant =
-        (resolvedMaxTotalHeight -
-                outerTopPadding -
-                outerBottomPadding -
-                (contentPadding * 2))
-            .clamp(0.0, resolvedMaxTotalHeight)
-            .toDouble();
+            ? maxAllowedTotalHeight
+            : normalDesiredTotalHeight;
+    final maxInnerContentByInvariant = (resolvedMaxTotalHeight -
+            outerTopPadding -
+            outerBottomPadding -
+            (contentPadding * 2))
+        .clamp(0.0, resolvedMaxTotalHeight)
+        .toDouble();
     final maxContentHeight =
         normalDesiredContentHeight > maxInnerContentByInvariant
-        ? maxInnerContentByInvariant
-        : normalDesiredContentHeight;
+            ? maxInnerContentByInvariant
+            : normalDesiredContentHeight;
 
     return AdaptiveFooterStyle(
       mode: mode,
@@ -998,9 +994,8 @@ class AdaptiveLayoutData {
       poemLineHeight: (baseLineHeight - ((1.0 - modeScale) * 0.5))
           .clamp(1.24, baseLineHeight)
           .toDouble(),
-      authorFontSize: (baseAuthor * modeScale)
-          .clamp(10.8, baseAuthor)
-          .toDouble(),
+      authorFontSize:
+          (baseAuthor * modeScale).clamp(10.8, baseAuthor).toDouble(),
       contentPadding: contentPadding,
       poemAuthorSpacing: (8.0 * spacingScale).clamp(4.0, 8.0).toDouble(),
       outerTopPadding: outerTopPadding,
@@ -1014,9 +1009,9 @@ class AdaptiveLayoutData {
   }
 
   AdaptiveFooterStyle get footerStyle => footerStyleForModeWithLayout(
-    mode: footerMode,
-    homeLayoutMode: homeLayoutMode,
-  );
+        mode: footerMode,
+        homeLayoutMode: homeLayoutMode,
+      );
 
   double get outerHorizontalPadding {
     if (isPhoneLikeLandscape) {
@@ -1178,14 +1173,12 @@ class AdaptiveLayoutData {
   AdaptiveHeaderStyle get headerStyle {
     final titleFontSize = _headerTitleFontSize;
     // Keep subtitle proportional to title across all adaptive states.
-    final subtitleFontSize = (titleFontSize * 0.305)
-        .clamp(11.8, 15.4)
-        .toDouble();
-    final subtitleLetterSpacing = (subtitleFontSize * 0.34)
-        .clamp(2.8, 5.2)
-        .toDouble();
-    final subtitleOffsetY = -(subtitleFontSize * (isLandscape ? 0.14 : 0.30))
-        .toDouble();
+    final subtitleFontSize =
+        (titleFontSize * 0.305).clamp(11.8, 15.4).toDouble();
+    final subtitleLetterSpacing =
+        (subtitleFontSize * 0.34).clamp(2.8, 5.2).toDouble();
+    final subtitleOffsetY =
+        -(subtitleFontSize * (isLandscape ? 0.14 : 0.30)).toDouble();
 
     return AdaptiveHeaderStyle(
       titleFontSize: titleFontSize,
@@ -1223,9 +1216,8 @@ class AdaptiveLayoutData {
         AdaptiveSizeClass.medium => 15.4,
         AdaptiveSizeClass.expanded => 16.0,
       };
-      final growth = ((availableWidth - 620.0) / 720.0)
-          .clamp(0.0, 1.0)
-          .toDouble();
+      final growth =
+          ((availableWidth - 620.0) / 720.0).clamp(0.0, 1.0).toDouble();
       return (base + growth).clamp(14.6, 17.4);
     }
     final base = switch (sizeClass) {

@@ -10,9 +10,9 @@ class SessionValidationException implements Exception {
   const SessionValidationException({required this.type, required this.message});
 
   const SessionValidationException.transientNetwork([String? message])
-    : type = SessionValidationFailureType.transientNetwork,
-      message =
-          message ?? 'Transient network failure during session validation';
+      : type = SessionValidationFailureType.transientNetwork,
+        message =
+            message ?? 'Transient network failure during session validation';
 
   @override
   String toString() {

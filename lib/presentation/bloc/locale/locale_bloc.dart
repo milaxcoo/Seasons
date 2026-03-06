@@ -19,11 +19,11 @@ class LocaleBloc extends Bloc<LocaleEvent, LocaleState> {
   LocaleBloc({
     SharedPreferencesFactory? sharedPreferencesFactory,
     SystemLocaleProvider? systemLocaleProvider,
-  }) : _sharedPreferencesFactory =
-           sharedPreferencesFactory ?? SharedPreferences.getInstance,
-       _systemLocaleProvider =
-           systemLocaleProvider ?? (() => PlatformDispatcher.instance.locale),
-       super(const LocaleState(_defaultLocale)) {
+  })  : _sharedPreferencesFactory =
+            sharedPreferencesFactory ?? SharedPreferences.getInstance,
+        _systemLocaleProvider =
+            systemLocaleProvider ?? (() => PlatformDispatcher.instance.locale),
+        super(const LocaleState(_defaultLocale)) {
     on<LoadLocale>(_onLoadLocale);
     on<ChangeLocale>(_onChangeLocale);
   }

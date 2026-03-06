@@ -39,10 +39,10 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     Stream<Map<String, dynamic>?>? backgroundServiceStream,
     Duration refreshDebounce = const Duration(milliseconds: 350),
     Duration restoredStatusDuration = const Duration(seconds: 2),
-  }) : _votingRepository = votingRepository,
-       _refreshDebounce = refreshDebounce,
-       _restoredStatusDuration = restoredStatusDuration,
-       super(VotingInitial()) {
+  })  : _votingRepository = votingRepository,
+        _refreshDebounce = refreshDebounce,
+        _restoredStatusDuration = restoredStatusDuration,
+        super(VotingInitial()) {
     on<FetchEventsByStatus>(_onFetchEventsByStatus);
     on<RefreshEventsSilent>(_onRefreshEventsSilent);
     on<RefreshAllEventsSilent>(_onRefreshAllEventsSilent);
@@ -52,18 +52,18 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     on<VotingListUpdated>(_onVotingListUpdated);
 
     // Listen to BackgroundService for updates (or provided stream for testing).
-    _serviceSubscription = (backgroundServiceStream ?? BackgroundService().on)
-        .listen((data) {
-          if (data == null) return;
+    _serviceSubscription =
+        (backgroundServiceStream ?? BackgroundService().on).listen((data) {
+      if (data == null) return;
 
-          final action = data['action'] as String?;
-          if (action == null || action.isEmpty) return;
-          if (kDebugMode) {
-            debugPrint("VotingBloc: Received from BackgroundService: $action");
-          }
+      final action = data['action'] as String?;
+      if (action == null || action.isEmpty) return;
+      if (kDebugMode) {
+        debugPrint("VotingBloc: Received from BackgroundService: $action");
+      }
 
-          _handleBackgroundServiceAction(action);
-        });
+      _handleBackgroundServiceAction(action);
+    });
   }
 
   void _handleBackgroundServiceAction(String action) {
@@ -164,9 +164,8 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
   ) {
     if (state is VotingEventsLoadSuccess) {
       final currentState = state as VotingEventsLoadSuccess;
-      final filtered = event.events
-          .where((e) => e.status == currentState.status)
-          .toList();
+      final filtered =
+          event.events.where((e) => e.status == currentState.status).toList();
 
       if (kDebugMode) {
         debugPrint(

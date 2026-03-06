@@ -57,9 +57,8 @@ String sanitizeUrlForLog(String rawUrl, {bool keepQuery = false}) {
 
   final redactedQuery = <String, String>{};
   for (final entry in uri.queryParameters.entries) {
-    redactedQuery[entry.key] = _isSensitiveKey(entry.key)
-        ? '<redacted>'
-        : entry.value;
+    redactedQuery[entry.key] =
+        _isSensitiveKey(entry.key) ? '<redacted>' : entry.value;
   }
 
   return uri.replace(queryParameters: redactedQuery).toString();

@@ -704,13 +704,13 @@ class WebViewFinalizationState {
   });
 
   const WebViewFinalizationState.initial()
-    : this._(
-        webViewHiddenAfterCallback: false,
-        isFinishing: false,
-        hasError: false,
-        errorMessage: '',
-        phase: WebViewFinalizationPhase.idle,
-      );
+      : this._(
+          webViewHiddenAfterCallback: false,
+          isFinishing: false,
+          hasError: false,
+          errorMessage: '',
+          phase: WebViewFinalizationPhase.idle,
+        );
 
   WebViewFinalizationState onCallbackDetected() {
     return const WebViewFinalizationState._(

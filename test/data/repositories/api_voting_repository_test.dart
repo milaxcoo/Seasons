@@ -86,16 +86,14 @@ void main() {
       expect(events.first.status, VotingStatus.registration);
       expect(events.first.title, 'Student Council');
 
-      final captured =
-          verify(
-                () => client.get(
-                  Uri.parse(
-                    'https://seasons.rudn.ru/api/v1/voters_page/registration_votings',
-                  ),
-                  headers: captureAny(named: 'headers'),
-                ),
-              ).captured.single
-              as Map<String, String>;
+      final captured = verify(
+        () => client.get(
+          Uri.parse(
+            'https://seasons.rudn.ru/api/v1/voters_page/registration_votings',
+          ),
+          headers: captureAny(named: 'headers'),
+        ),
+      ).captured.single as Map<String, String>;
       expect(captured['Cookie'], 'session=cookie-token');
       expect(captured['X-Requested-With'], 'XMLHttpRequest');
     });
@@ -177,17 +175,15 @@ void main() {
 
       await repository.registerForEvent('event-77');
 
-      final capturedBody =
-          verify(
-                () => client.post(
-                  Uri.parse(
-                    'https://seasons.rudn.ru/api/v1/voter/register_in_voting',
-                  ),
-                  headers: any(named: 'headers'),
-                  body: captureAny(named: 'body'),
-                ),
-              ).captured.single
-              as Map<String, String>;
+      final capturedBody = verify(
+        () => client.post(
+          Uri.parse(
+            'https://seasons.rudn.ru/api/v1/voter/register_in_voting',
+          ),
+          headers: any(named: 'headers'),
+          body: captureAny(named: 'body'),
+        ),
+      ).captured.single as Map<String, String>;
       expect(capturedBody['voting_id'], 'event-77');
     });
 
@@ -323,15 +319,13 @@ void main() {
 
         expect(ok, isTrue);
 
-        final capturedBody =
-            verify(
-                  () => client.post(
-                    Uri.parse('https://seasons.rudn.ru/api/v1/voter/vote'),
-                    headers: any(named: 'headers'),
-                    body: captureAny(named: 'body'),
-                  ),
-                ).captured.single
-                as Map<String, String>;
+        final capturedBody = verify(
+          () => client.post(
+            Uri.parse('https://seasons.rudn.ru/api/v1/voter/vote'),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured.single as Map<String, String>;
         expect(capturedBody['voting_id'], 'vote-1');
         expect(capturedBody['data[0][name]'], 'question::q1');
         expect(capturedBody['data[0][value]'], 'a1');
