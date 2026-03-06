@@ -11,32 +11,9 @@ import 'package:seasons/data/models/subject.dart';
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/repositories/api_voting_repository.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
+import '../../helpers/in_memory_secure_storage.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
-
-class InMemorySecureStorage implements SecureStorageInterface {
-  final Map<String, String?> _store = <String, String?>{};
-
-  @override
-  Future<void> delete({required String key}) async {
-    _store.remove(key);
-  }
-
-  @override
-  Future<void> deleteAll() async {
-    _store.clear();
-  }
-
-  @override
-  Future<String?> read({required String key}) async {
-    return _store[key];
-  }
-
-  @override
-  Future<void> write({required String key, required String? value}) async {
-    _store[key] = value;
-  }
-}
 
 String _fixture(String name) {
   return File('test/fixtures/api/$name').readAsStringSync();

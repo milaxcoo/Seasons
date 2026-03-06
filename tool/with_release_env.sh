@@ -69,6 +69,37 @@ if [[ "$ENABLE_ERROR_REPORTING_VALUE" == "true" && -z "$ERROR_REPORT_RELAY_URL_V
   exit 1
 fi
 
+build_command=("$@")
+
+has_dart_define() {
+  local key="$1"
+  local arg
+  for arg in "${build_command[@]}"; do
+    if [[ "$arg" == "--dart-define=$key="* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [[ "${build_command[0]}" == "flutter" && "${build_command[1]:-}" == "build" ]]; then
+  if ! has_dart_define "ENABLE_ERROR_REPORTING"; then
+    build_command+=("--dart-define=ENABLE_ERROR_REPORTING=$ENABLE_ERROR_REPORTING_VALUE")
+  fi
+
+  if ! has_dart_define "ENABLE_DIAGNOSTIC_EVENTS"; then
+    build_command+=("--dart-define=ENABLE_DIAGNOSTIC_EVENTS=$ENABLE_DIAGNOSTIC_EVENTS_VALUE")
+  fi
+
+  if [[ -n "$ERROR_REPORT_RELAY_URL_VALUE" ]] && ! has_dart_define "ERROR_REPORT_RELAY_URL"; then
+    build_command+=("--dart-define=ERROR_REPORT_RELAY_URL=$ERROR_REPORT_RELAY_URL_VALUE")
+  fi
+
+  if [[ -n "$ERROR_REPORT_RELAY_API_KEY_VALUE" ]] && ! has_dart_define "ERROR_REPORT_RELAY_API_KEY"; then
+    build_command+=("--dart-define=ERROR_REPORT_RELAY_API_KEY=$ERROR_REPORT_RELAY_API_KEY_VALUE")
+  fi
+fi
+
 env \
   KEYSTORE_PATH="$KEYSTORE_PATH_VALUE" \
   KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD_VALUE" \
@@ -78,4 +109,4 @@ env \
   ENABLE_DIAGNOSTIC_EVENTS="$ENABLE_DIAGNOSTIC_EVENTS_VALUE" \
   ERROR_REPORT_RELAY_URL="$ERROR_REPORT_RELAY_URL_VALUE" \
   ERROR_REPORT_RELAY_API_KEY="$ERROR_REPORT_RELAY_API_KEY_VALUE" \
-  "$@"
+  "${build_command[@]}"

@@ -22,8 +22,19 @@ fi
 
 echo "🏗️  Building $BUILD_TYPE (Telegram disabled in release/profile)..."
 
-flutter build $BUILD_TYPE --release \
-    --dart-define=ENABLE_ERROR_REPORTING=${ENABLE_ERROR_REPORTING_VALUE} \
-    --dart-define=ENABLE_DIAGNOSTIC_EVENTS=${ENABLE_DIAGNOSTIC_EVENTS:-false}
+dart_defines=(
+  "--dart-define=ENABLE_ERROR_REPORTING=${ENABLE_ERROR_REPORTING_VALUE}"
+  "--dart-define=ENABLE_DIAGNOSTIC_EVENTS=${ENABLE_DIAGNOSTIC_EVENTS:-false}"
+)
+
+if [ -n "${ERROR_REPORT_RELAY_URL_VALUE}" ]; then
+  dart_defines+=("--dart-define=ERROR_REPORT_RELAY_URL=${ERROR_REPORT_RELAY_URL_VALUE}")
+fi
+
+if [ -n "${ERROR_REPORT_RELAY_API_KEY:-}" ]; then
+  dart_defines+=("--dart-define=ERROR_REPORT_RELAY_API_KEY=${ERROR_REPORT_RELAY_API_KEY}")
+fi
+
+flutter build "$BUILD_TYPE" --release "${dart_defines[@]}"
 
 echo "✅ Done!"

@@ -60,9 +60,14 @@ Required (managed outside git):
 
 - Direct Telegram transport is debug-only and must not be used in release/profile.
 - Keep `ENABLE_ERROR_REPORTING=false` in production until secure relay is validated.
+- The app reads relay settings via `String.fromEnvironment(...)`, so values must be
+  embedded at build time using `--dart-define`.
 - If enabling production telemetry, provide:
-  - `ERROR_REPORT_RELAY_URL`
-  - optional `ERROR_REPORT_RELAY_API_KEY`
+  - `--dart-define=ERROR_REPORT_RELAY_URL=<https-endpoint>`
+  - optional `--dart-define=ERROR_REPORT_RELAY_API_KEY=<api-key>`
+- `tool/with_release_env.sh` bridges keychain/env values into build-time defines for
+  `flutter build ...` commands.
+- If bypassing `tool/with_release_env.sh`, you must pass relay defines manually.
 - Update store privacy disclosures when telemetry transport behavior changes.
 
 ## 6. Handoff checklist

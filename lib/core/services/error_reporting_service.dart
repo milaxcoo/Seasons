@@ -650,6 +650,22 @@ class HttpRelayErrorReportTransport implements ErrorReportTransport {
       }
       return;
     }
+    if (endpoint.scheme != 'https') {
+      if (kDebugMode) {
+        debugPrint(
+          'ErrorReportingService: insecure relay URL scheme "${endpoint.scheme}". Only "https" is allowed.',
+        );
+      }
+      return;
+    }
+    if (endpoint.host.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+          'ErrorReportingService: relay URL must include a non-empty host.',
+        );
+      }
+      return;
+    }
 
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
