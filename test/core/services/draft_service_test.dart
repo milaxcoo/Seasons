@@ -1,9 +1,40 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:seasons/core/services/draft_service.dart';
 import '../../helpers/in_memory_secure_storage.dart';
+
+class FlakySecureStorage implements SecureStorageInterface {
+  final Map<String, String?> _storage = <String, String?>{};
+  bool failDraftWrites;
+
+  FlakySecureStorage({required this.failDraftWrites});
+
+  @override
+  Future<void> delete({required String key}) async {
+    _storage.remove(key);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    _storage.clear();
+  }
+
+  @override
+  Future<String?> read({required String key}) async {
+    return _storage[key];
+  }
+
+  @override
+  Future<void> write({required String key, required String? value}) async {
+    if (failDraftWrites && key.startsWith('draft_secure_v1_')) {
+      throw Exception('simulated secure write failure');
+    }
+    _storage[key] = value;
+  }
+}
 
 void main() {
   late DraftService draftService;
@@ -94,6 +125,35 @@ void main() {
 
           final loadedAgain = await draftService.loadDraft('v42');
           expect(loadedAgain, equals({'q1': 'legacy-answer'}));
+        },
+      );
+
+      test(
+        'keeps legacy draft and retries migration after secure write failure',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'draft_voting_v99',
+            jsonEncode({'q1': 'legacy-answer'}),
+          );
+
+          final flakyStorage = FlakySecureStorage(failDraftWrites: true);
+          final flakyService = DraftService(
+            secureStorage: flakyStorage,
+            prefsFactory: SharedPreferences.getInstance,
+          );
+
+          final firstLoad = await flakyService.loadDraft('v99');
+          expect(firstLoad, isEmpty);
+          expect(prefs.getString('draft_voting_v99'), isNotNull);
+          expect(prefs.getBool('draft_secure_migration_v1_done'), isNot(true));
+
+          flakyStorage.failDraftWrites = false;
+
+          final secondLoad = await flakyService.loadDraft('v99');
+          expect(secondLoad, equals({'q1': 'legacy-answer'}));
+          expect(prefs.getString('draft_voting_v99'), isNull);
+          expect(prefs.getBool('draft_secure_migration_v1_done'), isTrue);
         },
       );
 

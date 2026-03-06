@@ -81,6 +81,7 @@ class DraftService {
     final prefs = await _prefsFactory();
     final alreadyMigrated = prefs.getBool(_migrationDoneFlag) ?? false;
     if (alreadyMigrated) return;
+    var hasPendingMigration = false;
 
     final legacyKeys = prefs
         .getKeys()
@@ -108,16 +109,23 @@ class DraftService {
           );
           if (isWritten) {
             await _addDraftIdToIndex(votingId);
+            await prefs.remove(legacyKey);
+            continue;
           }
+          hasPendingMigration = true;
+          continue;
         }
+        await prefs.remove(legacyKey);
+        continue;
       }
 
-      // Legacy plaintext key is removed regardless of decode success to avoid
-      // repeated parsing of malformed historical values.
+      // Remove malformed legacy values to avoid repeated decode attempts.
       await prefs.remove(legacyKey);
     }
 
-    await prefs.setBool(_migrationDoneFlag, true);
+    if (!hasPendingMigration) {
+      await prefs.setBool(_migrationDoneFlag, true);
+    }
   }
 
   String _encodePayload(Map<String, String> answers) {
