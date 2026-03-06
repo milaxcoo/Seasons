@@ -50,9 +50,7 @@ void main() {
 
     test('updates theme when provider month changes', () {
       var now = DateTime(2026, 1, 31, 23, 59);
-      final service = MonthlyThemeService(
-        currentDateProvider: () => now,
-      );
+      final service = MonthlyThemeService(currentDateProvider: () => now);
 
       expect(service.currentMonth, 1);
       expect(service.backgroundAssetPath, 'assets/backgrounds/january.jpg');

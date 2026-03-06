@@ -102,22 +102,25 @@ class _EdgeSwipeBackWrapperState extends State<_EdgeSwipeBackWrapper> {
       gestures: {
         _EdgeHorizontalDragGestureRecognizer:
             GestureRecognizerFactoryWithHandlers<
-                _EdgeHorizontalDragGestureRecognizer>(
-          () => _EdgeHorizontalDragGestureRecognizer(
-            edgeWidth: _backSwipeEdgeWidth,
-          ),
-          (recognizer) {
-            recognizer.onStart = (_) {
-              _dragDistance = 0;
-            };
-            recognizer.onUpdate = (details) {
-              _dragDistance =
-                  (_dragDistance + details.delta.dx).clamp(0.0, 10000.0);
-            };
-            recognizer.onCancel = _resetDrag;
-            recognizer.onEnd = _handleDragEnd;
-          },
-        ),
+              _EdgeHorizontalDragGestureRecognizer
+            >(
+              () => _EdgeHorizontalDragGestureRecognizer(
+                edgeWidth: _backSwipeEdgeWidth,
+              ),
+              (recognizer) {
+                recognizer.onStart = (_) {
+                  _dragDistance = 0;
+                };
+                recognizer.onUpdate = (details) {
+                  _dragDistance = (_dragDistance + details.delta.dx).clamp(
+                    0.0,
+                    10000.0,
+                  );
+                };
+                recognizer.onCancel = _resetDrag;
+                recognizer.onEnd = _handleDragEnd;
+              },
+            ),
       },
       child: widget.child,
     );
@@ -126,9 +129,7 @@ class _EdgeSwipeBackWrapperState extends State<_EdgeSwipeBackWrapper> {
 
 class _EdgeHorizontalDragGestureRecognizer
     extends HorizontalDragGestureRecognizer {
-  _EdgeHorizontalDragGestureRecognizer({
-    required this.edgeWidth,
-  });
+  _EdgeHorizontalDragGestureRecognizer({required this.edgeWidth});
 
   final double edgeWidth;
 
@@ -145,18 +146,19 @@ Widget _buildCorporateTransition({
   required Animation<double> secondary,
 }) {
   final incomingOpacity = Tween<double>(begin: 0.0, end: 1.0).evaluate(primary);
-  final outgoingOpacity =
-      Tween<double>(begin: 1.0, end: 0.92).evaluate(secondary);
+  final outgoingOpacity = Tween<double>(
+    begin: 1.0,
+    end: 0.92,
+  ).evaluate(secondary);
 
   final incomingScale = Tween<double>(begin: 1.03, end: 1.0).evaluate(primary);
-  final outgoingScale =
-      Tween<double>(begin: 1.0, end: 0.985).evaluate(secondary);
+  final outgoingScale = Tween<double>(
+    begin: 1.0,
+    end: 0.985,
+  ).evaluate(secondary);
 
   return Opacity(
     opacity: (incomingOpacity * outgoingOpacity).clamp(0.0, 1.0),
-    child: Transform.scale(
-      scale: incomingScale * outgoingScale,
-      child: child,
-    ),
+    child: Transform.scale(scale: incomingScale * outgoingScale, child: child),
   );
 }

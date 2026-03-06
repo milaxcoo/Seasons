@@ -11,11 +11,13 @@ part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   static const int _maxStartupValidationAttempts = 2;
-  static const Duration _startupValidationRetryDelay =
-      Duration(milliseconds: 250);
+  static const Duration _startupValidationRetryDelay = Duration(
+    milliseconds: 250,
+  );
   static const int _maxPostLoginValidationAttempts = 2;
-  static const Duration _postLoginValidationRetryDelay =
-      Duration(milliseconds: 250);
+  static const Duration _postLoginValidationRetryDelay = Duration(
+    milliseconds: 250,
+  );
 
   final VotingRepository _votingRepository;
   final DraftService _draftService;
@@ -23,9 +25,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({
     required VotingRepository votingRepository,
     DraftService? draftService,
-  })  : _draftService = draftService ?? DraftService(),
-        _votingRepository = votingRepository,
-        super(AuthInitial()) {
+  }) : _draftService = draftService ?? DraftService(),
+       _votingRepository = votingRepository,
+       super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoggedIn>(_onLoggedIn);
     on<LoggedOut>(_onLoggedOut);
@@ -119,7 +121,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _clearSessionAndEmitUnauthenticated(
-      Emitter<AuthState> emit) async {
+    Emitter<AuthState> emit,
+  ) async {
     try {
       await _votingRepository.logout();
     } catch (_) {
@@ -139,26 +142,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     ErrorReportingService().reportEvent('auth_bloc_logged_in_received');
     emit(AuthChecking());
 
-    for (var attempt = 1; attempt <= _maxPostLoginValidationAttempts; attempt++) {
+    for (
+      var attempt = 1;
+      attempt <= _maxPostLoginValidationAttempts;
+      attempt++
+    ) {
       try {
         final userLogin = await _votingRepository.getUserLogin();
         if (userLogin != null && userLogin.isNotEmpty) {
           emit(AuthAuthenticated(userLogin: userLogin));
-          ErrorReportingService().reportEvent('auth_bloc_authenticated_emitted');
+          ErrorReportingService().reportEvent(
+            'auth_bloc_authenticated_emitted',
+          );
           return;
         }
 
         await _clearSessionAndEmitUnauthenticated(emit);
-        emit(const AuthFailure(
-          error: 'Login session could not be validated. Please try again.',
-        ));
+        emit(
+          const AuthFailure(
+            error: 'Login session could not be validated. Please try again.',
+          ),
+        );
         ErrorReportingService().reportEvent('auth_bloc_validation_failed');
         return;
       } on UnauthorizedSessionException catch (e) {
         await _clearSessionAndEmitUnauthenticated(emit);
-        emit(const AuthFailure(
-          error: 'Login session expired. Please sign in again.',
-        ));
+        emit(
+          const AuthFailure(
+            error: 'Login session expired. Please sign in again.',
+          ),
+        );
         ErrorReportingService().reportEvent(
           'auth_bloc_validation_failed',
           details: {'exception_type': e.runtimeType.toString()},
@@ -212,9 +225,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
 
     await _clearSessionAndEmitUnauthenticated(emit);
-    emit(const AuthFailure(
-      error: 'Unable to validate login session. Check connection and try again.',
-    ));
+    emit(
+      const AuthFailure(
+        error:
+            'Unable to validate login session. Check connection and try again.',
+      ),
+    );
     ErrorReportingService().reportEvent('auth_bloc_validation_fallback_unauth');
   }
 
@@ -231,22 +247,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final hasTokenAfterLogout =
           tokenAfterLogout != null && tokenAfterLogout.isNotEmpty;
       if (hasTokenAfterLogout) {
-        emit(const AuthFailure(
-          error: 'Could not clear local session. Please try logging out again.',
-        ));
+        emit(
+          const AuthFailure(
+            error:
+                'Could not clear local session. Please try logging out again.',
+          ),
+        );
         return;
       }
     } catch (_) {
-      emit(const AuthFailure(
-        error: 'Could not verify logout. Please try again.',
-      ));
+      emit(
+        const AuthFailure(error: 'Could not verify logout. Please try again.'),
+      );
       return;
     }
 
     if (logoutInvocationFailed) {
-      emit(const AuthFailure(
-        error: 'Logout did not complete cleanly. Please try again.',
-      ));
+      emit(
+        const AuthFailure(
+          error: 'Logout did not complete cleanly. Please try again.',
+        ),
+      );
       return;
     }
 

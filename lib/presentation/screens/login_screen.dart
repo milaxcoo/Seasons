@@ -54,22 +54,18 @@ class _LoginScreenState extends State<LoginScreen>
     _scrimOpacityAnimation = Tween<double>(
       begin: 0.12,
       end: 0,
-    ).animate(
-      entryCurve,
-    );
+    ).animate(entryCurve);
     _contentOpacityAnimation = CurvedAnimation(
       parent: _entryAnimationController,
       curve: const Interval(0.18, 1, curve: Curves.easeOutCubic),
     );
-    _contentSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.02),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entryAnimationController,
-        curve: const Interval(0.12, 1, curve: Curves.easeOutCubic),
-      ),
-    );
+    _contentSlideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entryAnimationController,
+            curve: const Interval(0.12, 1, curve: Curves.easeOutCubic),
+          ),
+        );
     _entryAnimationController.forward();
   }
 
@@ -78,10 +74,7 @@ class _LoginScreenState extends State<LoginScreen>
     super.didChangeDependencies();
     if (_didPrecacheBackground) return;
     final monthlyThemeService = context.read<MonthlyThemeService>();
-    precacheImage(
-      AssetImage(monthlyThemeService.backgroundAssetPath),
-      context,
-    );
+    precacheImage(AssetImage(monthlyThemeService.backgroundAssetPath), context);
     _didPrecacheBackground = true;
   }
 
@@ -99,23 +92,24 @@ class _LoginScreenState extends State<LoginScreen>
       buildCorporatePageRoute(RudnWebviewScreen(languageCode: languageCode)),
     );
 
-    ErrorReportingService().reportEvent('webview_returned', details: {
-      'success': '$success',
-      'context_mounted': '${context.mounted}',
-    });
+    ErrorReportingService().reportEvent(
+      'webview_returned',
+      details: {'success': '$success', 'context_mounted': '${context.mounted}'},
+    );
 
     if (success == true && context.mounted) {
       ErrorReportingService().reportEvent('dispatching_logged_in');
       context.read<AuthBloc>().add(const LoggedIn());
     } else if (success == true && !context.mounted) {
-      ErrorReportingService()
-          .reportEvent('LOGIN_FAILED_CONTEXT_UNMOUNTED', details: {
-        'success': '$success',
-      });
+      ErrorReportingService().reportEvent(
+        'LOGIN_FAILED_CONTEXT_UNMOUNTED',
+        details: {'success': '$success'},
+      );
     } else {
-      ErrorReportingService().reportEvent('webview_cancelled', details: {
-        'success': '$success',
-      });
+      ErrorReportingService().reportEvent(
+        'webview_cancelled',
+        details: {'success': '$success'},
+      );
     }
   }
 
@@ -147,10 +141,7 @@ class _LoginScreenState extends State<LoginScreen>
               builder: (context, child) {
                 final sigma = _blurSigmaAnimation.value;
                 return BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: sigma,
-                    sigmaY: sigma,
-                  ),
+                  filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
                   child: ColoredBox(
                     color: Colors.black.withValues(
                       alpha: _scrimOpacityAnimation.value,
@@ -181,8 +172,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 // Main Content (Logo + Button)
                                 Padding(
                                   padding: EdgeInsets.symmetric(
-                                      horizontal:
-                                          authStyle.contentHorizontalPadding),
+                                    horizontal:
+                                        authStyle.contentHorizontalPadding,
+                                  ),
                                   child: Align(
                                     alignment: Alignment.topCenter,
                                     child: ConstrainedBox(
@@ -202,8 +194,9 @@ class _LoginScreenState extends State<LoginScreen>
                                                   .textTheme
                                                   .displaySmall
                                                   ?.copyWith(
-                                                    color:
-                                                        const Color(0xFF42445A),
+                                                    color: const Color(
+                                                      0xFF42445A,
+                                                    ),
                                                     fontWeight: FontWeight.w900,
                                                     fontSize:
                                                         authStyle.titleFontSize,
@@ -227,13 +220,14 @@ class _LoginScreenState extends State<LoginScreen>
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  AppLocalizations.of(context)!
-                                                      .login,
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.login,
                                                   textAlign: TextAlign.center,
                                                   style: TextStyle(
-                                                    fontFamily: GoogleFonts
-                                                            .gentiumBookPlus()
-                                                        .fontFamily,
+                                                    fontFamily:
+                                                        GoogleFonts.gentiumBookPlus()
+                                                            .fontFamily,
                                                     fontStyle: FontStyle.normal,
                                                     fontWeight: FontWeight.w900,
                                                     fontSize: authStyle
@@ -243,27 +237,30 @@ class _LoginScreenState extends State<LoginScreen>
                                                   ),
                                                 ),
                                                 SizedBox(
-                                                    width:
-                                                        authStyle.blockGap + 2),
+                                                  width: authStyle.blockGap + 2,
+                                                ),
                                                 Icon(
                                                   Icons.arrow_forward_ios,
                                                   color: Colors.white,
                                                   size:
                                                       authStyle.buttonIconSize,
-                                                )
+                                                ),
                                               ],
                                             ),
                                           ),
                                           if (authFailureMessage != null) ...[
                                             SizedBox(
-                                                height: authStyle.errorTopGap),
+                                              height: authStyle.errorTopGap,
+                                            ),
                                             Container(
                                               width: double.infinity,
                                               padding: EdgeInsets.all(
-                                                  authStyle.errorPadding),
+                                                authStyle.errorPadding,
+                                              ),
                                               decoration: BoxDecoration(
-                                                color: Colors.black
-                                                    .withValues(alpha: 0.5),
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.5,
+                                                ),
                                                 borderRadius:
                                                     BorderRadius.circular(12),
                                                 border: Border.all(
@@ -277,9 +274,9 @@ class _LoginScreenState extends State<LoginScreen>
                                                     .textTheme
                                                     .bodyMedium
                                                     ?.copyWith(
-                                                  color: Colors.white,
-                                                  shadows: const [],
-                                                ),
+                                                      color: Colors.white,
+                                                      shadows: const [],
+                                                    ),
                                               ),
                                             ),
                                           ],
@@ -292,7 +289,8 @@ class _LoginScreenState extends State<LoginScreen>
                                 // Footer (Copyright + Email)
                                 Padding(
                                   padding: EdgeInsets.only(
-                                      bottom: authStyle.footerBottomPadding),
+                                    bottom: authStyle.footerBottomPadding,
+                                  ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -331,12 +329,15 @@ class _LoginScreenState extends State<LoginScreen>
                             initialValue: Locale(
                               currentLanguageCode == 'en' ? 'en' : 'ru',
                             ),
-                            icon: const Icon(Icons.language,
-                                color: Colors.white, size: 28),
+                            icon: const Icon(
+                              Icons.language,
+                              color: Colors.white,
+                              size: 28,
+                            ),
                             onSelected: (Locale locale) {
-                              context
-                                  .read<LocaleBloc>()
-                                  .add(ChangeLocale(locale));
+                              context.read<LocaleBloc>().add(
+                                ChangeLocale(locale),
+                              );
                             },
                             itemBuilder: (BuildContext context) => [
                               CheckedPopupMenuItem<Locale>(
@@ -346,8 +347,11 @@ class _LoginScreenState extends State<LoginScreen>
                                   children: [
                                     const Text('🇷🇺'),
                                     const SizedBox(width: 8),
-                                    Text(AppLocalizations.of(context)!
-                                        .languageRussian),
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.languageRussian,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -358,8 +362,11 @@ class _LoginScreenState extends State<LoginScreen>
                                   children: [
                                     const Text('🇬🇧'),
                                     const SizedBox(width: 8),
-                                    Text(AppLocalizations.of(context)!
-                                        .languageEnglish),
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.languageEnglish,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -375,9 +382,7 @@ class _LoginScreenState extends State<LoginScreen>
                         if (state is AuthLoading) {
                           return Container(
                             color: Colors.black.withValues(alpha: 0.3),
-                            child: const Center(
-                              child: SeasonsLoader(),
-                            ),
+                            child: const Center(child: SeasonsLoader()),
                           );
                         }
                         return const SizedBox.shrink();
@@ -430,10 +435,7 @@ class _SkewedContainer extends StatelessWidget {
               ),
             ],
           ),
-          child: Transform(
-            transform: Matrix4.skewX(-skewValue),
-            child: child,
-          ),
+          child: Transform(transform: Matrix4.skewX(-skewValue), child: child),
         ),
       ),
     );

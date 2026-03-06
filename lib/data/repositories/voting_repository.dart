@@ -7,15 +7,12 @@ class SessionValidationException implements Exception {
   final SessionValidationFailureType type;
   final String message;
 
-  const SessionValidationException({
-    required this.type,
-    required this.message,
-  });
+  const SessionValidationException({required this.type, required this.message});
 
   const SessionValidationException.transientNetwork([String? message])
-      : type = SessionValidationFailureType.transientNetwork,
-        message =
-            message ?? 'Transient network failure during session validation';
+    : type = SessionValidationFailureType.transientNetwork,
+      message =
+          message ?? 'Transient network failure during session validation';
 
   @override
   String toString() {
@@ -26,9 +23,7 @@ class SessionValidationException implements Exception {
 class UnauthorizedSessionException implements Exception {
   final String message;
 
-  const UnauthorizedSessionException([
-    this.message = 'Unauthorized session',
-  ]);
+  const UnauthorizedSessionException([this.message = 'Unauthorized session']);
 
   @override
   String toString() {

@@ -5,11 +5,7 @@ class SeasonsLoader extends StatefulWidget {
   final double size;
   final Color? color; // Optional override
 
-  const SeasonsLoader({
-    super.key,
-    this.size = 50.0,
-    this.color,
-  });
+  const SeasonsLoader({super.key, this.size = 50.0, this.color});
 
   @override
   State<SeasonsLoader> createState() => _SeasonsLoaderState();
@@ -53,7 +49,8 @@ class _SeasonsLoaderState extends State<SeasonsLoader>
           return Stack(
             children: List.generate(4, (index) {
               // Calculate angle for each dot (0, 90, 180, 270 degrees) + rotation
-              final angle = (index * 90.0 * (math.pi / 180.0)) +
+              final angle =
+                  (index * 90.0 * (math.pi / 180.0)) +
                   (_controller.value * 2 * math.pi);
 
               // Variable radius for breathing effect
@@ -62,10 +59,12 @@ class _SeasonsLoaderState extends State<SeasonsLoader>
               final radius = (widget.size / 3) + (breathing * 2.0);
 
               return Positioned(
-                left: (widget.size / 2) +
+                left:
+                    (widget.size / 2) +
                     (radius * math.cos(angle)) -
                     (widget.size / 8),
-                top: (widget.size / 2) +
+                top:
+                    (widget.size / 2) +
                     (radius * math.sin(angle)) -
                     (widget.size / 8),
                 child: Container(
@@ -73,13 +72,15 @@ class _SeasonsLoaderState extends State<SeasonsLoader>
                   height: widget.size / 4,
                   decoration: BoxDecoration(
                     // Make colors less noticeable (more transparent)
-                    color:
-                        (widget.color ?? colors[index]).withValues(alpha: 0.8),
+                    color: (widget.color ?? colors[index]).withValues(
+                      alpha: 0.8,
+                    ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (widget.color ?? colors[index])
-                            .withValues(alpha: 0.3),
+                        color: (widget.color ?? colors[index]).withValues(
+                          alpha: 0.3,
+                        ),
                         blurRadius: 4,
                         spreadRadius: 1,
                       ),

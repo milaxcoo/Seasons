@@ -18,11 +18,11 @@ class AppInstallService {
     DraftService? draftService,
     Future<SharedPreferences> Function()? sharedPreferencesFactory,
     String Function()? idGenerator,
-  })  : _authService = authService ?? RudnAuthService(),
-        _draftService = draftService ?? DraftService(),
-        _sharedPreferencesFactory =
-            sharedPreferencesFactory ?? SharedPreferences.getInstance,
-        _idGenerator = idGenerator ?? _defaultInstallId;
+  }) : _authService = authService ?? RudnAuthService(),
+       _draftService = draftService ?? DraftService(),
+       _sharedPreferencesFactory =
+           sharedPreferencesFactory ?? SharedPreferences.getInstance,
+       _idGenerator = idGenerator ?? _defaultInstallId;
 
   Future<void> ensureInstallConsistency() async {
     final prefs = await _sharedPreferencesFactory();

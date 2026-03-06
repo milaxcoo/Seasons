@@ -38,7 +38,9 @@ void main() {
           type: 'standard',
           subjectResults: [
             SubjectResult(
-                name: 'Candidate A', voteCounts: {'Yes': 10, 'No': 2}),
+              name: 'Candidate A',
+              voteCounts: {'Yes': 10, 'No': 2},
+            ),
           ],
         ),
       ],

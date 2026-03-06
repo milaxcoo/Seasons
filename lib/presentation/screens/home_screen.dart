@@ -57,9 +57,7 @@ class _TopBar extends StatelessWidget {
         children: [
           // Language switcher button (moved to left)
           PopupMenuButton<Locale>(
-            initialValue: Locale(
-              currentLanguageCode == 'en' ? 'en' : 'ru',
-            ),
+            initialValue: Locale(currentLanguageCode == 'en' ? 'en' : 'ru'),
             icon: const Icon(Icons.language, color: Colors.white),
             onSelected: (Locale locale) {
               context.read<LocaleBloc>().add(ChangeLocale(locale));
@@ -98,7 +96,8 @@ class _TopBar extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         buildCorporatePageRoute(
-                            ProfileScreen(imagePathOverride: imagePath)),
+                          ProfileScreen(imagePathOverride: imagePath),
+                        ),
                       );
                     },
                     child: Align(
@@ -108,10 +107,9 @@ class _TopBar extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge
-                            ?.copyWith(color: Colors.white),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyLarge?.copyWith(color: Colors.white),
                       ),
                     ),
                   ),
@@ -119,8 +117,10 @@ class _TopBar extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.exit_to_app, color: Colors.white),
                   padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints.tightFor(width: 40, height: 40),
+                  constraints: const BoxConstraints.tightFor(
+                    width: 40,
+                    height: 40,
+                  ),
                   visualDensity: VisualDensity.compact,
                   splashRadius: 20,
                   onPressed: () {
@@ -149,34 +149,32 @@ class _Header extends StatelessWidget {
     final headerStyle = adaptive.headerStyle;
 
     final headerContent = Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: headerStyle.verticalPadding,
-      ),
+      padding: EdgeInsets.symmetric(vertical: headerStyle.verticalPadding),
       child: Column(
         children: [
           Text(
             'Seasons',
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontSize: headerStyle.titleFontSize,
-                  height: 1.0,
-                  color: Colors.white,
-                  shadows: headerStyle.titleShadows,
-                  fontWeight: FontWeight.w900,
-                ),
+              fontSize: headerStyle.titleFontSize,
+              height: 1.0,
+              color: Colors.white,
+              shadows: headerStyle.titleShadows,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           Transform.translate(
             offset: Offset(0, headerStyle.subtitleOffsetY),
             child: Text(
               'времена года',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.94),
-                    shadows: headerStyle.subtitleShadows,
-                    fontStyle: FontStyle.normal,
-                    fontWeight: FontWeight.w900,
-                    fontSize: headerStyle.subtitleFontSize,
-                    letterSpacing: headerStyle.subtitleLetterSpacing,
-                    height: 1.0,
-                  ),
+                color: Colors.white.withValues(alpha: 0.94),
+                shadows: headerStyle.subtitleShadows,
+                fontStyle: FontStyle.normal,
+                fontWeight: FontWeight.w900,
+                fontSize: headerStyle.subtitleFontSize,
+                letterSpacing: headerStyle.subtitleLetterSpacing,
+                height: 1.0,
+              ),
             ),
           ),
         ],
@@ -206,8 +204,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   static const Duration _loaderFadeDuration = Duration(milliseconds: 120);
   static const Duration _minLoaderVisibleDuration = Duration(milliseconds: 180);
   static const Duration _sectionTransitionTimeout = Duration(seconds: 4);
-  static const Duration _metricsSyncDebounceDuration =
-      Duration(milliseconds: 320);
+  static const Duration _metricsSyncDebounceDuration = Duration(
+    milliseconds: 320,
+  );
   static const double _sectionSqueezedScale = 0.92;
 
   // Use ValueNotifier for efficient updates without rebuilding the entire tree
@@ -305,10 +304,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
     });
 
-    context.read<HomeTabCubit>().setIndex(
-          normalizedIndex,
-          source: source,
-        );
+    context.read<HomeTabCubit>().setIndex(normalizedIndex, source: source);
     if (normalizedIndex == 2) {
       _markCompletedSectionAsViewed();
     }
@@ -394,42 +390,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }) {
     if (!_pageController.hasClients) {
       _pendingNavigationIndex = index;
-      _debugLog(
-        'panel_navigation_queued',
-        {
-          'source': source,
-          'index': index,
-          'reason': 'no_page_controller_clients',
-        },
-      );
+      _debugLog('panel_navigation_queued', {
+        'source': source,
+        'index': index,
+        'reason': 'no_page_controller_clients',
+      });
       return;
     }
 
-    final currentPage =
-        (_pageController.page ?? _pageController.initialPage).round();
+    final currentPage = (_pageController.page ?? _pageController.initialPage)
+        .round();
     if (currentPage == index) {
       if (source == 'user_tap') {
         _refreshCurrentPage(index);
       }
-      _debugLog(
-        'panel_navigation_skipped_same_page',
-        {
-          'source': source,
-          'index': index,
-        },
-      );
+      _debugLog('panel_navigation_skipped_same_page', {
+        'source': source,
+        'index': index,
+      });
       return;
     }
 
     _pendingNavigationIndex = null;
-    _debugLog(
-      'panel_navigation_execute',
-      {
-        'source': source,
-        'index': index,
-        'animate': animate,
-      },
-    );
+    _debugLog('panel_navigation_execute', {
+      'source': source,
+      'index': index,
+      'animate': animate,
+    });
 
     if (animate) {
       _pageController.animateToPage(
@@ -442,18 +429,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _pageController.jumpToPage(index);
   }
 
-  void _flushPendingNavigationIfNeeded({
-    required String source,
-  }) {
+  void _flushPendingNavigationIfNeeded({required String source}) {
     final pendingIndex = _pendingNavigationIndex;
     if (pendingIndex == null) return;
-    _debugLog(
-      'panel_navigation_flush_pending',
-      {
-        'source': source,
-        'index': pendingIndex,
-      },
-    );
+    _debugLog('panel_navigation_flush_pending', {
+      'source': source,
+      'index': pendingIndex,
+    });
     _movePageToIndex(
       pendingIndex,
       source: '$source.pending_flush',
@@ -462,16 +444,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _onPanelSelected(int index) {
-    _debugLog(
-      'panel_tap',
-      {
-        'index': index,
-      },
-    );
-    _switchSectionWithTransition(
-      index,
-      source: 'user_tap',
-    );
+    _debugLog('panel_tap', {'index': index});
+    _switchSectionWithTransition(index, source: 'user_tap');
   }
 
   void _cycleDebugThemeMonth() {
@@ -483,23 +457,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _debugThemeMonth = nextMonth;
     });
-    _debugLog(
-      'debug_theme_cycle',
-      {'month': nextMonth},
-    );
+    _debugLog('debug_theme_cycle', {'month': nextMonth});
   }
 
   void _onPageChanged(int index) {
-    _debugLog(
-      'page_changed',
-      {
-        'index': index,
-      },
-    );
-    context.read<HomeTabCubit>().setIndex(
-          index,
-          source: 'page_sync',
-        );
+    _debugLog('page_changed', {'index': index});
+    context.read<HomeTabCubit>().setIndex(index, source: 'page_sync');
     if (index == 2) {
       _markCompletedSectionAsViewed();
     }
@@ -550,10 +513,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final targetIndex = _normalizePanelIndex(currentIndex + direction);
     if (targetIndex == currentIndex) return;
 
-    _switchSectionWithTransition(
-      targetIndex,
-      source: 'user_swipe',
-    );
+    _switchSectionWithTransition(targetIndex, source: 'user_swipe');
   }
 
   void _refreshCurrentPage(int index) {
@@ -567,14 +527,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }) {
     if (!mounted) return;
 
-    _debugLog(
-      'notification_navigation_received',
-      {
-        'tab_index': event.tabIndex,
-        'should_refresh': event.shouldRefresh,
-        'source': source,
-      },
-    );
+    _debugLog('notification_navigation_received', {
+      'tab_index': event.tabIndex,
+      'should_refresh': event.shouldRefresh,
+      'source': source,
+    });
     final currentIndex = context.read<HomeTabCubit>().state.index;
     if (event.tabIndex == currentIndex) {
       if (event.shouldRefresh) {
@@ -582,10 +539,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
       return;
     }
-    _switchSectionWithTransition(
-      event.tabIndex,
-      source: source,
-    );
+    _switchSectionWithTransition(event.tabIndex, source: source);
   }
 
   bool _isHomeRouteActive() {
@@ -647,7 +601,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _handleConnectionStatus(VotingConnectionStatus status) {
     if (!mounted) return;
 
-    final isDegraded = status == VotingConnectionStatus.waitingForNetwork ||
+    final isDegraded =
+        status == VotingConnectionStatus.waitingForNetwork ||
         status == VotingConnectionStatus.reconnecting ||
         status == VotingConnectionStatus.syncing ||
         status == VotingConnectionStatus.disconnected;
@@ -705,20 +660,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final initialIndex = context.read<HomeTabCubit>().state.index;
     _pageController = PageController(initialPage: initialIndex);
     _resolvedThemeMonth = context.read<MonthlyThemeService>().currentMonth;
-    _debugLog(
-      'init_state',
-      {
-        'initial_index': initialIndex,
-      },
-    );
+    _debugLog('init_state', {'initial_index': initialIndex});
 
     // Listen for notification navigation events
     final navigationService = NotificationNavigationService();
     _navigationSubscription = navigationService.onNavigate.listen((event) {
-      _handleNotificationNavigation(
-        event,
-        source: 'notification_live',
-      );
+      _handleNotificationNavigation(event, source: 'notification_live');
     });
 
     final pendingNavigation = navigationService.consumePendingNavigation();
@@ -732,12 +679,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     _authInvalidSubscription = context.read<VotingBloc>().onAuthInvalid.listen(
-          (_) => _handleAuthInvalid(),
-        );
+      (_) => _handleAuthInvalid(),
+    );
     final votingBloc = context.read<VotingBloc>();
     _handleConnectionStatus(votingBloc.currentConnectionStatus);
-    _connectionStatusSubscription =
-        votingBloc.connectionStatusStream.listen(_handleConnectionStatus);
+    _connectionStatusSubscription = votingBloc.connectionStatusStream.listen(
+      _handleConnectionStatus,
+    );
 
     // UI Ticker: Updates every 1 second to handle time-based UI changes instantly
     // e.g. "Registration closes in..." or switching from Open to Closed based on local time
@@ -754,15 +702,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
 
     // Fetch initial data for all sections to populate button colors
-    context
-        .read<VotingBloc>()
-        .add(FetchEventsByStatus(status: model.VotingStatus.registration));
-    context
-        .read<VotingBloc>()
-        .add(RefreshEventsSilent(status: model.VotingStatus.active));
-    context
-        .read<VotingBloc>()
-        .add(RefreshEventsSilent(status: model.VotingStatus.completed));
+    context.read<VotingBloc>().add(
+      FetchEventsByStatus(status: model.VotingStatus.registration),
+    );
+    context.read<VotingBloc>().add(
+      RefreshEventsSilent(status: model.VotingStatus.active),
+    );
+    context.read<VotingBloc>().add(
+      RefreshEventsSilent(status: model.VotingStatus.completed),
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -780,24 +728,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final orientation = logicalSize.width >= logicalSize.height
         ? Orientation.landscape
         : Orientation.portrait;
-    _debugLog(
-      'metrics_changed',
-      {
-        'orientation': orientation.name,
-        'size': '${logicalSize.width.toStringAsFixed(1)}x'
-            '${logicalSize.height.toStringAsFixed(1)}',
-      },
-    );
+    _debugLog('metrics_changed', {
+      'orientation': orientation.name,
+      'size':
+          '${logicalSize.width.toStringAsFixed(1)}x'
+          '${logicalSize.height.toStringAsFixed(1)}',
+    });
 
     _metricsSyncDebounceTimer?.cancel();
     _metricsSyncDebounceTimer = Timer(_metricsSyncDebounceDuration, () {
       if (!mounted) return;
       final targetIndex = context.read<HomeTabCubit>().state.index;
-      _movePageToIndex(
-        targetIndex,
-        source: 'metrics_sync',
-        animate: false,
-      );
+      _movePageToIndex(targetIndex, source: 'metrics_sync', animate: false);
       _flushPendingNavigationIfNeeded(source: 'metrics_sync');
       _refreshCurrentPage(targetIndex);
     });
@@ -837,10 +779,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final theme = (kDebugMode && _debugThemeMonth != null)
         ? (monthlyThemes[_debugThemeMonth!] ?? themeService.theme)
         : themeService.theme;
-    final VoidCallback? debugThemeTapHandler =
-        kDebugMode ? _cycleDebugThemeMonth : null;
-    final selectedPanelIndex =
-        context.select((HomeTabCubit cubit) => cubit.state.index);
+    final VoidCallback? debugThemeTapHandler = kDebugMode
+        ? _cycleDebugThemeMonth
+        : null;
+    final selectedPanelIndex = context.select(
+      (HomeTabCubit cubit) => cubit.state.index,
+    );
 
     final adaptive = context.adaptiveLayout;
     final navDimensions = adaptive.navDimensions;
@@ -877,33 +821,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             _lastLoggedSize != mediaQuery.size)) {
       _lastLoggedOrientation = mediaQuery.orientation;
       _lastLoggedSize = mediaQuery.size;
-      _debugLog(
-        'build_orientation_snapshot',
-        {
-          'orientation': mediaQuery.orientation.name,
-          'size': '${mediaQuery.size.width.toStringAsFixed(1)}x'
-              '${mediaQuery.size.height.toStringAsFixed(1)}',
-          'layout_mode_raw': rawHomeLayoutMode.name,
-          'layout_mode_stable': stableHomeLayoutMode.name,
-          'footer_mode_raw': rawFooterMode.name,
-          'footer_mode_stable': stableFooterMode.name,
-          'footer_budget': adaptive
-              .footerBudgetAfterContentProtectionForLayout(stableHomeLayoutMode)
-              .toStringAsFixed(1),
-          'footer_cap_h': adaptive
-              .footerReservedHeightCapForLayout(stableHomeLayoutMode)
-              .toStringAsFixed(1),
-          'voting_h': adaptive
-              .votingContentHeightForLayout(stableHomeLayoutMode)
-              .toStringAsFixed(1),
-          'pane_primary_w':
-              adaptive.homePrimaryPaneWidthForSplit.toStringAsFixed(1),
-          'pane_secondary_w':
-              adaptive.homeSecondaryPaneWidthForSplit.toStringAsFixed(1),
-          'selected_index': selectedPanelIndex,
-          'tap_blocking_overlay': shouldBlockContentForConnection,
-        },
-      );
+      _debugLog('build_orientation_snapshot', {
+        'orientation': mediaQuery.orientation.name,
+        'size':
+            '${mediaQuery.size.width.toStringAsFixed(1)}x'
+            '${mediaQuery.size.height.toStringAsFixed(1)}',
+        'layout_mode_raw': rawHomeLayoutMode.name,
+        'layout_mode_stable': stableHomeLayoutMode.name,
+        'footer_mode_raw': rawFooterMode.name,
+        'footer_mode_stable': stableFooterMode.name,
+        'footer_budget': adaptive
+            .footerBudgetAfterContentProtectionForLayout(stableHomeLayoutMode)
+            .toStringAsFixed(1),
+        'footer_cap_h': adaptive
+            .footerReservedHeightCapForLayout(stableHomeLayoutMode)
+            .toStringAsFixed(1),
+        'voting_h': adaptive
+            .votingContentHeightForLayout(stableHomeLayoutMode)
+            .toStringAsFixed(1),
+        'pane_primary_w': adaptive.homePrimaryPaneWidthForSplit.toStringAsFixed(
+          1,
+        ),
+        'pane_secondary_w': adaptive.homeSecondaryPaneWidthForSplit
+            .toStringAsFixed(1),
+        'selected_index': selectedPanelIndex,
+        'tap_blocking_overlay': shouldBlockContentForConnection,
+      });
     }
 
     // --- UI COMPONENTS ---
@@ -923,17 +866,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           int actionableCount;
           if (status == model.VotingStatus.registration) {
             actionableCount = state.events
-                .where((e) =>
-                    !e.isRegistered &&
-                    (e.registrationEndDate == null ||
-                        !DateTime.now().isAfter(e.registrationEndDate!)))
+                .where(
+                  (e) =>
+                      !e.isRegistered &&
+                      (e.registrationEndDate == null ||
+                          !DateTime.now().isAfter(e.registrationEndDate!)),
+                )
                 .length;
           } else if (status == model.VotingStatus.active) {
             actionableCount = state.events
-                .where((e) =>
-                    !e.hasVoted &&
-                    (e.votingEndDate == null ||
-                        !DateTime.now().isAfter(e.votingEndDate!)))
+                .where(
+                  (e) =>
+                      !e.hasVoted &&
+                      (e.votingEndDate == null ||
+                          !DateTime.now().isAfter(e.votingEndDate!)),
+                )
                 .length;
           } else {
             _latestCompletedEventIds
@@ -971,7 +918,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // 4. Voting List (The Main Content) - WITHOUT Expanded wrapper here
     final votingListContent = Padding(
       padding: EdgeInsets.symmetric(
-          horizontal: adaptive.homeSectionHorizontalPadding),
+        horizontal: adaptive.homeSectionHorizontalPadding,
+      ),
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -999,7 +947,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   key: ValueKey(
                     'connection_content_absorb_${shouldBlockContentForConnection ? 'on' : 'off'}',
                   ),
-                  absorbing: _transitionTargetIndex != null ||
+                  absorbing:
+                      _transitionTargetIndex != null ||
                       shouldBlockContentForConnection,
                   child: AnimatedScale(
                     scale: _sectionContentScale,
@@ -1032,7 +981,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               timeNotifier: _timeNotifier,
                               suppressTransitions:
                                   _transitionTargetIndex != null ||
-                                      _showSectionLoader,
+                                  _showSectionLoader,
                             );
                           },
                         ),
@@ -1046,14 +995,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   switchOutCurve: Curves.easeIn,
                   child: !_showSectionLoader || shouldShowOverlay
                       ? const SizedBox.shrink(
-                          key: ValueKey('section_loader_off'))
+                          key: ValueKey('section_loader_off'),
+                        )
                       : IgnorePointer(
                           key: const ValueKey('section_loader_on'),
                           child: Container(
                             color: Colors.transparent,
-                            child: const Center(
-                              child: SeasonsLoader(size: 64),
-                            ),
+                            child: const Center(child: SeasonsLoader(size: 64)),
                           ),
                         ),
                 ),
@@ -1070,18 +1018,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             tween: Tween<double>(
                               begin: _sectionSqueezedScale,
                               end: 1.02,
-                            ).chain(
-                              CurveTween(curve: Curves.easeOutCubic),
-                            ),
+                            ).chain(CurveTween(curve: Curves.easeOutCubic)),
                             weight: 70,
                           ),
                           TweenSequenceItem(
                             tween: Tween<double>(
                               begin: 1.02,
                               end: 1.0,
-                            ).chain(
-                              CurveTween(curve: Curves.easeInOutCubic),
-                            ),
+                            ).chain(CurveTween(curve: Curves.easeInOutCubic)),
                             weight: 30,
                           ),
                         ]).animate(animation);
@@ -1110,13 +1054,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 ),
                                 child: SizedBox(
                                   key: const ValueKey(
-                                      'connection_status_overlay_content'),
+                                    'connection_status_overlay_content',
+                                  ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       SizedBox(
                                         key: const ValueKey(
-                                            'connection_status_overlay_loader'),
+                                          'connection_status_overlay_loader',
+                                        ),
                                         width: overlayDimensions.loaderSize,
                                         height: overlayDimensions.loaderSize,
                                         child: SeasonsLoader(
@@ -1127,22 +1073,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       Text(
                                         overlayTitle,
                                         key: const ValueKey(
-                                            'connection_status_overlay_text'),
+                                          'connection_status_overlay_text',
+                                        ),
                                         maxLines: overlayDimensions.maxLines,
                                         overflow: TextOverflow.ellipsis,
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyLarge
                                             ?.copyWith(
-                                          color: Colors.white,
-                                          fontSize: overlayDimensions.textSize,
-                                          shadows: [
-                                            const Shadow(
-                                              blurRadius: 6,
-                                              color: Colors.black87,
+                                              color: Colors.white,
+                                              fontSize:
+                                                  overlayDimensions.textSize,
+                                              shadows: [
+                                                const Shadow(
+                                                  blurRadius: 6,
+                                                  color: Colors.black87,
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
                                         textAlign: TextAlign.center,
                                       ),
                                     ],
@@ -1241,8 +1189,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                             Padding(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                horizontal: 6.0,
-                                              ),
+                                                    horizontal: 6.0,
+                                                  ),
                                               child: navbar,
                                             ),
                                             SizedBox(
@@ -1282,23 +1230,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       content = Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: (event) {
-          _debugLog(
-            'pointer_down',
-            {
-              'x': event.position.dx.toStringAsFixed(1),
-              'y': event.position.dy.toStringAsFixed(1),
-              'selected_index': selectedPanelIndex,
-            },
-          );
+          _debugLog('pointer_down', {
+            'x': event.position.dx.toStringAsFixed(1),
+            'y': event.position.dy.toStringAsFixed(1),
+            'selected_index': selectedPanelIndex,
+          });
         },
         child: content,
       );
     }
 
-    return AppBackground(
-      imagePath: theme.imagePath,
-      child: content,
-    );
+    return AppBackground(imagePath: theme.imagePath, child: content);
   }
 }
 
@@ -1440,41 +1382,39 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
 
     if (remainingScroll > 0) {
       // Very slow speed: 10 pixels per second
-      final duration =
-          Duration(milliseconds: (remainingScroll / 10 * 1000).toInt());
+      final duration = Duration(
+        milliseconds: (remainingScroll / 10 * 1000).toInt(),
+      );
 
       _isAutoScrollAnimating = true;
       _scrollController
-          .animateTo(
-            maxScroll,
-            duration: duration,
-            curve: Curves.linear,
-          )
+          .animateTo(maxScroll, duration: duration, curve: Curves.linear)
           .catchError((_) {})
           .then((_) {
-        if (!mounted ||
-            _isUserScrolling ||
-            !_scrollController.hasClients ||
-            _scrollGeneration != generation) {
-          return;
-        }
-        if (_scrollController.offset >=
-            _scrollController.position.maxScrollExtent) {
-          _resumeTimer?.cancel();
-          _resumeTimer = Timer(const Duration(seconds: 5), () {
-            if (mounted &&
-                !_isUserScrolling &&
-                _scrollController.hasClients &&
-                _scrollGeneration == generation) {
-              _scrollController.jumpTo(0);
-              _resumeAutoScroll(delay: const Duration(seconds: 1));
+            if (!mounted ||
+                _isUserScrolling ||
+                !_scrollController.hasClients ||
+                _scrollGeneration != generation) {
+              return;
             }
+            if (_scrollController.offset >=
+                _scrollController.position.maxScrollExtent) {
+              _resumeTimer?.cancel();
+              _resumeTimer = Timer(const Duration(seconds: 5), () {
+                if (mounted &&
+                    !_isUserScrolling &&
+                    _scrollController.hasClients &&
+                    _scrollGeneration == generation) {
+                  _scrollController.jumpTo(0);
+                  _resumeAutoScroll(delay: const Duration(seconds: 1));
+                }
+              });
+            }
+          })
+          .whenComplete(() {
+            _isAutoScrollAnimating = false;
+            _ensureAutoScrollRunning();
           });
-        }
-      }).whenComplete(() {
-        _isAutoScrollAnimating = false;
-        _ensureAutoScrollRunning();
-      });
     } else {
       _resumeTimer?.cancel();
       _resumeTimer = Timer(const Duration(seconds: 5), () {
@@ -1578,35 +1518,35 @@ class _FooterState extends State<_Footer> with WidgetsBindingObserver {
                             Text(
                               widget.poem,
                               textAlign: TextAlign.left,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                color: Colors.white,
-                                height: style.poemLineHeight,
-                                fontSize: style.poemFontSize,
-                                shadows: [
-                                  const Shadow(
-                                      blurRadius: 6, color: Colors.black87)
-                                ],
-                              ),
+                                    color: Colors.white,
+                                    height: style.poemLineHeight,
+                                    fontSize: style.poemFontSize,
+                                    shadows: [
+                                      const Shadow(
+                                        blurRadius: 6,
+                                        color: Colors.black87,
+                                      ),
+                                    ],
+                                  ),
                             ),
                             SizedBox(height: style.poemAuthorSpacing),
                             Text(
                               widget.author,
                               textAlign: TextAlign.left,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
+                              style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                color: Colors.white,
-                                fontStyle: FontStyle.italic,
-                                fontSize: style.authorFontSize,
-                                shadows: [
-                                  const Shadow(
-                                      blurRadius: 6, color: Colors.black87)
-                                ],
-                              ),
+                                    color: Colors.white,
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: style.authorFontSize,
+                                    shadows: [
+                                      const Shadow(
+                                        blurRadius: 6,
+                                        color: Colors.black87,
+                                      ),
+                                    ],
+                                  ),
                             ),
                           ],
                         ),
@@ -1657,9 +1597,7 @@ class _EventListPage extends StatelessWidget {
 
         if (state is VotingLoadInProgress) {
           if (suppressTransitions) {
-            content = const SizedBox.shrink(
-              key: ValueKey('loader_suppressed'),
-            );
+            content = const SizedBox.shrink(key: ValueKey('loader_suppressed'));
           } else {
             content = const Center(
               key: ValueKey('loader'),
@@ -1695,7 +1633,7 @@ class _EventListPage extends StatelessWidget {
                       height: adaptive.emptyStateLineHeight,
                       fontWeight: FontWeight.w800,
                       shadows: [
-                        const Shadow(blurRadius: 6, color: Colors.black87)
+                        const Shadow(blurRadius: 6, color: Colors.black87),
                       ],
                     ),
                     textAlign: TextAlign.center,
@@ -1743,8 +1681,11 @@ class _EventListPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.cloud_off_rounded,
-                        color: Colors.white70, size: 48),
+                    const Icon(
+                      Icons.cloud_off_rounded,
+                      color: Colors.white70,
+                      size: 48,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       AppLocalizations.of(context)!.connectionError,
@@ -1752,7 +1693,7 @@ class _EventListPage extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 18.0,
                         shadows: [
-                          const Shadow(blurRadius: 6, color: Colors.black87)
+                          const Shadow(blurRadius: 6, color: Colors.black87),
                         ],
                       ),
                       textAlign: TextAlign.center,
@@ -1761,9 +1702,9 @@ class _EventListPage extends StatelessWidget {
                     Text(
                       AppLocalizations.of(context)!.tapToRetry,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white60,
-                            fontSize: 14.0,
-                          ),
+                        color: Colors.white60,
+                        fontSize: 14.0,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -1818,8 +1759,9 @@ class _VotingEventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
-    final dateFormat =
-        DateFormat.yMMMd(locale.languageCode == 'ru' ? 'ru' : 'en');
+    final dateFormat = DateFormat.yMMMd(
+      locale.languageCode == 'ru' ? 'ru' : 'en',
+    );
     final l10n = AppLocalizations.of(context)!;
     String dateInfo;
 
@@ -1830,7 +1772,8 @@ class _VotingEventCard extends StatelessWidget {
             dateInfo = l10n.registrationClosed;
           } else {
             dateInfo = l10n.registrationUntil(
-                dateFormat.format(event.registrationEndDate!));
+              dateFormat.format(event.registrationEndDate!),
+            );
           }
         } else {
           dateInfo = l10n.registrationOpen;
@@ -1861,9 +1804,9 @@ class _VotingEventCard extends StatelessWidget {
           child: Text(
             event.title,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.w900,
-                ),
+              color: Colors.black87,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
         subtitle: Column(
@@ -1871,35 +1814,36 @@ class _VotingEventCard extends StatelessWidget {
           children: [
             Text(
               dateInfo,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.black54,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
             ),
             if (sectionStatus == model.VotingStatus.registration ||
                 sectionStatus == model.VotingStatus.active) ...[
               const SizedBox(height: 2),
               ValueListenableBuilder<int>(
-                  valueListenable: timeNotifier,
-                  builder: (context, _, __) {
-                    return Text(
-                      sectionStatus == model.VotingStatus.registration
-                          ? (event.isRegistered
+                valueListenable: timeNotifier,
+                builder: (context, _, __) {
+                  return Text(
+                    sectionStatus == model.VotingStatus.registration
+                        ? (event.isRegistered
                               ? AppLocalizations.of(context)!.registered
                               : AppLocalizations.of(context)!.notRegistered)
-                          : (event.hasVoted
+                        : (event.hasVoted
                               ? AppLocalizations.of(context)!.voted
                               : AppLocalizations.of(context)!.notVoted),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: (sectionStatus ==
-                                        model.VotingStatus.registration
-                                    ? event.isRegistered
-                                    : event.hasVoted)
-                                ? AppTheme.rudnGreenColor
-                                : AppTheme.rudnRedColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    );
-                  }),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color:
+                          (sectionStatus == model.VotingStatus.registration
+                              ? event.isRegistered
+                              : event.hasVoted)
+                          ? AppTheme.rudnGreenColor
+                          : AppTheme.rudnRedColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
+              ),
             ],
           ],
         ),
@@ -1907,18 +1851,22 @@ class _VotingEventCard extends StatelessWidget {
         onTap: () async {
           final Widget detailsScreen;
           if (sectionStatus == model.VotingStatus.registration) {
-            detailsScreen =
-                RegistrationDetailsScreen(event: event, imagePath: imagePath);
+            detailsScreen = RegistrationDetailsScreen(
+              event: event,
+              imagePath: imagePath,
+            );
           } else if (sectionStatus == model.VotingStatus.active) {
-            detailsScreen =
-                VotingDetailsScreen(event: event, imagePath: imagePath);
+            detailsScreen = VotingDetailsScreen(
+              event: event,
+              imagePath: imagePath,
+            );
           } else {
             detailsScreen = ResultsScreen(event: event, imagePath: imagePath);
           }
 
-          final result = await Navigator.of(context).push(
-            buildCorporatePageRoute(detailsScreen),
-          );
+          final result = await Navigator.of(
+            context,
+          ).push(buildCorporatePageRoute(detailsScreen));
 
           if (result == true) {
             onActionComplete();

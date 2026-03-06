@@ -14,9 +14,7 @@ void main() {
   group('LocaleBloc default derivation without saved locale', () {
     blocTest<LocaleBloc, LocaleState>(
       "system locale 'en' resolves to app locale 'en' and persists it",
-      build: () => LocaleBloc(
-        systemLocaleProvider: () => const Locale('en'),
-      ),
+      build: () => LocaleBloc(systemLocaleProvider: () => const Locale('en')),
       act: (bloc) => bloc.add(const LoadLocale()),
       expect: () => [const LocaleState(Locale('en'))],
       verify: (_) async {
@@ -27,9 +25,7 @@ void main() {
 
     blocTest<LocaleBloc, LocaleState>(
       "system locale 'ru' resolves to app locale 'ru' and persists it",
-      build: () => LocaleBloc(
-        systemLocaleProvider: () => const Locale('ru'),
-      ),
+      build: () => LocaleBloc(systemLocaleProvider: () => const Locale('ru')),
       act: (bloc) => bloc.add(const LoadLocale()),
       expect: () => [const LocaleState(Locale('ru'))],
       verify: (_) async {
@@ -40,9 +36,7 @@ void main() {
 
     blocTest<LocaleBloc, LocaleState>(
       "unsupported system locale (de) resolves to app locale 'ru' and persists it",
-      build: () => LocaleBloc(
-        systemLocaleProvider: () => const Locale('de'),
-      ),
+      build: () => LocaleBloc(systemLocaleProvider: () => const Locale('de')),
       act: (bloc) => bloc.add(const LoadLocale()),
       expect: () => [const LocaleState(Locale('ru'))],
       verify: (_) async {
@@ -58,9 +52,7 @@ void main() {
       setUp: () {
         SharedPreferences.setMockInitialValues({'app_locale': 'en'});
       },
-      build: () => LocaleBloc(
-        systemLocaleProvider: () => const Locale('ru'),
-      ),
+      build: () => LocaleBloc(systemLocaleProvider: () => const Locale('ru')),
       act: (bloc) => bloc.add(const LoadLocale()),
       expect: () => [const LocaleState(Locale('en'))],
       verify: (_) async {
@@ -74,9 +66,7 @@ void main() {
       setUp: () {
         SharedPreferences.setMockInitialValues({'app_locale': 'ru'});
       },
-      build: () => LocaleBloc(
-        systemLocaleProvider: () => const Locale('en'),
-      ),
+      build: () => LocaleBloc(systemLocaleProvider: () => const Locale('en')),
       act: (bloc) => bloc.add(const LoadLocale()),
       expect: () => [const LocaleState(Locale('ru'))],
       verify: (_) async {

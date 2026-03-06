@@ -19,37 +19,43 @@ void main() {
     expect(authScreenKeyForState(AuthUnauthenticated()), 'auth-login');
   });
 
-  test('shouldStartBackgroundServiceForState only starts for authenticated',
-      () {
-    expect(shouldStartBackgroundServiceForState(AuthInitial()), isFalse);
-    expect(shouldStartBackgroundServiceForState(AuthChecking()), isFalse);
-    expect(
-        shouldStartBackgroundServiceForState(AuthUnauthenticated()), isFalse);
-    expect(
-      shouldStartBackgroundServiceForState(
-        const AuthAuthenticated(userLogin: 'test'),
-      ),
-      isTrue,
-    );
-  });
+  test(
+    'shouldStartBackgroundServiceForState only starts for authenticated',
+    () {
+      expect(shouldStartBackgroundServiceForState(AuthInitial()), isFalse);
+      expect(shouldStartBackgroundServiceForState(AuthChecking()), isFalse);
+      expect(
+        shouldStartBackgroundServiceForState(AuthUnauthenticated()),
+        isFalse,
+      );
+      expect(
+        shouldStartBackgroundServiceForState(
+          const AuthAuthenticated(userLogin: 'test'),
+        ),
+        isTrue,
+      );
+    },
+  );
 
-  test('backgroundServiceTransitionReasonForState returns expected reasons',
-      () {
-    expect(
-      backgroundServiceTransitionReasonForState(
-        const AuthAuthenticated(userLogin: 'test'),
-      ),
-      'auth_transition:not_authenticated->authenticated',
-    );
-    expect(
-      backgroundServiceTransitionReasonForState(AuthUnauthenticated()),
-      'auth_transition:authenticated->AuthUnauthenticated',
-    );
-    expect(
-      backgroundServiceTransitionReasonForState(
-        const AuthFailure(error: 'session'),
-      ),
-      'auth_transition:authenticated->AuthFailure',
-    );
-  });
+  test(
+    'backgroundServiceTransitionReasonForState returns expected reasons',
+    () {
+      expect(
+        backgroundServiceTransitionReasonForState(
+          const AuthAuthenticated(userLogin: 'test'),
+        ),
+        'auth_transition:not_authenticated->authenticated',
+      );
+      expect(
+        backgroundServiceTransitionReasonForState(AuthUnauthenticated()),
+        'auth_transition:authenticated->AuthUnauthenticated',
+      );
+      expect(
+        backgroundServiceTransitionReasonForState(
+          const AuthFailure(error: 'session'),
+        ),
+        'auth_transition:authenticated->AuthFailure',
+      );
+    },
+  );
 }

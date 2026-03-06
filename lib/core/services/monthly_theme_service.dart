@@ -20,20 +20,16 @@ class MonthlyThemeService {
   int _currentMonth;
   MonthlyTheme _theme;
 
-  factory MonthlyThemeService({
-    CurrentDateProvider? currentDateProvider,
-  }) {
+  factory MonthlyThemeService({CurrentDateProvider? currentDateProvider}) {
     final nowProvider = currentDateProvider ?? DateTime.now;
     final initialNow = nowProvider().toLocal();
     return MonthlyThemeService._(nowProvider, initialNow);
   }
 
-  MonthlyThemeService._(
-    this._currentDateProvider,
-    DateTime initialNow,
-  )   : _lastResolvedDateTime = initialNow,
-        _currentMonth = normalizeMonthNumber(initialNow.month),
-        _theme = monthlyThemeForMonth(normalizeMonthNumber(initialNow.month));
+  MonthlyThemeService._(this._currentDateProvider, DateTime initialNow)
+    : _lastResolvedDateTime = initialNow,
+      _currentMonth = normalizeMonthNumber(initialNow.month),
+      _theme = monthlyThemeForMonth(normalizeMonthNumber(initialNow.month));
 
   void _syncThemeIfMonthChanged() {
     final now = _currentDateProvider().toLocal();

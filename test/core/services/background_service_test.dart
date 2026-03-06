@@ -50,36 +50,44 @@ void main() {
       mockService = MockFlutterBackgroundService();
     });
 
-    test('initialize configures service once and startService starts when idle',
-        () async {
-      when(() => mockService.configure(
+    test(
+      'initialize configures service once and startService starts when idle',
+      () async {
+        when(
+          () => mockService.configure(
             androidConfiguration: any(named: 'androidConfiguration'),
             iosConfiguration: any(named: 'iosConfiguration'),
-          )).thenAnswer((_) async => true);
-      when(() => mockService.isRunning()).thenAnswer((_) async => false);
-      when(() => mockService.startService()).thenAnswer((_) async => true);
+          ),
+        ).thenAnswer((_) async => true);
+        when(() => mockService.isRunning()).thenAnswer((_) async => false);
+        when(() => mockService.startService()).thenAnswer((_) async => true);
 
-      final service = BackgroundService.forTesting(
-        service: mockService,
-        notificationsInitializer: (_) async {},
-      );
+        final service = BackgroundService.forTesting(
+          service: mockService,
+          notificationsInitializer: (_) async {},
+        );
 
-      await service.initialize();
-      await service.initialize();
-      await service.startService();
+        await service.initialize();
+        await service.initialize();
+        await service.startService();
 
-      verify(() => mockService.configure(
+        verify(
+          () => mockService.configure(
             androidConfiguration: any(named: 'androidConfiguration'),
             iosConfiguration: any(named: 'iosConfiguration'),
-          )).called(1);
-      verify(() => mockService.startService()).called(1);
-    });
+          ),
+        ).called(1);
+        verify(() => mockService.startService()).called(1);
+      },
+    );
 
     test('startService lazily initializes when needed', () async {
-      when(() => mockService.configure(
-            androidConfiguration: any(named: 'androidConfiguration'),
-            iosConfiguration: any(named: 'iosConfiguration'),
-          )).thenAnswer((_) async => true);
+      when(
+        () => mockService.configure(
+          androidConfiguration: any(named: 'androidConfiguration'),
+          iosConfiguration: any(named: 'iosConfiguration'),
+        ),
+      ).thenAnswer((_) async => true);
       when(() => mockService.isRunning()).thenAnswer((_) async => false);
       when(() => mockService.startService()).thenAnswer((_) async => true);
 
@@ -90,18 +98,22 @@ void main() {
 
       await service.startService();
 
-      verify(() => mockService.configure(
-            androidConfiguration: any(named: 'androidConfiguration'),
-            iosConfiguration: any(named: 'iosConfiguration'),
-          )).called(1);
+      verify(
+        () => mockService.configure(
+          androidConfiguration: any(named: 'androidConfiguration'),
+          iosConfiguration: any(named: 'iosConfiguration'),
+        ),
+      ).called(1);
       verify(() => mockService.startService()).called(1);
     });
 
     test('startService does not start when already running', () async {
-      when(() => mockService.configure(
-            androidConfiguration: any(named: 'androidConfiguration'),
-            iosConfiguration: any(named: 'iosConfiguration'),
-          )).thenAnswer((_) async => true);
+      when(
+        () => mockService.configure(
+          androidConfiguration: any(named: 'androidConfiguration'),
+          iosConfiguration: any(named: 'iosConfiguration'),
+        ),
+      ).thenAnswer((_) async => true);
       when(() => mockService.isRunning()).thenAnswer((_) async => true);
 
       final service = BackgroundService.forTesting(
@@ -126,9 +138,9 @@ void main() {
 
       await service.stopService(reason: 'test:logout');
 
-      verify(() => mockService.invoke('stopService', {
-            'reason': 'test:logout',
-          })).called(1);
+      verify(
+        () => mockService.invoke('stopService', {'reason': 'test:logout'}),
+      ).called(1);
     });
 
     test('stopService does not invoke stop command when not running', () async {
@@ -176,96 +188,118 @@ void main() {
       mockNotifications = MockNotificationsPlugin();
       mockHttpClient = MockHttpClient();
       when(() => mockInstance.invoke(any(), any())).thenReturn(null);
-      when(() => mockNotifications.show(
-            id: any(named: 'id'),
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            notificationDetails: any(named: 'notificationDetails'),
-            payload: any(named: 'payload'),
-          )).thenAnswer((_) async {});
+      when(
+        () => mockNotifications.show(
+          id: any(named: 'id'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationDetails: any(named: 'notificationDetails'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
     });
 
-    test('handleMessageForTest sends update and notification for known action',
-        () async {
-      await handleMessageForTest(
-        '{"action":"VotingStarted","data":{"id":1}}',
-        mockInstance,
-        mockNotifications,
-      );
+    test(
+      'handleMessageForTest sends update and notification for known action',
+      () async {
+        await handleMessageForTest(
+          '{"action":"VotingStarted","data":{"id":1}}',
+          mockInstance,
+          mockNotifications,
+        );
 
-      verify(() => mockInstance.invoke('update', {
+        verify(
+          () => mockInstance.invoke('update', {
             'action': 'VotingStarted',
             'data': {'id': 1},
-          })).called(1);
-      verify(() => mockNotifications.show(
+          }),
+        ).called(1);
+        verify(
+          () => mockNotifications.show(
             id: any(named: 'id'),
             title: 'Голосование началось!',
             body: 'Нажмите, чтобы проголосовать',
             notificationDetails: any(named: 'notificationDetails'),
             payload: 'Navigate:VotingList:1',
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
-    test('handleMessageForTest reports unknown action for invalid payload',
-        () async {
-      await handleMessageForTest('not a json', mockInstance, mockNotifications);
+    test(
+      'handleMessageForTest reports unknown action for invalid payload',
+      () async {
+        await handleMessageForTest(
+          'not a json',
+          mockInstance,
+          mockNotifications,
+        );
 
-      verify(() => mockInstance.invoke('update', {
+        verify(
+          () => mockInstance.invoke('update', {
             'action': 'unknown',
             'raw': 'not a json',
-          })).called(1);
-      verifyNever(() => mockNotifications.show(
+          }),
+        ).called(1);
+        verifyNever(
+          () => mockNotifications.show(
             id: any(named: 'id'),
             title: any(named: 'title'),
             body: any(named: 'body'),
             notificationDetails: any(named: 'notificationDetails'),
             payload: any(named: 'payload'),
-          ));
-    });
+          ),
+        );
+      },
+    );
 
-    test('handleMessageForTest skips invoke when service is stopping',
-        () async {
-      await handleMessageForTest(
-        '{"action":"VotingStarted","data":{"id":1}}',
-        mockInstance,
-        mockNotifications,
-        isStopped: () => true,
-      );
+    test(
+      'handleMessageForTest skips invoke when service is stopping',
+      () async {
+        await handleMessageForTest(
+          '{"action":"VotingStarted","data":{"id":1}}',
+          mockInstance,
+          mockNotifications,
+          isStopped: () => true,
+        );
 
-      verifyNever(() => mockInstance.invoke(any(), any()));
-      verifyNever(() => mockNotifications.show(
+        verifyNever(() => mockInstance.invoke(any(), any()));
+        verifyNever(
+          () => mockNotifications.show(
             id: any(named: 'id'),
             title: any(named: 'title'),
             body: any(named: 'body'),
             notificationDetails: any(named: 'notificationDetails'),
             payload: any(named: 'payload'),
-          ));
-    });
+          ),
+        );
+      },
+    );
 
     test('showAlertNotificationForTest ignores unsupported actions', () async {
       await showAlertNotificationForTest(
-          mockNotifications, 'UNSUPPORTED_ACTION');
+        mockNotifications,
+        'UNSUPPORTED_ACTION',
+      );
 
-      verifyNever(() => mockNotifications.show(
-            id: any(named: 'id'),
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            notificationDetails: any(named: 'notificationDetails'),
-            payload: any(named: 'payload'),
-          ));
+      verifyNever(
+        () => mockNotifications.show(
+          id: any(named: 'id'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationDetails: any(named: 'notificationDetails'),
+          payload: any(named: 'payload'),
+        ),
+      );
     });
 
     test('scheduleReconnectForTest replaces previous timer', () {
       var called = false;
       final previousTimer = Timer(const Duration(minutes: 1), () {});
 
-      final timer = scheduleReconnectForTest(
-        previousTimer,
-        () {
-          called = true;
-        },
-        attempts: 1,
-      );
+      final timer = scheduleReconnectForTest(previousTimer, () {
+        called = true;
+      }, attempts: 1);
 
       expect(previousTimer.isActive, isFalse);
       expect(timer.isActive, isTrue);
@@ -338,39 +372,20 @@ void main() {
         isLikelyNetworkIssue(Exception('SocketException: Connection refused')),
         isTrue,
       );
-      expect(
-        isLikelyNetworkIssue(Exception('Unauthorized 403')),
-        isFalse,
-      );
+      expect(isLikelyNetworkIssue(Exception('Unauthorized 403')), isFalse);
     });
 
-    test('shouldStopReconnectForAuth stops on missing cookie or auth status',
-        () {
-      expect(
-        shouldStopReconnectForAuth(cookie: null),
-        isTrue,
-      );
-      expect(
-        shouldStopReconnectForAuth(cookie: ''),
-        isTrue,
-      );
-      expect(
-        shouldStopReconnectForAuth(negotiateStatusCode: 401),
-        isTrue,
-      );
-      expect(
-        shouldStopReconnectForAuth(negotiateStatusCode: 403),
-        isTrue,
-      );
-      expect(
-        shouldStopReconnectForAuth(cookie: 'session-token'),
-        isFalse,
-      );
-      expect(
-        shouldStopReconnectForAuth(negotiateStatusCode: 500),
-        isFalse,
-      );
-    });
+    test(
+      'shouldStopReconnectForAuth stops on missing cookie or auth status',
+      () {
+        expect(shouldStopReconnectForAuth(cookie: null), isTrue);
+        expect(shouldStopReconnectForAuth(cookie: ''), isTrue);
+        expect(shouldStopReconnectForAuth(negotiateStatusCode: 401), isTrue);
+        expect(shouldStopReconnectForAuth(negotiateStatusCode: 403), isTrue);
+        expect(shouldStopReconnectForAuth(cookie: 'session-token'), isFalse);
+        expect(shouldStopReconnectForAuth(negotiateStatusCode: 500), isFalse);
+      },
+    );
 
     test('onIosBackground returns true', () async {
       expect(await onIosBackground(mockInstance), isTrue);
@@ -380,8 +395,9 @@ void main() {
       final uri = Uri.parse('https://example.com/ws');
       final headers = {'Cookie': 'session=token'};
 
-      when(() => mockHttpClient.get(uri, headers: headers))
-          .thenAnswer((_) async => http.Response('{"url":"wss://x"}', 200));
+      when(
+        () => mockHttpClient.get(uri, headers: headers),
+      ).thenAnswer((_) async => http.Response('{"url":"wss://x"}', 200));
 
       final response = await negotiateWsUrlWithTimeout(
         client: mockHttpClient,
@@ -393,27 +409,29 @@ void main() {
       expect(response.statusCode, 200);
     });
 
-    test('negotiateWsUrlWithTimeout throws TimeoutException on slow response',
-        () async {
-      final uri = Uri.parse('https://example.com/ws');
-      final headers = {'Cookie': 'session=token'};
+    test(
+      'negotiateWsUrlWithTimeout throws TimeoutException on slow response',
+      () async {
+        final uri = Uri.parse('https://example.com/ws');
+        final headers = {'Cookie': 'session=token'};
 
-      when(() => mockHttpClient.get(uri, headers: headers)).thenAnswer(
-        (_) => Future<http.Response>.delayed(
-          const Duration(milliseconds: 30),
-          () => http.Response('{"url":"wss://x"}', 200),
-        ),
-      );
+        when(() => mockHttpClient.get(uri, headers: headers)).thenAnswer(
+          (_) => Future<http.Response>.delayed(
+            const Duration(milliseconds: 30),
+            () => http.Response('{"url":"wss://x"}', 200),
+          ),
+        );
 
-      await expectLater(
-        () => negotiateWsUrlWithTimeout(
-          client: mockHttpClient,
-          uri: uri,
-          headers: headers,
-          timeout: const Duration(milliseconds: 1),
-        ),
-        throwsA(isA<TimeoutException>()),
-      );
-    });
+        await expectLater(
+          () => negotiateWsUrlWithTimeout(
+            client: mockHttpClient,
+            uri: uri,
+            headers: headers,
+            timeout: const Duration(milliseconds: 1),
+          ),
+          throwsA(isA<TimeoutException>()),
+        );
+      },
+    );
   });
 }

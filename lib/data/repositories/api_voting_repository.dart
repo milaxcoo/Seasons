@@ -20,9 +20,9 @@ class ApiVotingRepository implements VotingRepository {
     String baseUrl = 'https://seasons.rudn.ru',
     http.Client? httpClient,
     RudnAuthService? authService,
-  })  : _baseUri = Uri.parse(baseUrl),
-        _httpClient = httpClient ?? http.Client(),
-        _authService = authService ?? RudnAuthService();
+  }) : _baseUri = Uri.parse(baseUrl),
+       _httpClient = httpClient ?? http.Client(),
+       _authService = authService ?? RudnAuthService();
   // No longer needed internal state given we use the service
   // String? _userLogin;
   // String? _authToken;
@@ -30,10 +30,7 @@ class ApiVotingRepository implements VotingRepository {
   // Helper to retrieve the current headers with the valid cookie
   Future<Map<String, String>> get _headers async {
     final cookie = await _authService.getCookie() ?? '';
-    return {
-      'Cookie': 'session=$cookie',
-      'X-Requested-With': 'XMLHttpRequest',
-    };
+    return {'Cookie': 'session=$cookie', 'X-Requested-With': 'XMLHttpRequest'};
   }
 
   Uri _buildSeasonsUri(String path, [Map<String, String>? queryParameters]) {
@@ -53,8 +50,10 @@ class ApiVotingRepository implements VotingRepository {
   }
 
   @visibleForTesting
-  Uri buildSeasonsUriForTest(String path,
-      [Map<String, String>? queryParameters]) {
+  Uri buildSeasonsUriForTest(
+    String path, [
+    Map<String, String>? queryParameters,
+  ]) {
     return _buildSeasonsUri(path, queryParameters);
   }
 
@@ -168,7 +167,8 @@ class ApiVotingRepository implements VotingRepository {
         return data.map((json) => VotingEvent.fromJson(json)).toList();
       } else {
         throw Exception(
-            'Не удалось загрузить события. Код ответа: ${response.statusCode}');
+          'Не удалось загрузить события. Код ответа: ${response.statusCode}',
+        );
       }
     } on UnauthorizedSessionException {
       rethrow;
@@ -210,7 +210,9 @@ class ApiVotingRepository implements VotingRepository {
   // FIXED: Полностью переписан метод для отправки голоса
   @override
   Future<bool> submitVote(
-      VotingEvent event, Map<String, String> answers) async {
+    VotingEvent event,
+    Map<String, String> answers,
+  ) async {
     final url = _buildSeasonsUri('/api/v1/voter/vote');
 
     final baseHeaders = await _headers;
@@ -220,9 +222,7 @@ class ApiVotingRepository implements VotingRepository {
     };
 
     // Собираем тело запроса в ПРАВИЛЬНОМ формате
-    final body = <String, String>{
-      'voting_id': event.id,
-    };
+    final body = <String, String>{'voting_id': event.id};
 
     int index = 0;
     // Проходим по всем вопросам в том порядке, в котором они есть в голосовании
@@ -281,7 +281,8 @@ class ApiVotingRepository implements VotingRepository {
 
       // Любая другая ошибка
       throw Exception(
-          'Ошибка при отправке голоса. Сервер ответил: ${response.body}');
+        'Ошибка при отправке голоса. Сервер ответил: ${response.body}',
+      );
     } on UnauthorizedSessionException {
       rethrow;
     } catch (e) {
@@ -323,9 +324,10 @@ class ApiVotingRepository implements VotingRepository {
         // We use a flexible regex to handle potential attributes or whitespace
         // dotAll: true allows '.' to match newlines
         final RegExp nameRegExp = RegExp(
-            r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
-            caseSensitive: false,
-            dotAll: true);
+          r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
+          caseSensitive: false,
+          dotAll: true,
+        );
         final match = nameRegExp.firstMatch(response.body);
 
         if (match != null) {
@@ -391,9 +393,10 @@ class ApiVotingRepository implements VotingRepository {
         // 1. Extract Full Name (from header)
         // Regex: <a href="/account" ...>(Name)</a>
         final RegExp nameRegExp = RegExp(
-            r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
-            caseSensitive: false,
-            dotAll: true);
+          r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
+          caseSensitive: false,
+          dotAll: true,
+        );
         final nameMatch = nameRegExp.firstMatch(response.body);
         if (nameMatch != null) {
           final fullNameRaw = nameMatch.group(1)?.trim() ?? "";
@@ -410,8 +413,9 @@ class ApiVotingRepository implements VotingRepository {
         // HTML: <th style="...">Email</th> ... <td>value</td>
         // Regex must handle attributes in <th> and newlines
         final RegExp emailRegExp = RegExp(
-            r'<th[^>]*>\s*Email\s*</th>[\s\S]*?<td>([^<]+)</td>',
-            caseSensitive: false);
+          r'<th[^>]*>\s*Email\s*</th>[\s\S]*?<td>([^<]+)</td>',
+          caseSensitive: false,
+        );
         final emailMatch = emailRegExp.firstMatch(response.body);
         if (emailMatch != null) {
           email = emailMatch.group(1)?.trim() ?? "";
@@ -419,8 +423,9 @@ class ApiVotingRepository implements VotingRepository {
 
         // 3. Extract Job Title (Position / Должность / Job Title)
         final RegExp jobRegExp = RegExp(
-            r'<th[^>]*>\s*(?:Position|Должность|Job\s*Title)\s*</th>[\s\S]*?<td>([\s\S]*?)</td>',
-            caseSensitive: false);
+          r'<th[^>]*>\s*(?:Position|Должность|Job\s*Title)\s*</th>[\s\S]*?<td>([\s\S]*?)</td>',
+          caseSensitive: false,
+        );
         final jobMatch = jobRegExp.firstMatch(response.body);
         if (jobMatch != null) {
           // Value might be empty or &nbsp;, or contain tags
@@ -471,8 +476,10 @@ class ApiVotingRepository implements VotingRepository {
 
   // Formats "Ivanov Ivan Ivanovich" -> "Ivanov I.I."
   String _formatFio(String fullName) {
-    final parts =
-        fullName.split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
+    final parts = fullName
+        .split(RegExp(r'\s+'))
+        .where((s) => s.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return fullName;
 
     // If we have at least Surname and Name
@@ -512,7 +519,8 @@ class ApiVotingRepository implements VotingRepository {
           .timeout(const Duration(seconds: 15));
       if (kDebugMode) {
         debugPrint(
-            'Device token registration response: ${response.statusCode}');
+          'Device token registration response: ${response.statusCode}',
+        );
       }
       // Silently accept any response - backend may not have endpoint yet
     } catch (e) {

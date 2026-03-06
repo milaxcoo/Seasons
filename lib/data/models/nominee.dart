@@ -4,10 +4,7 @@ class Nominee extends Equatable {
   final String id;
   final String name;
 
-  const Nominee({
-    required this.id,
-    required this.name,
-  });
+  const Nominee({required this.id, required this.name});
 
   // Этот "рецепт" объясняет, как создать объект Nominee из JSON-карты.
   // Он безопасно считывает поля, чтобы избежать ошибок, если данные придут в неожиданном формате.

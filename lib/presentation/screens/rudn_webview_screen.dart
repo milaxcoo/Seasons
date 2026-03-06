@@ -124,10 +124,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
           },
           onNavigationRequest: (NavigationRequest request) {
             final action = resolveWebViewNavigationAction(request.url);
-            _logNavigationDecision(
-              url: request.url,
-              action: action,
-            );
+            _logNavigationDecision(url: request.url, action: action);
             switch (action) {
               case WebViewNavigationAction.preventAndUpgrade:
                 final secureUrl = upgradeToHttps(request.url);
@@ -185,7 +182,8 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       skipped: false,
     );
     _controller.loadRequest(
-        Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
+      Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'),
+    );
   }
 
   @override
@@ -236,10 +234,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     }
   }
 
-  Future<void> _startCookiePollingPhase(
-    String callbackUrl,
-    int runId,
-  ) async {
+  Future<void> _startCookiePollingPhase(String callbackUrl, int runId) async {
     if (!shouldStartCallbackCompletion(
       isMounted: mounted,
       hasPopped: _hasPopped,
@@ -379,15 +374,14 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   Future<void> _completeLoginAndPop(String sessionCookie) async {
     final cookiePersisted = await RudnAuthService().saveCookie(sessionCookie);
     if (!cookiePersisted) {
-      ErrorReportingService().reportEvent(
-        'webview_cookie_persist_failed',
-      );
+      ErrorReportingService().reportEvent('webview_cookie_persist_failed');
       _showFinishingError(WebViewFinalizationState.storageSaveFailedMessage);
       return;
     }
-    ErrorReportingService().reportEvent('webview_cookie_found', details: {
-      'cookie_length': '${sessionCookie.length}',
-    });
+    ErrorReportingService().reportEvent(
+      'webview_cookie_found',
+      details: {'cookie_length': '${sessionCookie.length}'},
+    );
 
     if (mounted && !_hasPopped) {
       _hasPopped = true;
@@ -397,11 +391,10 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       return;
     }
 
-    ErrorReportingService()
-        .reportEvent('webview_duplicate_pop_blocked', details: {
-      'mounted': '$mounted',
-      'hasPopped': '$_hasPopped',
-    });
+    ErrorReportingService().reportEvent(
+      'webview_duplicate_pop_blocked',
+      details: {'mounted': '$mounted', 'hasPopped': '$_hasPopped'},
+    );
   }
 
   void _showFinalizationTimeoutError() {
@@ -436,10 +429,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
     _startFinalizationTimeout(_finalizationRunId);
     unawaited(
-      _startCookiePollingPhase(
-        _lastCallbackUrl ?? '',
-        _finalizationRunId,
-      ),
+      _startCookiePollingPhase(_lastCallbackUrl ?? '', _finalizationRunId),
     );
 
     try {
@@ -502,20 +492,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     if (!mounted || _hasPopped) return;
     const reloadMarker = '__reload__';
     if (!shouldForceNavigation(_lastForcedNavigationUrl, reloadMarker)) {
-      _logForcedNavigation(
-        method: 'reload',
-        reason: reason,
-        skipped: true,
-      );
+      _logForcedNavigation(method: 'reload', reason: reason, skipped: true);
       return;
     }
 
     _lastForcedNavigationUrl = reloadMarker;
-    _logForcedNavigation(
-      method: 'reload',
-      reason: reason,
-      skipped: false,
-    );
+    _logForcedNavigation(method: 'reload', reason: reason, skipped: false);
     await _controller.reload();
   }
 
@@ -564,9 +546,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(''),
-      ),
+      appBar: AppBar(title: const Text('')),
       body: Stack(
         children: [
           Offstage(
@@ -576,10 +556,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
               child: WebViewWidget(controller: _controller),
             ),
           ),
-          if (_isLoading)
-            const Center(
-              child: SeasonsLoader(),
-            ),
+          if (_isLoading) const Center(child: SeasonsLoader()),
           if (!_isFinishingLogin && _webResourceErrorMessage != null)
             Align(
               alignment: Alignment.bottomCenter,
@@ -727,13 +704,13 @@ class WebViewFinalizationState {
   });
 
   const WebViewFinalizationState.initial()
-      : this._(
-          webViewHiddenAfterCallback: false,
-          isFinishing: false,
-          hasError: false,
-          errorMessage: '',
-          phase: WebViewFinalizationPhase.idle,
-        );
+    : this._(
+        webViewHiddenAfterCallback: false,
+        isFinishing: false,
+        hasError: false,
+        errorMessage: '',
+        phase: WebViewFinalizationPhase.idle,
+      );
 
   WebViewFinalizationState onCallbackDetected() {
     return const WebViewFinalizationState._(
@@ -829,10 +806,7 @@ String localizeWebViewFinalizationError({
   return l10n.genericError;
 }
 
-const Set<String> _allowedWebViewHosts = {
-  'seasons.rudn.ru',
-  'id.rudn.ru',
-};
+const Set<String> _allowedWebViewHosts = {'seasons.rudn.ru', 'id.rudn.ru'};
 
 const Set<String> _blockedWebViewSchemes = {
   'file',

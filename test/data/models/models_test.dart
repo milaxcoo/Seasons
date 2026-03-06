@@ -7,10 +7,7 @@ void main() {
   group('Nominee', () {
     group('fromJson', () {
       test('parses a valid nominee correctly', () {
-        final json = {
-          'id': 'nom-01',
-          'name': 'John Doe',
-        };
+        final json = {'id': 'nom-01', 'name': 'John Doe'};
 
         final nominee = Nominee.fromJson(json);
 
@@ -94,9 +91,7 @@ void main() {
       });
 
       test('handles missing name with default value', () {
-        final json = {
-          'answers': [],
-        };
+        final json = {'answers': []};
 
         final subject = Subject.fromJson(json, 'subj-03');
 
@@ -144,10 +139,7 @@ void main() {
       test('parses a question with simple answers correctly', () {
         final json = {
           'data': {
-            'question': {
-              'id': 'q-01',
-              'name': 'Who is the best teacher?',
-            },
+            'question': {'id': 'q-01', 'name': 'Who is the best teacher?'},
             'answers': [
               {'id': 'ans-01', 'name': 'Teacher A'},
               {'id': 'ans-02', 'name': 'Teacher B'},
@@ -166,10 +158,7 @@ void main() {
       test('parses a question with subjects correctly', () {
         final json = {
           'data': {
-            'question': {
-              'id': 'q-02',
-              'name': 'Vote for your favorites',
-            },
+            'question': {'id': 'q-02', 'name': 'Vote for your favorites'},
             'subjects': {
               'subj-01': {
                 'name': 'Category 1',
@@ -197,9 +186,7 @@ void main() {
 
       test('handles missing question data with defaults', () {
         final json = {
-          'data': {
-            'question': {},
-          },
+          'data': {'question': {}},
         };
 
         final question = Question.fromJson(json);

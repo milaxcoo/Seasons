@@ -28,10 +28,7 @@ void main() {
     });
 
     test('handles empty vote counts', () {
-      final result = const SubjectResult(
-        name: 'Candidate C',
-        voteCounts: {},
-      );
+      final result = const SubjectResult(name: 'Candidate C', voteCounts: {});
 
       expect(result.voteCounts, isEmpty);
       expect(result.columns, isEmpty);
@@ -102,7 +99,9 @@ void main() {
         subjectResults: [
           SubjectResult(name: 'Project A', voteCounts: {'За': 10, 'Против': 5}),
           SubjectResult(
-              name: 'Project B', voteCounts: {'За': 8, 'Воздержался': 3}),
+            name: 'Project B',
+            voteCounts: {'За': 8, 'Воздержался': 3},
+          ),
         ],
       );
 
@@ -145,9 +144,13 @@ void main() {
         type: 'subject_oriented',
         subjectResults: [
           SubjectResult(
-              name: 'Department A', voteCounts: {'За': 20, 'Против': 3}),
+            name: 'Department A',
+            voteCounts: {'За': 20, 'Против': 3},
+          ),
           SubjectResult(
-              name: 'Department B', voteCounts: {'За': 18, 'Против': 5}),
+            name: 'Department B',
+            voteCounts: {'За': 18, 'Против': 5},
+          ),
         ],
       );
 

@@ -6,10 +6,7 @@ class HomeTabState extends Equatable {
   final int index;
   final String source;
 
-  const HomeTabState({
-    required this.index,
-    required this.source,
-  });
+  const HomeTabState({required this.index, required this.source});
 
   @override
   List<Object> get props => [index, source];
@@ -17,12 +14,7 @@ class HomeTabState extends Equatable {
 
 class HomeTabCubit extends Cubit<HomeTabState> {
   HomeTabCubit({int initialIndex = 0})
-      : super(
-          HomeTabState(
-            index: _normalizeIndex(initialIndex),
-            source: 'init',
-          ),
-        );
+    : super(HomeTabState(index: _normalizeIndex(initialIndex), source: 'init'));
 
   static int _normalizeIndex(int index) {
     if (index < 0) return 0;
@@ -30,16 +22,11 @@ class HomeTabCubit extends Cubit<HomeTabState> {
     return index;
   }
 
-  void setIndex(
-    int index, {
-    required String source,
-  }) {
+  void setIndex(int index, {required String source}) {
     final normalized = _normalizeIndex(index);
     if (state.index == normalized) {
       if (kDebugMode) {
-        debugPrint(
-          'HomeTabCubit: unchanged index=$normalized source=$source',
-        );
+        debugPrint('HomeTabCubit: unchanged index=$normalized source=$source');
       }
       return;
     }

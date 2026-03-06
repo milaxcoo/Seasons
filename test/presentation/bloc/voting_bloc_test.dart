@@ -38,16 +38,18 @@ void main() {
 
     // Register fallback values for custom types
     setUpAll(() {
-      registerFallbackValue(const model.VotingEvent(
-        id: 'test',
-        title: 'Test Event',
-        description: 'Test Description',
-        status: model.VotingStatus.active,
-        isRegistered: false,
-        questions: [],
-        hasVoted: false,
-        results: [],
-      ));
+      registerFallbackValue(
+        const model.VotingEvent(
+          id: 'test',
+          title: 'Test Event',
+          description: 'Test Description',
+          status: model.VotingStatus.active,
+          isRegistered: false,
+          questions: [],
+          hasVoted: false,
+          results: [],
+        ),
+      );
       registerFallbackValue(model.VotingStatus.active);
       registerFallbackValue(<String, String>{});
     });
@@ -66,57 +68,65 @@ void main() {
 
       mockServiceStreamController.add({'action': 'auth_invalid'});
 
-      await expectLater(
-        completer.future,
-        completes,
-      );
+      await expectLater(completer.future, completes);
       await subscription.cancel();
     });
 
     test(
-        'emits reconnecting/waiting/syncing/restored lifecycle statuses on reconnect recovery',
-        () async {
-      when(() => mockVotingRepository.getEventsByStatus(any()))
-          .thenAnswer((_) async => []);
-      final statuses = <VotingConnectionStatus>[];
-      final subscription =
-          votingBloc.connectionStatusStream.listen(statuses.add);
+      'emits reconnecting/waiting/syncing/restored lifecycle statuses on reconnect recovery',
+      () async {
+        when(
+          () => mockVotingRepository.getEventsByStatus(any()),
+        ).thenAnswer((_) async => []);
+        final statuses = <VotingConnectionStatus>[];
+        final subscription = votingBloc.connectionStatusStream.listen(
+          statuses.add,
+        );
 
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionReconnecting});
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionWaitingForNetwork});
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionConnected});
+        mockServiceStreamController.add({
+          'action': BackgroundService.actionConnectionReconnecting,
+        });
+        mockServiceStreamController.add({
+          'action': BackgroundService.actionConnectionWaitingForNetwork,
+        });
+        mockServiceStreamController.add({
+          'action': BackgroundService.actionConnectionConnected,
+        });
 
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      expect(
-        statuses,
-        equals([
-          VotingConnectionStatus.reconnecting,
-          VotingConnectionStatus.waitingForNetwork,
-          VotingConnectionStatus.syncing,
-          VotingConnectionStatus.restored,
-          VotingConnectionStatus.connected,
-        ]),
-      );
-      await subscription.cancel();
-    });
+        expect(
+          statuses,
+          equals([
+            VotingConnectionStatus.reconnecting,
+            VotingConnectionStatus.waitingForNetwork,
+            VotingConnectionStatus.syncing,
+            VotingConnectionStatus.restored,
+            VotingConnectionStatus.connected,
+          ]),
+        );
+        await subscription.cancel();
+      },
+    );
 
     test('dedupes identical connection statuses', () async {
       final statuses = <VotingConnectionStatus>[];
-      final subscription =
-          votingBloc.connectionStatusStream.listen(statuses.add);
+      final subscription = votingBloc.connectionStatusStream.listen(
+        statuses.add,
+      );
 
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionReconnecting});
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionReconnecting});
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionWaitingForNetwork});
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionWaitingForNetwork});
+      mockServiceStreamController.add({
+        'action': BackgroundService.actionConnectionReconnecting,
+      });
+      mockServiceStreamController.add({
+        'action': BackgroundService.actionConnectionReconnecting,
+      });
+      mockServiceStreamController.add({
+        'action': BackgroundService.actionConnectionWaitingForNetwork,
+      });
+      mockServiceStreamController.add({
+        'action': BackgroundService.actionConnectionWaitingForNetwork,
+      });
 
       await Future<void>.delayed(const Duration(milliseconds: 40));
 
@@ -131,49 +141,59 @@ void main() {
     });
 
     test('coalesces reconnect catch-up refresh into one burst', () async {
-      when(() => mockVotingRepository.getEventsByStatus(any()))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockVotingRepository.getEventsByStatus(any()),
+      ).thenAnswer((_) async => []);
 
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionReconnecting});
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionConnected});
-      mockServiceStreamController
-          .add({'action': BackgroundService.actionConnectionConnected});
+      mockServiceStreamController.add({
+        'action': BackgroundService.actionConnectionReconnecting,
+      });
+      mockServiceStreamController.add({
+        'action': BackgroundService.actionConnectionConnected,
+      });
+      mockServiceStreamController.add({
+        'action': BackgroundService.actionConnectionConnected,
+      });
 
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
       verify(() => mockVotingRepository.getEventsByStatus(any())).called(3);
     });
 
-    test('marks connection disconnected when only part of silent refresh fails',
-        () async {
-      when(
-        () => mockVotingRepository
-            .getEventsByStatus(model.VotingStatus.registration),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockVotingRepository.getEventsByStatus(model.VotingStatus.active),
-      ).thenThrow(Exception('temporary failure'));
-      when(
-        () => mockVotingRepository
-            .getEventsByStatus(model.VotingStatus.completed),
-      ).thenAnswer((_) async => []);
+    test(
+      'marks connection disconnected when only part of silent refresh fails',
+      () async {
+        when(
+          () => mockVotingRepository.getEventsByStatus(
+            model.VotingStatus.registration,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () =>
+              mockVotingRepository.getEventsByStatus(model.VotingStatus.active),
+        ).thenThrow(Exception('temporary failure'));
+        when(
+          () => mockVotingRepository.getEventsByStatus(
+            model.VotingStatus.completed,
+          ),
+        ).thenAnswer((_) async => []);
 
-      final statuses = <VotingConnectionStatus>[];
-      final subscription =
-          votingBloc.connectionStatusStream.listen(statuses.add);
+        final statuses = <VotingConnectionStatus>[];
+        final subscription = votingBloc.connectionStatusStream.listen(
+          statuses.add,
+        );
 
-      votingBloc.add(const RefreshAllEventsSilent());
-      await Future<void>.delayed(const Duration(milliseconds: 80));
+        votingBloc.add(const RefreshAllEventsSilent());
+        await Future<void>.delayed(const Duration(milliseconds: 80));
 
-      expect(statuses, equals([VotingConnectionStatus.disconnected]));
-      expect(
-        votingBloc.currentConnectionStatus,
-        VotingConnectionStatus.disconnected,
-      );
-      await subscription.cancel();
-    });
+        expect(statuses, equals([VotingConnectionStatus.disconnected]));
+        expect(
+          votingBloc.currentConnectionStatus,
+          VotingConnectionStatus.disconnected,
+        );
+        await subscription.cancel();
+      },
+    );
 
     group('FetchEventsByStatus', () {
       final testEvents = [
@@ -208,35 +228,48 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingEventsLoadSuccess] when events are fetched successfully',
         build: () {
-          when(() => mockVotingRepository
-                  .getEventsByStatus(model.VotingStatus.registration))
-              .thenAnswer((_) async => testEvents);
+          when(
+            () => mockVotingRepository.getEventsByStatus(
+              model.VotingStatus.registration,
+            ),
+          ).thenAnswer((_) async => testEvents);
           return votingBloc;
         },
         act: (bloc) => bloc.add(
-            const FetchEventsByStatus(status: model.VotingStatus.registration)),
+          const FetchEventsByStatus(status: model.VotingStatus.registration),
+        ),
         expect: () => [
           VotingLoadInProgress(),
           isA<VotingEventsLoadSuccess>()
               .having((s) => s.events, 'events', testEvents)
               .having(
-                  (s) => s.status, 'status', model.VotingStatus.registration),
+                (s) => s.status,
+                'status',
+                model.VotingStatus.registration,
+              ),
         ],
         verify: (_) {
-          verify(() => mockVotingRepository
-              .getEventsByStatus(model.VotingStatus.registration)).called(1);
+          verify(
+            () => mockVotingRepository.getEventsByStatus(
+              model.VotingStatus.registration,
+            ),
+          ).called(1);
         },
       );
 
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingEventsLoadSuccess] with empty list when no events',
         build: () {
-          when(() => mockVotingRepository.getEventsByStatus(
-              model.VotingStatus.active)).thenAnswer((_) async => []);
+          when(
+            () => mockVotingRepository.getEventsByStatus(
+              model.VotingStatus.active,
+            ),
+          ).thenAnswer((_) async => []);
           return votingBloc;
         },
-        act: (bloc) => bloc
-            .add(const FetchEventsByStatus(status: model.VotingStatus.active)),
+        act: (bloc) => bloc.add(
+          const FetchEventsByStatus(status: model.VotingStatus.active),
+        ),
         expect: () => [
           VotingLoadInProgress(),
           isA<VotingEventsLoadSuccess>()
@@ -248,16 +281,21 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingFailure] when fetch fails',
         build: () {
-          when(() => mockVotingRepository.getEventsByStatus(any()))
-              .thenThrow(Exception('Failed to fetch events'));
+          when(
+            () => mockVotingRepository.getEventsByStatus(any()),
+          ).thenThrow(Exception('Failed to fetch events'));
           return votingBloc;
         },
         act: (bloc) => bloc.add(
-            const FetchEventsByStatus(status: model.VotingStatus.completed)),
+          const FetchEventsByStatus(status: model.VotingStatus.completed),
+        ),
         expect: () => [
           VotingLoadInProgress(),
           isA<VotingFailure>().having(
-              (s) => s.error, 'error', contains('Failed to fetch events')),
+            (s) => s.error,
+            'error',
+            contains('Failed to fetch events'),
+          ),
         ],
       );
     });
@@ -266,48 +304,55 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'emits [RegistrationInProgress, RegistrationSuccess] when registration succeeds',
         build: () {
-          when(() => mockVotingRepository.registerForEvent('event-1'))
-              .thenAnswer((_) async => {});
+          when(
+            () => mockVotingRepository.registerForEvent('event-1'),
+          ).thenAnswer((_) async => {});
           return votingBloc;
         },
         act: (bloc) => bloc.add(const RegisterForEvent(eventId: 'event-1')),
-        expect: () => [
-          RegistrationInProgress(),
-          RegistrationSuccess(),
-        ],
+        expect: () => [RegistrationInProgress(), RegistrationSuccess()],
         verify: (_) {
-          verify(() => mockVotingRepository.registerForEvent('event-1'))
-              .called(1);
+          verify(
+            () => mockVotingRepository.registerForEvent('event-1'),
+          ).called(1);
         },
       );
 
       blocTest<VotingBloc, VotingState>(
         'emits [RegistrationInProgress, RegistrationFailure] when registration fails',
         build: () {
-          when(() => mockVotingRepository.registerForEvent(any()))
-              .thenThrow(Exception('Registration failed'));
+          when(
+            () => mockVotingRepository.registerForEvent(any()),
+          ).thenThrow(Exception('Registration failed'));
           return votingBloc;
         },
         act: (bloc) => bloc.add(const RegisterForEvent(eventId: 'event-1')),
         expect: () => [
           RegistrationInProgress(),
-          isA<RegistrationFailure>()
-              .having((s) => s.error, 'error', contains('Registration failed')),
+          isA<RegistrationFailure>().having(
+            (s) => s.error,
+            'error',
+            contains('Registration failed'),
+          ),
         ],
       );
 
       blocTest<VotingBloc, VotingState>(
         'emits [RegistrationInProgress, RegistrationFailure] when user is already registered',
         build: () {
-          when(() => mockVotingRepository.registerForEvent(any()))
-              .thenThrow(Exception('User already registered'));
+          when(
+            () => mockVotingRepository.registerForEvent(any()),
+          ).thenThrow(Exception('User already registered'));
           return votingBloc;
         },
         act: (bloc) => bloc.add(const RegisterForEvent(eventId: 'event-1')),
         expect: () => [
           RegistrationInProgress(),
-          isA<RegistrationFailure>()
-              .having((s) => s.error, 'error', contains('already registered')),
+          isA<RegistrationFailure>().having(
+            (s) => s.error,
+            'error',
+            contains('already registered'),
+          ),
         ],
       );
     });
@@ -320,12 +365,7 @@ void main() {
         status: model.VotingStatus.active,
         isRegistered: true,
         questions: const [
-          Question(
-            id: 'q1',
-            name: 'Question 1',
-            subjects: [],
-            answers: [],
-          ),
+          Question(id: 'q1', name: 'Question 1', subjects: [], answers: []),
         ],
         hasVoted: false,
         results: const [],
@@ -336,16 +376,14 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingSubmissionSuccess] when vote is submitted successfully',
         build: () {
-          when(() => mockVotingRepository.submitVote(any(), any()))
-              .thenAnswer((_) async => true);
+          when(
+            () => mockVotingRepository.submitVote(any(), any()),
+          ).thenAnswer((_) async => true);
           return votingBloc;
         },
         act: (bloc) =>
             bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
-        expect: () => [
-          VotingLoadInProgress(),
-          VotingSubmissionSuccess(),
-        ],
+        expect: () => [VotingLoadInProgress(), VotingSubmissionSuccess()],
         verify: (_) {
           verify(() => mockVotingRepository.submitVote(any(), any())).called(1);
         },
@@ -354,63 +392,73 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingFailure] when repository reports already-voted conflict via false',
         build: () {
-          when(() => mockVotingRepository.submitVote(any(), any()))
-              .thenAnswer((_) async => false);
+          when(
+            () => mockVotingRepository.submitVote(any(), any()),
+          ).thenAnswer((_) async => false);
           return votingBloc;
         },
         act: (bloc) =>
             bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
         expect: () => [
           VotingLoadInProgress(),
-          isA<VotingFailure>()
-              .having((s) => s.error, 'error', contains('already voted')),
+          isA<VotingFailure>().having(
+            (s) => s.error,
+            'error',
+            contains('already voted'),
+          ),
         ],
       );
 
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingFailure] when vote submission fails',
         build: () {
-          when(() => mockVotingRepository.submitVote(any(), any()))
-              .thenThrow(Exception('Submission failed'));
+          when(
+            () => mockVotingRepository.submitVote(any(), any()),
+          ).thenThrow(Exception('Submission failed'));
           return votingBloc;
         },
         act: (bloc) =>
             bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
         expect: () => [
           VotingLoadInProgress(),
-          isA<VotingFailure>()
-              .having((s) => s.error, 'error', contains('Submission failed')),
+          isA<VotingFailure>().having(
+            (s) => s.error,
+            'error',
+            contains('Submission failed'),
+          ),
         ],
       );
 
       blocTest<VotingBloc, VotingState>(
         'emits [VotingLoadInProgress, VotingFailure] when user already voted',
         build: () {
-          when(() => mockVotingRepository.submitVote(any(), any()))
-              .thenThrow(Exception('User already voted'));
+          when(
+            () => mockVotingRepository.submitVote(any(), any()),
+          ).thenThrow(Exception('User already voted'));
           return votingBloc;
         },
         act: (bloc) =>
             bloc.add(SubmitVote(event: testEvent, answers: testAnswers)),
         expect: () => [
           VotingLoadInProgress(),
-          isA<VotingFailure>()
-              .having((s) => s.error, 'error', contains('already voted')),
+          isA<VotingFailure>().having(
+            (s) => s.error,
+            'error',
+            contains('already voted'),
+          ),
         ],
       );
 
       blocTest<VotingBloc, VotingState>(
         'handles empty answers map',
         build: () {
-          when(() => mockVotingRepository.submitVote(any(), any()))
-              .thenAnswer((_) async => true);
+          when(
+            () => mockVotingRepository.submitVote(any(), any()),
+          ).thenAnswer((_) async => true);
           return votingBloc;
         },
         act: (bloc) => bloc.add(SubmitVote(event: testEvent, answers: {})),
-        expect: () => [
-          VotingLoadInProgress(),
-          VotingSubmissionSuccess(),
-        ],
+        expect: () => [VotingLoadInProgress(), VotingSubmissionSuccess()],
       );
     });
 
@@ -418,15 +466,18 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'handles multiple fetch requests correctly',
         build: () {
-          when(() => mockVotingRepository.getEventsByStatus(any()))
-              .thenAnswer((_) async => []);
+          when(
+            () => mockVotingRepository.getEventsByStatus(any()),
+          ).thenAnswer((_) async => []);
           return votingBloc;
         },
         act: (bloc) {
-          bloc.add(const FetchEventsByStatus(
-              status: model.VotingStatus.registration));
           bloc.add(
-              const FetchEventsByStatus(status: model.VotingStatus.active));
+            const FetchEventsByStatus(status: model.VotingStatus.registration),
+          );
+          bloc.add(
+            const FetchEventsByStatus(status: model.VotingStatus.active),
+          );
         },
         skip: 2, // Skip first fetch
         expect: () => [
@@ -440,18 +491,22 @@ void main() {
       blocTest<VotingBloc, VotingState>(
         'handles register followed by fetch',
         build: () {
-          when(() => mockVotingRepository.registerForEvent(any()))
-              .thenAnswer((_) async => {});
-          when(() => mockVotingRepository.getEventsByStatus(any()))
-              .thenAnswer((_) async => []);
+          when(
+            () => mockVotingRepository.registerForEvent(any()),
+          ).thenAnswer((_) async => {});
+          when(
+            () => mockVotingRepository.getEventsByStatus(any()),
+          ).thenAnswer((_) async => []);
           return votingBloc;
         },
         act: (bloc) async {
           bloc.add(const RegisterForEvent(eventId: 'event-1'));
-          await Future.delayed(const Duration(
-              milliseconds: 100)); // Wait for registration to complete
-          bloc.add(const FetchEventsByStatus(
-              status: model.VotingStatus.registration));
+          await Future.delayed(
+            const Duration(milliseconds: 100),
+          ); // Wait for registration to complete
+          bloc.add(
+            const FetchEventsByStatus(status: model.VotingStatus.registration),
+          );
         },
         expect: () => [
           RegistrationInProgress(),
@@ -460,108 +515,123 @@ void main() {
           isA<VotingEventsLoadSuccess>()
               .having((s) => s.events, 'events', isEmpty)
               .having(
-                  (s) => s.status, 'status', model.VotingStatus.registration),
+                (s) => s.status,
+                'status',
+                model.VotingStatus.registration,
+              ),
         ],
       );
     });
 
     group('Unauthorized session handling', () {
       test(
-          'fetch emits auth_invalid failure and notifies auth invalid stream',
-          () async {
-        when(() => mockVotingRepository.getEventsByStatus(any())).thenThrow(
-          const UnauthorizedSessionException('expired'),
-        );
+        'fetch emits auth_invalid failure and notifies auth invalid stream',
+        () async {
+          when(
+            () => mockVotingRepository.getEventsByStatus(any()),
+          ).thenThrow(const UnauthorizedSessionException('expired'));
 
-        final authInvalid = Completer<void>();
-        final subscription = votingBloc.onAuthInvalid.listen((_) {
-          if (!authInvalid.isCompleted) {
-            authInvalid.complete();
-          }
-        });
+          final authInvalid = Completer<void>();
+          final subscription = votingBloc.onAuthInvalid.listen((_) {
+            if (!authInvalid.isCompleted) {
+              authInvalid.complete();
+            }
+          });
 
-        votingBloc.add(
-          const FetchEventsByStatus(status: model.VotingStatus.active),
-        );
+          votingBloc.add(
+            const FetchEventsByStatus(status: model.VotingStatus.active),
+          );
 
-        await expectLater(
-          votingBloc.stream,
-          emitsInOrder([
-            isA<VotingLoadInProgress>(),
-            isA<VotingFailure>()
-                .having((s) => s.error, 'error', equals('auth_invalid')),
-          ]),
-        );
-        await expectLater(authInvalid.future, completes);
-        await subscription.cancel();
-      });
-
-      test(
-          'register emits auth_invalid failure and notifies auth invalid stream',
-          () async {
-        when(() => mockVotingRepository.registerForEvent(any())).thenThrow(
-          const UnauthorizedSessionException('expired'),
-        );
-
-        final authInvalid = Completer<void>();
-        final subscription = votingBloc.onAuthInvalid.listen((_) {
-          if (!authInvalid.isCompleted) {
-            authInvalid.complete();
-          }
-        });
-
-        votingBloc.add(const RegisterForEvent(eventId: 'event-1'));
-
-        await expectLater(
-          votingBloc.stream,
-          emitsInOrder([
-            isA<RegistrationInProgress>(),
-            isA<RegistrationFailure>()
-                .having((s) => s.error, 'error', equals('auth_invalid')),
-          ]),
-        );
-        await expectLater(authInvalid.future, completes);
-        await subscription.cancel();
-      });
+          await expectLater(
+            votingBloc.stream,
+            emitsInOrder([
+              isA<VotingLoadInProgress>(),
+              isA<VotingFailure>().having(
+                (s) => s.error,
+                'error',
+                equals('auth_invalid'),
+              ),
+            ]),
+          );
+          await expectLater(authInvalid.future, completes);
+          await subscription.cancel();
+        },
+      );
 
       test(
-          'submit vote emits auth_invalid failure and notifies auth invalid stream',
-          () async {
-        const testEvent = model.VotingEvent(
-          id: 'event-1',
-          title: 'Test Voting Event',
-          description: 'Vote for your favorite',
-          status: model.VotingStatus.active,
-          isRegistered: true,
-          questions: [],
-          hasVoted: false,
-          results: [],
-        );
+        'register emits auth_invalid failure and notifies auth invalid stream',
+        () async {
+          when(
+            () => mockVotingRepository.registerForEvent(any()),
+          ).thenThrow(const UnauthorizedSessionException('expired'));
 
-        when(() => mockVotingRepository.submitVote(any(), any())).thenThrow(
-          const UnauthorizedSessionException('expired'),
-        );
+          final authInvalid = Completer<void>();
+          final subscription = votingBloc.onAuthInvalid.listen((_) {
+            if (!authInvalid.isCompleted) {
+              authInvalid.complete();
+            }
+          });
 
-        final authInvalid = Completer<void>();
-        final subscription = votingBloc.onAuthInvalid.listen((_) {
-          if (!authInvalid.isCompleted) {
-            authInvalid.complete();
-          }
-        });
+          votingBloc.add(const RegisterForEvent(eventId: 'event-1'));
 
-        votingBloc.add(SubmitVote(event: testEvent, answers: const {}));
+          await expectLater(
+            votingBloc.stream,
+            emitsInOrder([
+              isA<RegistrationInProgress>(),
+              isA<RegistrationFailure>().having(
+                (s) => s.error,
+                'error',
+                equals('auth_invalid'),
+              ),
+            ]),
+          );
+          await expectLater(authInvalid.future, completes);
+          await subscription.cancel();
+        },
+      );
 
-        await expectLater(
-          votingBloc.stream,
-          emitsInOrder([
-            isA<VotingLoadInProgress>(),
-            isA<VotingFailure>()
-                .having((s) => s.error, 'error', equals('auth_invalid')),
-          ]),
-        );
-        await expectLater(authInvalid.future, completes);
-        await subscription.cancel();
-      });
+      test(
+        'submit vote emits auth_invalid failure and notifies auth invalid stream',
+        () async {
+          const testEvent = model.VotingEvent(
+            id: 'event-1',
+            title: 'Test Voting Event',
+            description: 'Vote for your favorite',
+            status: model.VotingStatus.active,
+            isRegistered: true,
+            questions: [],
+            hasVoted: false,
+            results: [],
+          );
+
+          when(
+            () => mockVotingRepository.submitVote(any(), any()),
+          ).thenThrow(const UnauthorizedSessionException('expired'));
+
+          final authInvalid = Completer<void>();
+          final subscription = votingBloc.onAuthInvalid.listen((_) {
+            if (!authInvalid.isCompleted) {
+              authInvalid.complete();
+            }
+          });
+
+          votingBloc.add(SubmitVote(event: testEvent, answers: const {}));
+
+          await expectLater(
+            votingBloc.stream,
+            emitsInOrder([
+              isA<VotingLoadInProgress>(),
+              isA<VotingFailure>().having(
+                (s) => s.error,
+                'error',
+                equals('auth_invalid'),
+              ),
+            ]),
+          );
+          await expectLater(authInvalid.future, completes);
+          await subscription.cancel();
+        },
+      );
     });
   });
 }

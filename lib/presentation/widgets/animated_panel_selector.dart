@@ -66,8 +66,10 @@ class AnimatedPanelSelector extends StatelessWidget {
                 maxUsableInternalPadding,
               );
               // Effective width for buttons is barWidth minus internal padding.
-              final double effectiveButtonAreaWidth =
-                  math.max(0.0, barWidth - (resolvedInternalPadding * 2));
+              final double effectiveButtonAreaWidth = math.max(
+                0.0,
+                barWidth - (resolvedInternalPadding * 2),
+              );
               final double buttonSlotWidth = effectiveButtonAreaWidth / 3;
 
               return TweenAnimationBuilder<double>(
@@ -118,7 +120,8 @@ class AnimatedPanelSelector extends StatelessWidget {
                         height: barHeight,
                         child: Padding(
                           padding: EdgeInsets.symmetric(
-                              horizontal: resolvedInternalPadding),
+                            horizontal: resolvedInternalPadding,
+                          ),
                           child: Row(
                             children: [
                               // Button 1 - Registration
@@ -128,8 +131,10 @@ class AnimatedPanelSelector extends StatelessWidget {
                                   icon: RegistrationIcon(isSelected: false),
                                   isSelected: selectedIndex == 0,
                                   onTap: () => onPanelSelected(0),
-                                  hasActiveEvents: (hasEvents[model
-                                              .VotingStatus.registration] ??
+                                  hasActiveEvents:
+                                      (hasEvents[model
+                                              .VotingStatus
+                                              .registration] ??
                                           0) >
                                       0,
                                   buttonRadius: buttonRadius,
@@ -149,8 +154,8 @@ class AnimatedPanelSelector extends StatelessWidget {
                                   onTap: () => onPanelSelected(1),
                                   hasActiveEvents:
                                       (hasEvents[model.VotingStatus.active] ??
-                                              0) >
-                                          0,
+                                          0) >
+                                      0,
                                   buttonRadius: buttonRadius,
                                   animDuration: animDuration,
                                   animCurve: animCurve,
@@ -166,8 +171,10 @@ class AnimatedPanelSelector extends StatelessWidget {
                                   icon: ResultsIcon(isSelected: false),
                                   isSelected: selectedIndex == 2,
                                   onTap: () => onPanelSelected(2),
-                                  hasActiveEvents: (hasEvents[
-                                              model.VotingStatus.completed] ??
+                                  hasActiveEvents:
+                                      (hasEvents[model
+                                              .VotingStatus
+                                              .completed] ??
                                           0) >
                                       0,
                                   buttonRadius: buttonRadius,
@@ -341,18 +348,21 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     const double expressiveWidthFactor = 1.85;
 
     // ===== STEP 2: Create Blob/Curve Shape =====
-    final double slotSupportT = ((buttonSlotWidth - compactSlotWidth) /
-            (expressiveSlotWidth - compactSlotWidth))
-        .clamp(0.0, 1.0)
-        .toDouble();
+    final double slotSupportT =
+        ((buttonSlotWidth - compactSlotWidth) /
+                (expressiveSlotWidth - compactSlotWidth))
+            .clamp(0.0, 1.0)
+            .toDouble();
     if (slotSupportT < 0.01) {
       return basePath;
     }
     final double baseBlobHeight = bumpHeight.clamp(12.0, 28.0).toDouble();
-    final double compactHeightFactor = compactHeightFactorMin +
+    final double compactHeightFactor =
+        compactHeightFactorMin +
         ((1.0 - compactHeightFactorMin) * slotSupportT);
     final double blobHeight = baseBlobHeight * compactHeightFactor;
-    final double desiredBlobCenterX = barLeft +
+    final double desiredBlobCenterX =
+        barLeft +
         internalPadding +
         (animationValue * buttonSlotWidth) +
         (buttonSlotWidth / 2);
@@ -364,7 +374,8 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
         ((distanceToNearestBarEdge - (cornerRadius + 36.0)) / 34.0)
             .clamp(0.0, 1.0)
             .toDouble();
-    final double maxWidthBySlot = buttonSlotWidth *
+    final double maxWidthBySlot =
+        buttonSlotWidth *
         (compactWidthFactorMin +
             ((expressiveWidthFactor - compactWidthFactorMin) * slotSupportT));
     final double resolvedMaxBlobWidth = math.min(maxBlobWidth, maxWidthBySlot);
@@ -372,14 +383,15 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
       minBlobWidth,
       math.max(28.0, resolvedMaxBlobWidth - 6.0),
     );
-    final double blobWidthBase = resolvedMinBlobWidth +
+    final double blobWidthBase =
+        resolvedMinBlobWidth +
         ((resolvedMaxBlobWidth - resolvedMinBlobWidth) * edgeInfluence);
     // Tiny edge-only taper to remove residual protrusion on far-left/right tabs.
     final double extremeEdgeTrimT =
         ((cornerRadius + 44.0) - distanceToNearestBarEdge)
-                .clamp(0.0, extremeEdgeTrimRange)
-                .toDouble() /
-            extremeEdgeTrimRange;
+            .clamp(0.0, extremeEdgeTrimRange)
+            .toDouble() /
+        extremeEdgeTrimRange;
     final double edgeTrim =
         extremeEdgeTrimMax * extremeEdgeTrimT * extremeEdgeTrimT;
     final double blobWidthAfterEdgeTrim = (blobWidthBase - edgeTrim)
@@ -438,11 +450,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     blobPath.close();
 
     // ===== STEP 3: MERGE into Single Path =====
-    final unifiedPath = Path.combine(
-      PathOperation.union,
-      basePath,
-      blobPath,
-    );
+    final unifiedPath = Path.combine(PathOperation.union, basePath, blobPath);
 
     return unifiedPath;
   }

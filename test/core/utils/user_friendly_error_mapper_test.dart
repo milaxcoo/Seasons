@@ -30,22 +30,24 @@ Future<AppLocalizations> _loadL10n(WidgetTester tester, Locale locale) async {
 
 void main() {
   testWidgets(
-      'maps registration error to friendly text and does not leak endpoint details',
-      (tester) async {
-    final l10n = await _loadL10n(tester, const Locale('en'));
-    final message = UserFriendlyErrorMapper.toMessage(
-      l10n,
-      'POST https://seasons.rudn.ru/api/v1/voter/register_in_voting failed',
-      context: UserErrorContext.registration,
-    );
+    'maps registration error to friendly text and does not leak endpoint details',
+    (tester) async {
+      final l10n = await _loadL10n(tester, const Locale('en'));
+      final message = UserFriendlyErrorMapper.toMessage(
+        l10n,
+        'POST https://seasons.rudn.ru/api/v1/voter/register_in_voting failed',
+        context: UserErrorContext.registration,
+      );
 
-    expect(message, 'Could not complete registration. Please try again.');
-    expect(message.contains('https://'), isFalse);
-    expect(message.contains('/api/'), isFalse);
-  });
+      expect(message, 'Could not complete registration. Please try again.');
+      expect(message.contains('https://'), isFalse);
+      expect(message.contains('/api/'), isFalse);
+    },
+  );
 
-  testWidgets('maps vote submission network/server failures correctly',
-      (tester) async {
+  testWidgets('maps vote submission network/server failures correctly', (
+    tester,
+  ) async {
     final l10n = await _loadL10n(tester, const Locale('en'));
 
     final networkMessage = UserFriendlyErrorMapper.toMessage(

@@ -44,7 +44,8 @@ void main() {
   setUpAll(() async {
     await initializeDateFormatting('ru_RU', null);
     registerFallbackValue(
-        const FetchEventsByStatus(status: model.VotingStatus.registration));
+      const FetchEventsByStatus(status: model.VotingStatus.registration),
+    );
     registerFallbackValue(LoggedOut());
     registerFallbackValue(const Locale('ru'));
   });
@@ -58,24 +59,31 @@ void main() {
 
     NotificationNavigationService.setMockInstance(mockNavigationService);
 
-    when(() => mockAuthBloc.state)
-        .thenReturn(const AuthAuthenticated(userLogin: 'testuser'));
+    when(
+      () => mockAuthBloc.state,
+    ).thenReturn(const AuthAuthenticated(userLogin: 'testuser'));
     when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
 
-    when(() => mockLocaleBloc.state)
-        .thenReturn(const LocaleState(Locale('ru')));
+    when(
+      () => mockLocaleBloc.state,
+    ).thenReturn(const LocaleState(Locale('ru')));
     when(() => mockLocaleBloc.stream).thenAnswer((_) => const Stream.empty());
 
-    when(() => mockNavigationService.onNavigate)
-        .thenAnswer((_) => const Stream.empty());
-    when(() => mockNavigationService.consumePendingNavigation())
-        .thenReturn(null);
-    when(() => mockVotingBloc.onAuthInvalid)
-        .thenAnswer((_) => const Stream<void>.empty());
-    when(() => mockVotingBloc.connectionStatusStream)
-        .thenAnswer((_) => const Stream<VotingConnectionStatus>.empty());
-    when(() => mockVotingBloc.currentConnectionStatus)
-        .thenReturn(VotingConnectionStatus.connected);
+    when(
+      () => mockNavigationService.onNavigate,
+    ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockNavigationService.consumePendingNavigation(),
+    ).thenReturn(null);
+    when(
+      () => mockVotingBloc.onAuthInvalid,
+    ).thenAnswer((_) => const Stream<void>.empty());
+    when(
+      () => mockVotingBloc.connectionStatusStream,
+    ).thenAnswer((_) => const Stream<VotingConnectionStatus>.empty());
+    when(
+      () => mockVotingBloc.currentConnectionStatus,
+    ).thenReturn(VotingConnectionStatus.connected);
   });
 
   tearDown(() {
@@ -119,8 +127,12 @@ void main() {
   group('HomeScreen', () {
     testWidgets('renders main layout components correctly', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -138,14 +150,20 @@ void main() {
       expect(find.byType(ResultsIcon), findsWidgets);
     });
 
-    testWidgets('top bar ellipsizes long username without overflow',
-        (tester) async {
+    testWidgets('top bar ellipsizes long username without overflow', (
+      tester,
+    ) async {
       const longLogin =
           'very.long.user.login.with.many.sections.and.extra.characters@example.rudn.ru';
-      when(() => mockAuthBloc.state)
-          .thenReturn(const AuthAuthenticated(userLogin: longLogin));
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(
+        () => mockAuthBloc.state,
+      ).thenReturn(const AuthAuthenticated(userLogin: longLogin));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -161,59 +179,81 @@ void main() {
       expect(find.byIcon(Icons.exit_to_app), findsOneWidget);
     });
 
-    testWidgets('shows centered connection overlay for degraded/syncing states',
-        (tester) async {
-      final connectionStatusController =
-          StreamController<VotingConnectionStatus>.broadcast();
-      addTearDown(() async {
-        await connectionStatusController.close();
-      });
+    testWidgets(
+      'shows centered connection overlay for degraded/syncing states',
+      (tester) async {
+        final connectionStatusController =
+            StreamController<VotingConnectionStatus>.broadcast();
+        addTearDown(() async {
+          await connectionStatusController.close();
+        });
 
-      when(() => mockVotingBloc.connectionStatusStream)
-          .thenAnswer((_) => connectionStatusController.stream);
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
-      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+        when(
+          () => mockVotingBloc.connectionStatusStream,
+        ).thenAnswer((_) => connectionStatusController.stream);
+        when(() => mockVotingBloc.state).thenReturn(
+          const VotingEventsLoadSuccess(
+            events: [],
+            status: model.VotingStatus.registration,
+          ),
+        );
+        when(
+          () => mockVotingBloc.stream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      connectionStatusController.add(VotingConnectionStatus.reconnecting);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        connectionStatusController.add(VotingConnectionStatus.reconnecting);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Переподключение...'), findsOneWidget);
-      expect(find.byKey(const ValueKey('connection_status_overlay_loader')),
-          findsOneWidget);
-      expect(find.byKey(const ValueKey('connection_status_overlay_text')),
-          findsOneWidget);
-      final overlayText = tester.widget<Text>(
-        find.byKey(const ValueKey('connection_status_overlay_text')),
-      );
-      expect(overlayText.style?.fontSize, 20.0);
-      expect(find.text('Проблема с подключением. Пытаемся восстановить...'),
-          findsNothing);
-      expect(
+        expect(find.text('Переподключение...'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('connection_status_overlay_loader')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('connection_status_overlay_text')),
+          findsOneWidget,
+        );
+        final overlayText = tester.widget<Text>(
+          find.byKey(const ValueKey('connection_status_overlay_text')),
+        );
+        expect(overlayText.style?.fontSize, 20.0);
+        expect(
+          find.text('Проблема с подключением. Пытаемся восстановить...'),
+          findsNothing,
+        );
+        expect(
           find.byKey(const ValueKey('connection_status_overlay_reconnecting')),
-          findsOneWidget);
+          findsOneWidget,
+        );
 
-      connectionStatusController.add(VotingConnectionStatus.waitingForNetwork);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Ожидание сети...'), findsOneWidget);
-      expect(
+        connectionStatusController.add(
+          VotingConnectionStatus.waitingForNetwork,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Ожидание сети...'), findsOneWidget);
+        expect(
           find.byKey(
-              const ValueKey('connection_status_overlay_waitingForNetwork')),
-          findsOneWidget);
+            const ValueKey('connection_status_overlay_waitingForNetwork'),
+          ),
+          findsOneWidget,
+        );
 
-      connectionStatusController.add(VotingConnectionStatus.syncing);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Синхронизация обновлений...'), findsOneWidget);
-      expect(find.byKey(const ValueKey('connection_status_overlay_syncing')),
-          findsOneWidget);
-    });
+        connectionStatusController.add(VotingConnectionStatus.syncing);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Синхронизация обновлений...'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('connection_status_overlay_syncing')),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('connection overlay is localized in English', (tester) async {
       final connectionStatusController =
@@ -222,10 +262,15 @@ void main() {
         await connectionStatusController.close();
       });
 
-      when(() => mockVotingBloc.connectionStatusStream)
-          .thenAnswer((_) => connectionStatusController.stream);
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(
+        () => mockVotingBloc.connectionStatusStream,
+      ).thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -240,34 +285,50 @@ void main() {
     });
 
     testWidgets('overlay is hidden in healthy connected state', (tester) async {
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('connection_status_overlay_hidden')),
-          findsOneWidget);
-      expect(find.byKey(const ValueKey('connection_status_overlay_content')),
-          findsNothing);
-      expect(find.byKey(const ValueKey('connection_content_absorb_off')),
-          findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('connection_status_overlay_hidden')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('connection_status_overlay_content')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('connection_content_absorb_off')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('restored overlay hides after connected status',
-        (tester) async {
+    testWidgets('restored overlay hides after connected status', (
+      tester,
+    ) async {
       final connectionStatusController =
           StreamController<VotingConnectionStatus>.broadcast();
       addTearDown(() async {
         await connectionStatusController.close();
       });
 
-      when(() => mockVotingBloc.connectionStatusStream)
-          .thenAnswer((_) => connectionStatusController.stream);
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(
+        () => mockVotingBloc.connectionStatusStream,
+      ).thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -278,18 +339,23 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Подключение восстановлено'), findsOneWidget);
-      expect(find.byKey(const ValueKey('connection_content_absorb_on')),
-          findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('connection_content_absorb_on')),
+        findsOneWidget,
+      );
 
       connectionStatusController.add(VotingConnectionStatus.connected);
       await tester.pumpAndSettle();
       expect(find.text('Подключение восстановлено'), findsNothing);
-      expect(find.byKey(const ValueKey('connection_status_overlay_hidden')),
-          findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('connection_status_overlay_hidden')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('blocks content-area taps while degraded overlay is active',
-        (tester) async {
+    testWidgets('blocks content-area taps while degraded overlay is active', (
+      tester,
+    ) async {
       final connectionStatusController =
           StreamController<VotingConnectionStatus>.broadcast();
       addTearDown(() async {
@@ -310,10 +376,15 @@ void main() {
         ),
       ];
 
-      when(() => mockVotingBloc.connectionStatusStream)
-          .thenAnswer((_) => connectionStatusController.stream);
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
-          events: events, status: model.VotingStatus.registration));
+      when(
+        () => mockVotingBloc.connectionStatusStream,
+      ).thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -324,8 +395,10 @@ void main() {
       connectionStatusController.add(VotingConnectionStatus.reconnecting);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byKey(const ValueKey('connection_content_absorb_on')),
-          findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('connection_content_absorb_on')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Blocked Event'), warnIfMissed: false);
       await tester.pump(const Duration(milliseconds: 200));
@@ -333,18 +406,24 @@ void main() {
       expect(find.byType(RegistrationDetailsScreen), findsNothing);
     });
 
-    testWidgets('does not stack duplicate overlays for identical statuses',
-        (tester) async {
+    testWidgets('does not stack duplicate overlays for identical statuses', (
+      tester,
+    ) async {
       final connectionStatusController =
           StreamController<VotingConnectionStatus>.broadcast();
       addTearDown(() async {
         await connectionStatusController.close();
       });
 
-      when(() => mockVotingBloc.connectionStatusStream)
-          .thenAnswer((_) => connectionStatusController.stream);
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(
+        () => mockVotingBloc.connectionStatusStream,
+      ).thenAnswer((_) => connectionStatusController.stream);
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -358,49 +437,62 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const ValueKey('connection_status_overlay_content')),
-          findsOneWidget);
       expect(
-          find.byKey(const ValueKey('connection_status_overlay_reconnecting')),
-          findsOneWidget);
+        find.byKey(const ValueKey('connection_status_overlay_content')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('connection_status_overlay_reconnecting')),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
-        'auto-refreshes currently visible section after reconnect recovery',
-        (tester) async {
-      final connectionStatusController =
-          StreamController<VotingConnectionStatus>.broadcast();
-      addTearDown(() async {
-        await connectionStatusController.close();
-      });
+      'auto-refreshes currently visible section after reconnect recovery',
+      (tester) async {
+        final connectionStatusController =
+            StreamController<VotingConnectionStatus>.broadcast();
+        addTearDown(() async {
+          await connectionStatusController.close();
+        });
 
-      homeTabCubit.setIndex(1, source: 'test_setup');
-      when(() => mockVotingBloc.connectionStatusStream)
-          .thenAnswer((_) => connectionStatusController.stream);
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.active));
-      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+        homeTabCubit.setIndex(1, source: 'test_setup');
+        when(
+          () => mockVotingBloc.connectionStatusStream,
+        ).thenAnswer((_) => connectionStatusController.stream);
+        when(() => mockVotingBloc.state).thenReturn(
+          const VotingEventsLoadSuccess(
+            events: [],
+            status: model.VotingStatus.active,
+          ),
+        );
+        when(
+          () => mockVotingBloc.stream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-      clearInteractions(mockVotingBloc);
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+        clearInteractions(mockVotingBloc);
 
-      connectionStatusController.add(VotingConnectionStatus.reconnecting);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      connectionStatusController.add(VotingConnectionStatus.restored);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 900));
+        connectionStatusController.add(VotingConnectionStatus.reconnecting);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        connectionStatusController.add(VotingConnectionStatus.restored);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 900));
 
-      verify(
-        () => mockVotingBloc
-            .add(const FetchEventsByStatus(status: model.VotingStatus.active)),
-      ).called(1);
-    });
+        verify(
+          () => mockVotingBloc.add(
+            const FetchEventsByStatus(status: model.VotingStatus.active),
+          ),
+        ).called(1);
+      },
+    );
 
-    testWidgets('renders SeasonsLoader when state is VotingLoadInProgress',
-        (tester) async {
+    testWidgets('renders SeasonsLoader when state is VotingLoadInProgress', (
+      tester,
+    ) async {
       // Arrange
       when(() => mockVotingBloc.state).thenReturn(VotingLoadInProgress());
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -414,44 +506,54 @@ void main() {
       expect(find.byType(SeasonsLoader), findsOneWidget);
     });
 
-    testWidgets('renders list of events when state is VotingEventsLoadSuccess',
-        (tester) async {
-      // Arrange
-      final events = [
-        model.VotingEvent(
-          id: 'reg-01',
-          title: 'Лучшее мобильное приложение',
-          description: 'Описание события',
+    testWidgets(
+      'renders list of events when state is VotingEventsLoadSuccess',
+      (tester) async {
+        // Arrange
+        final events = [
+          model.VotingEvent(
+            id: 'reg-01',
+            title: 'Лучшее мобильное приложение',
+            description: 'Описание события',
+            status: model.VotingStatus.registration,
+            registrationEndDate: DateTime(2026, 12, 31),
+            votingStartDate: DateTime(2026, 1, 1),
+            votingEndDate: DateTime(2026, 1, 31),
+            isRegistered: false,
+            questions: const [],
+            hasVoted: false,
+            results: const [],
+          ),
+        ];
+        final state = VotingEventsLoadSuccess(
+          events: events,
           status: model.VotingStatus.registration,
-          registrationEndDate: DateTime(2026, 12, 31),
-          votingStartDate: DateTime(2026, 1, 1),
-          votingEndDate: DateTime(2026, 1, 31),
-          isRegistered: false,
-          questions: const [],
-          hasVoted: false,
-          results: const [],
-        ),
-      ];
-      final state = VotingEventsLoadSuccess(
-          events: events, status: model.VotingStatus.registration);
-      when(() => mockVotingBloc.state).thenReturn(state);
-      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+        );
+        when(() => mockVotingBloc.state).thenReturn(state);
+        when(
+          () => mockVotingBloc.stream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-      // Act
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        // Act
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      // Assert
-      expect(find.text('Лучшее мобильное приложение'), findsOneWidget);
-      expect(find.byType(Card), findsOneWidget);
-      expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
-    });
+        // Assert
+        expect(find.text('Лучшее мобильное приложение'), findsOneWidget);
+        expect(find.byType(Card), findsOneWidget);
+        expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
+      },
+    );
 
     testWidgets('renders empty state when no events', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -463,8 +565,9 @@ void main() {
       expect(find.text('Нет активных голосований'), findsOneWidget);
     });
 
-    testWidgets('renders error message when state is VotingFailure',
-        (tester) async {
+    testWidgets('renders error message when state is VotingFailure', (
+      tester,
+    ) async {
       // Arrange
       final state = const VotingFailure(error: 'Failed to load');
       when(() => mockVotingBloc.state).thenReturn(state);
@@ -482,8 +585,12 @@ void main() {
 
     testWidgets('shows logout button and triggers logout', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
       when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
@@ -503,15 +610,19 @@ void main() {
       verify(() => mockAuthBloc.add(LoggedOut())).called(1);
     });
 
-    testWidgets('handles auth_invalid once and avoids duplicate logout spam',
-        (tester) async {
+    testWidgets('handles auth_invalid once and avoids duplicate logout spam', (
+      tester,
+    ) async {
       final authInvalidController = StreamController<void>.broadcast();
-      when(() => mockVotingBloc.onAuthInvalid)
-          .thenAnswer((_) => authInvalidController.stream);
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-        events: [],
-        status: model.VotingStatus.registration,
-      ));
+      when(
+        () => mockVotingBloc.onAuthInvalid,
+      ).thenAnswer((_) => authInvalidController.stream);
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
       when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
@@ -548,8 +659,12 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
-          events: events, status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -562,69 +677,83 @@ void main() {
     });
 
     testWidgets(
-        'displays not registered on second line when registration is closed',
-        (tester) async {
-      final events = [
-        model.VotingEvent(
-          id: 'reg-closed-01',
-          title: 'Closed Registration Event',
-          description: 'Description',
-          status: model.VotingStatus.registration,
-          registrationEndDate: DateTime(2025, 1, 1),
-          isRegistered: false,
-          questions: const [],
-          hasVoted: false,
-          results: const [],
-        ),
-      ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
-          events: events, status: model.VotingStatus.registration));
-      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+      'displays not registered on second line when registration is closed',
+      (tester) async {
+        final events = [
+          model.VotingEvent(
+            id: 'reg-closed-01',
+            title: 'Closed Registration Event',
+            description: 'Description',
+            status: model.VotingStatus.registration,
+            registrationEndDate: DateTime(2025, 1, 1),
+            isRegistered: false,
+            questions: const [],
+            hasVoted: false,
+            results: const [],
+          ),
+        ];
+        when(() => mockVotingBloc.state).thenReturn(
+          VotingEventsLoadSuccess(
+            events: events,
+            status: model.VotingStatus.registration,
+          ),
+        );
+        when(
+          () => mockVotingBloc.stream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Регистрация закрыта'), findsOneWidget);
-      expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
-    });
+        expect(find.text('Регистрация закрыта'), findsOneWidget);
+        expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'registration tab keeps registration behavior for unregistered active-status event',
-        (tester) async {
-      final events = [
-        model.VotingEvent(
-          id: 'reg-closed-active-01',
-          title: 'Closed Registration Active Event',
-          description: 'Description',
-          status: model.VotingStatus.active,
-          registrationEndDate: DateTime(2025, 1, 1),
-          votingStartDate: DateTime(2025, 1, 2),
-          votingEndDate: DateTime(2026, 12, 31),
-          isRegistered: false,
-          questions: const [],
-          hasVoted: false,
-          results: const [],
-        ),
-      ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
-          events: events, status: model.VotingStatus.registration));
-      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+      'registration tab keeps registration behavior for unregistered active-status event',
+      (tester) async {
+        final events = [
+          model.VotingEvent(
+            id: 'reg-closed-active-01',
+            title: 'Closed Registration Active Event',
+            description: 'Description',
+            status: model.VotingStatus.active,
+            registrationEndDate: DateTime(2025, 1, 1),
+            votingStartDate: DateTime(2025, 1, 2),
+            votingEndDate: DateTime(2026, 12, 31),
+            isRegistered: false,
+            questions: const [],
+            hasVoted: false,
+            results: const [],
+          ),
+        ];
+        when(() => mockVotingBloc.state).thenReturn(
+          VotingEventsLoadSuccess(
+            events: events,
+            status: model.VotingStatus.registration,
+          ),
+        );
+        when(
+          () => mockVotingBloc.stream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Регистрация закрыта'), findsOneWidget);
-      expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
-      expect(find.text('Идет голосование'), findsNothing);
-      expect(find.text('Не проголосовал(-а)'), findsNothing);
+        expect(find.text('Регистрация закрыта'), findsOneWidget);
+        expect(find.text('Не зарегистрирован(-а)'), findsOneWidget);
+        expect(find.text('Идет голосование'), findsNothing);
+        expect(find.text('Не проголосовал(-а)'), findsNothing);
 
-      await tester.tap(find.byType(Card).first);
-      await tester.pumpAndSettle();
+        await tester.tap(find.byType(Card).first);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(RegistrationDetailsScreen), findsOneWidget);
-    });
+        expect(find.byType(RegistrationDetailsScreen), findsOneWidget);
+      },
+    );
 
     testWidgets('displays voted status correctly', (tester) async {
       // Arrange
@@ -641,8 +770,12 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
-          events: events, status: model.VotingStatus.active));
+      when(() => mockVotingBloc.state).thenReturn(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: model.VotingStatus.active,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
       homeTabCubit.setIndex(1, source: 'test_setup');
@@ -657,8 +790,12 @@ void main() {
 
     testWidgets('panel selector switches between statuses', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -672,70 +809,85 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert: Verify that FetchEventsByStatus was called with active status
-      verify(() => mockVotingBloc.add(
-              const FetchEventsByStatus(status: model.VotingStatus.active)))
-          .called(greaterThan(0));
+      verify(
+        () => mockVotingBloc.add(
+          const FetchEventsByStatus(status: model.VotingStatus.active),
+        ),
+      ).called(greaterThan(0));
       expect(homeTabCubit.state.index, 1);
     });
 
     testWidgets(
-        'completed panel turns blue immediately after user opens completed section',
-        (tester) async {
-      final completedEvent = model.VotingEvent(
-        id: 'completed-01',
-        title: 'Finished Event',
-        description: 'Finished description',
-        status: model.VotingStatus.completed,
-        votingEndDate: DateTime(2026, 1, 31),
-        isRegistered: true,
-        questions: const [],
-        hasVoted: true,
-        results: const [],
-      );
-      final stateController = StreamController<VotingState>.broadcast();
-      addTearDown(() async {
-        await stateController.close();
-      });
+      'completed panel turns blue immediately after user opens completed section',
+      (tester) async {
+        final completedEvent = model.VotingEvent(
+          id: 'completed-01',
+          title: 'Finished Event',
+          description: 'Finished description',
+          status: model.VotingStatus.completed,
+          votingEndDate: DateTime(2026, 1, 31),
+          isRegistered: true,
+          questions: const [],
+          hasVoted: true,
+          results: const [],
+        );
+        final stateController = StreamController<VotingState>.broadcast();
+        addTearDown(() async {
+          await stateController.close();
+        });
 
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
-      when(() => mockVotingBloc.stream)
-          .thenAnswer((_) => stateController.stream);
-      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+        when(() => mockVotingBloc.state).thenReturn(
+          const VotingEventsLoadSuccess(
+            events: [],
+            status: model.VotingStatus.registration,
+          ),
+        );
+        when(
+          () => mockVotingBloc.stream,
+        ).thenAnswer((_) => stateController.stream);
+        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      stateController.add(VotingEventsLoadSuccess(
-          events: [completedEvent], status: model.VotingStatus.completed));
-      await tester.pumpAndSettle();
+        stateController.add(
+          VotingEventsLoadSuccess(
+            events: [completedEvent],
+            status: model.VotingStatus.completed,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      final completedIcon = find.byType(ResultsIcon).first;
-      final completedAvatarFinder =
-          find.ancestor(of: completedIcon, matching: find.byType(CircleAvatar));
+        final completedIcon = find.byType(ResultsIcon).first;
+        final completedAvatarFinder = find.ancestor(
+          of: completedIcon,
+          matching: find.byType(CircleAvatar),
+        );
 
-      expect(
-        tester
-            .widget<CircleAvatar>(completedAvatarFinder.first)
-            .backgroundColor,
-        const Color(0xFF00A94F),
-      );
+        expect(
+          tester
+              .widget<CircleAvatar>(completedAvatarFinder.first)
+              .backgroundColor,
+          const Color(0xFF00A94F),
+        );
 
-      await tester.tap(completedIcon);
-      await tester.pump();
+        await tester.tap(completedIcon);
+        await tester.pump();
 
-      expect(
-        tester
-            .widget<CircleAvatar>(completedAvatarFinder.first)
-            .backgroundColor,
-        const Color(0xFF6d9fc5),
-      );
+        expect(
+          tester
+              .widget<CircleAvatar>(completedAvatarFinder.first)
+              .backgroundColor,
+          const Color(0xFF6d9fc5),
+        );
 
-      await tester.pumpAndSettle();
-    });
+        await tester.pumpAndSettle();
+      },
+    );
 
-    testWidgets('keeps selected panel after orientation change',
-        (tester) async {
+    testWidgets('keeps selected panel after orientation change', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 3.0;
       addTearDown(() {
@@ -743,8 +895,12 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -762,8 +918,9 @@ void main() {
       expect(homeTabCubit.state.index, 2);
     });
 
-    testWidgets('panel selector remains tappable after orientation change',
-        (tester) async {
+    testWidgets('panel selector remains tappable after orientation change', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1080, 1920);
       tester.view.devicePixelRatio = 3.0;
       addTearDown(() {
@@ -771,8 +928,12 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -787,9 +948,11 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 900));
 
       expect(homeTabCubit.state.index, 1);
-      verify(() => mockVotingBloc.add(
-              const FetchEventsByStatus(status: model.VotingStatus.active)))
-          .called(greaterThan(0));
+      verify(
+        () => mockVotingBloc.add(
+          const FetchEventsByStatus(status: model.VotingStatus.active),
+        ),
+      ).called(greaterThan(0));
     });
 
     testWidgets('displays date information correctly', (tester) async {
@@ -809,8 +972,12 @@ void main() {
           results: const [],
         ),
       ];
-      when(() => mockVotingBloc.state).thenReturn(VotingEventsLoadSuccess(
-          events: events, status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
@@ -824,8 +991,12 @@ void main() {
 
     testWidgets('renders footer with poem', (tester) async {
       // Arrange
-      when(() => mockVotingBloc.state).thenReturn(const VotingEventsLoadSuccess(
-          events: [], status: model.VotingStatus.registration));
+      when(() => mockVotingBloc.state).thenReturn(
+        const VotingEventsLoadSuccess(
+          events: [],
+          status: model.VotingStatus.registration,
+        ),
+      );
       when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
       when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 

@@ -38,7 +38,7 @@ class ErrorReportingService {
   /// injectable [http.Client] so network calls can be stubbed in unit tests.
   @visibleForTesting
   ErrorReportingService.withHttpClient(http.Client httpClient)
-      : _httpClient = httpClient;
+    : _httpClient = httpClient;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CONFIGURATION
@@ -178,7 +178,8 @@ class ErrorReportingService {
         maxLength: _kMaxTelemetryMessageLength,
       );
       debugPrint(
-          'ErrorReportingService: ${severity.name.toUpperCase()} - $sanitizedError');
+        'ErrorReportingService: ${severity.name.toUpperCase()} - $sanitizedError',
+      );
       if (stackTrace != null) {
         debugPrint(
           sanitizeTelemetryText(
@@ -203,12 +204,14 @@ class ErrorReportingService {
   Future<void> reportEvent(String event, {Map<String, String>? details}) async {
     final sanitizedEvent = sanitizeTelemetryText(event, maxLength: 120);
     final sanitizedDetails = sanitizeTelemetryDetails(details);
-    final detailStr =
-        sanitizedDetails.entries.map((e) => '${e.key}=${e.value}').join(', ');
+    final detailStr = sanitizedDetails.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join(', ');
 
     if (kDebugMode) {
       debugPrint(
-          'ErrorReportingService: EVENT - $sanitizedEvent ${detailStr.isNotEmpty ? "($detailStr)" : ""}');
+        'ErrorReportingService: EVENT - $sanitizedEvent ${detailStr.isNotEmpty ? "($detailStr)" : ""}',
+      );
       if (!_enableDiagnosticEvents) return;
     }
 
@@ -222,10 +225,7 @@ class ErrorReportingService {
   }
 
   /// Report a fatal crash (unhandled exception).
-  Future<void> reportCrash(
-    dynamic error,
-    StackTrace stackTrace,
-  ) async {
+  Future<void> reportCrash(dynamic error, StackTrace stackTrace) async {
     if (!_enableErrorReporting) return;
 
     if (kDebugMode) {
@@ -254,7 +254,8 @@ class ErrorReportingService {
 
     if (kDebugMode) {
       debugPrint(
-          'ErrorReportingService: FLUTTER_ERROR - ${sanitizeTelemetryText(details.exceptionAsString(), maxLength: _kMaxTelemetryMessageLength)}');
+        'ErrorReportingService: FLUTTER_ERROR - ${sanitizeTelemetryText(details.exceptionAsString(), maxLength: _kMaxTelemetryMessageLength)}',
+      );
       return;
     }
 
@@ -275,24 +276,38 @@ class ErrorReportingService {
     if (!_isReportingEnabledForType(type)) return;
 
     final sanitizedType = sanitizeTelemetryText(type, maxLength: 32);
-    final sanitizedMessage =
-        sanitizeTelemetryText(message, maxLength: _kMaxTelemetryMessageLength);
+    final sanitizedMessage = sanitizeTelemetryText(
+      message,
+      maxLength: _kMaxTelemetryMessageLength,
+    );
     final sanitizedContext = context == null
         ? null
-        : sanitizeTelemetryText(context,
-            maxLength: _kMaxTelemetryContextLength);
+        : sanitizeTelemetryText(
+            context,
+            maxLength: _kMaxTelemetryContextLength,
+          );
     final sanitizedStack = stackTrace == null
         ? null
-        : sanitizeTelemetryText(stackTrace,
-            maxLength: _kMaxTelemetryStackLength);
-    final sanitizedAppVersion =
-        sanitizeTelemetryText(_appVersion, maxLength: 40);
-    final sanitizedPlatform =
-        sanitizeTelemetryText(detectPlatform(), maxLength: 20);
-    final sanitizedOsVersion =
-        sanitizeTelemetryText(detectOsVersion(), maxLength: 120);
-    final sanitizedScreen =
-        sanitizeTelemetryText(_currentScreen, maxLength: 80);
+        : sanitizeTelemetryText(
+            stackTrace,
+            maxLength: _kMaxTelemetryStackLength,
+          );
+    final sanitizedAppVersion = sanitizeTelemetryText(
+      _appVersion,
+      maxLength: 40,
+    );
+    final sanitizedPlatform = sanitizeTelemetryText(
+      detectPlatform(),
+      maxLength: 20,
+    );
+    final sanitizedOsVersion = sanitizeTelemetryText(
+      detectOsVersion(),
+      maxLength: 120,
+    );
+    final sanitizedScreen = sanitizeTelemetryText(
+      _currentScreen,
+      maxLength: 80,
+    );
 
     final report = ErrorReport(
       type: sanitizedType,
@@ -405,10 +420,12 @@ class ErrorReportingService {
 
     final buffer = StringBuffer();
     buffer.writeln(
-        '$emoji <b>${escapeHtml(report.type.toUpperCase())}</b> в Seasons');
+      '$emoji <b>${escapeHtml(report.type.toUpperCase())}</b> в Seasons',
+    );
     buffer.writeln();
     buffer.writeln(
-        '📱 ${escapeHtml(report.platform)} ${escapeHtml(report.osVersion)}');
+      '📱 ${escapeHtml(report.platform)} ${escapeHtml(report.osVersion)}',
+    );
     buffer.writeln('📦 Версия: ${escapeHtml(report.appVersion)}');
     buffer.writeln('📍 Экран: ${escapeHtml(report.screenName)}');
     buffer.writeln('🕐 ${escapeHtml(report.timestamp)}');
@@ -555,8 +572,9 @@ class TelegramErrorReportTransport implements ErrorReportTransport {
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
         final message = ErrorReportingService.formatTelegramMessage(report);
-        final telegramUrl =
-            Uri.parse('https://api.telegram.org/bot$botToken/sendMessage');
+        final telegramUrl = Uri.parse(
+          'https://api.telegram.org/bot$botToken/sendMessage',
+        );
 
         final response = await client
             .post(
@@ -636,19 +654,13 @@ class HttpRelayErrorReportTransport implements ErrorReportTransport {
 
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
-        final headers = <String, String>{
-          'Content-Type': 'application/json',
-        };
+        final headers = <String, String>{'Content-Type': 'application/json'};
         if (apiKey.isNotEmpty) {
           headers['Authorization'] = 'Bearer $apiKey';
         }
 
         final response = await client
-            .post(
-              endpoint,
-              headers: headers,
-              body: jsonEncode(report.toJson()),
-            )
+            .post(endpoint, headers: headers, body: jsonEncode(report.toJson()))
             .timeout(const Duration(seconds: 10));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -694,11 +706,7 @@ class HttpRelayErrorReportTransport implements ErrorReportTransport {
 }
 
 /// Error severity levels.
-enum ErrorSeverity {
-  warning,
-  error,
-  critical,
-}
+enum ErrorSeverity { warning, error, critical }
 
 /// Error report data model.
 /// Contains only non-PII information.
@@ -726,26 +734,26 @@ class ErrorReport {
   });
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'message': message,
-        if (stackTrace != null) 'stackTrace': stackTrace,
-        if (context != null) 'context': context,
-        'timestamp': timestamp,
-        'appVersion': appVersion,
-        'platform': platform,
-        'osVersion': osVersion,
-        'screenName': screenName,
-      };
+    'type': type,
+    'message': message,
+    if (stackTrace != null) 'stackTrace': stackTrace,
+    if (context != null) 'context': context,
+    'timestamp': timestamp,
+    'appVersion': appVersion,
+    'platform': platform,
+    'osVersion': osVersion,
+    'screenName': screenName,
+  };
 
   factory ErrorReport.fromJson(Map<String, dynamic> json) => ErrorReport(
-        type: json['type'] as String,
-        message: json['message'] as String,
-        stackTrace: json['stackTrace'] as String?,
-        context: json['context'] as String?,
-        timestamp: json['timestamp'] as String,
-        appVersion: json['appVersion'] as String,
-        platform: json['platform'] as String,
-        osVersion: json['osVersion'] as String,
-        screenName: json['screenName'] as String,
-      );
+    type: json['type'] as String,
+    message: json['message'] as String,
+    stackTrace: json['stackTrace'] as String?,
+    context: json['context'] as String?,
+    timestamp: json['timestamp'] as String,
+    appVersion: json['appVersion'] as String,
+    platform: json['platform'] as String,
+    osVersion: json['osVersion'] as String,
+    screenName: json['screenName'] as String,
+  );
 }

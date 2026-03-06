@@ -31,11 +31,7 @@ mixin ScreenTrackingMixin<T extends StatefulWidget> on State<T> {
 extension ErrorReportingContext on BuildContext {
   /// Report an error with context from this widget.
   void reportError(dynamic error, StackTrace? stackTrace, {String? context}) {
-    ErrorReportingService().reportError(
-      error,
-      stackTrace,
-      context: context,
-    );
+    ErrorReportingService().reportError(error, stackTrace, context: context);
   }
 
   /// Report a warning.

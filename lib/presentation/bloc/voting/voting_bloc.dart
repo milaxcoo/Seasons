@@ -39,10 +39,10 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     Stream<Map<String, dynamic>?>? backgroundServiceStream,
     Duration refreshDebounce = const Duration(milliseconds: 350),
     Duration restoredStatusDuration = const Duration(seconds: 2),
-  })  : _votingRepository = votingRepository,
-        _refreshDebounce = refreshDebounce,
-        _restoredStatusDuration = restoredStatusDuration,
-        super(VotingInitial()) {
+  }) : _votingRepository = votingRepository,
+       _refreshDebounce = refreshDebounce,
+       _restoredStatusDuration = restoredStatusDuration,
+       super(VotingInitial()) {
     on<FetchEventsByStatus>(_onFetchEventsByStatus);
     on<RefreshEventsSilent>(_onRefreshEventsSilent);
     on<RefreshAllEventsSilent>(_onRefreshAllEventsSilent);
@@ -52,18 +52,18 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     on<VotingListUpdated>(_onVotingListUpdated);
 
     // Listen to BackgroundService for updates (or provided stream for testing).
-    _serviceSubscription =
-        (backgroundServiceStream ?? BackgroundService().on).listen((data) {
-      if (data == null) return;
+    _serviceSubscription = (backgroundServiceStream ?? BackgroundService().on)
+        .listen((data) {
+          if (data == null) return;
 
-      final action = data['action'] as String?;
-      if (action == null || action.isEmpty) return;
-      if (kDebugMode) {
-        debugPrint("VotingBloc: Received from BackgroundService: $action");
-      }
+          final action = data['action'] as String?;
+          if (action == null || action.isEmpty) return;
+          if (kDebugMode) {
+            debugPrint("VotingBloc: Received from BackgroundService: $action");
+          }
 
-      _handleBackgroundServiceAction(action);
-    });
+          _handleBackgroundServiceAction(action);
+        });
   }
 
   void _handleBackgroundServiceAction(String action) {
@@ -137,11 +137,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
   ) async {
     try {
       final events = await _votingRepository.getEventsByStatus(status);
-      emit(VotingEventsLoadSuccess(
-        events: events,
-        status: status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
       return true;
     } on UnauthorizedSessionException {
       _notifyAuthInvalid();
@@ -162,8 +164,9 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
   ) {
     if (state is VotingEventsLoadSuccess) {
       final currentState = state as VotingEventsLoadSuccess;
-      final filtered =
-          event.events.where((e) => e.status == currentState.status).toList();
+      final filtered = event.events
+          .where((e) => e.status == currentState.status)
+          .toList();
 
       if (kDebugMode) {
         debugPrint(
@@ -171,11 +174,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
         );
       }
 
-      emit(VotingEventsLoadSuccess(
-        events: filtered,
-        status: currentState.status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: filtered,
+          status: currentState.status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
     }
   }
 
@@ -189,11 +194,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
         return e;
       }).toList();
 
-      emit(VotingEventsLoadSuccess(
-        events: updatedEvents,
-        status: currentState.status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: updatedEvents,
+          status: currentState.status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
     }
   }
 
@@ -214,11 +221,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     emit(VotingLoadInProgress());
     try {
       final events = await _votingRepository.getEventsByStatus(event.status);
-      emit(VotingEventsLoadSuccess(
-        events: events,
-        status: event.status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: event.status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
     } on UnauthorizedSessionException {
       _notifyAuthInvalid();
       emit(const VotingFailure(error: 'auth_invalid'));
@@ -250,36 +259,38 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     ];
 
     // Fetch all statuses in parallel.
-    final results = await Future.wait(statuses.map((status) async {
-      try {
-        final events = await _votingRepository.getEventsByStatus(status);
-        return (
-          status: status,
-          events: events,
-          success: true,
-          unauthorized: false,
-        );
-      } on UnauthorizedSessionException {
-        return (
-          status: status,
-          events: <model.VotingEvent>[],
-          success: false,
-          unauthorized: true,
-        );
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-            'Silent refresh failed for $status: ${sanitizeObjectForLog(e)}',
+    final results = await Future.wait(
+      statuses.map((status) async {
+        try {
+          final events = await _votingRepository.getEventsByStatus(status);
+          return (
+            status: status,
+            events: events,
+            success: true,
+            unauthorized: false,
+          );
+        } on UnauthorizedSessionException {
+          return (
+            status: status,
+            events: <model.VotingEvent>[],
+            success: false,
+            unauthorized: true,
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              'Silent refresh failed for $status: ${sanitizeObjectForLog(e)}',
+            );
+          }
+          return (
+            status: status,
+            events: <model.VotingEvent>[],
+            success: false,
+            unauthorized: _isUnauthorizedError(e),
           );
         }
-        return (
-          status: status,
-          events: <model.VotingEvent>[],
-          success: false,
-          unauthorized: _isUnauthorizedError(e),
-        );
-      }
-    }));
+      }),
+    );
 
     // Emit results sequentially (Emitter does not support concurrent emissions).
     var hasSuccess = false;
@@ -288,11 +299,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     for (final result in results) {
       if (result.success) {
         hasSuccess = true;
-        emit(VotingEventsLoadSuccess(
-          events: result.events,
-          status: result.status,
-          timestamp: DateTime.now().millisecondsSinceEpoch,
-        ));
+        emit(
+          VotingEventsLoadSuccess(
+            events: result.events,
+            status: result.status,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
       } else {
         if (result.unauthorized) {
           hasUnauthorized = true;
@@ -347,11 +360,15 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
   }
 
   Future<void> _onSubmitVote(
-      SubmitVote event, Emitter<VotingState> emit) async {
+    SubmitVote event,
+    Emitter<VotingState> emit,
+  ) async {
     emit(VotingLoadInProgress());
     try {
-      final isVoteAccepted =
-          await _votingRepository.submitVote(event.event, event.answers);
+      final isVoteAccepted = await _votingRepository.submitVote(
+        event.event,
+        event.answers,
+      );
       if (isVoteAccepted) {
         emit(VotingSubmissionSuccess());
       } else {

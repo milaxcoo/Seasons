@@ -86,51 +86,57 @@ void main() {
         expect(loaded, isEmpty);
       });
 
-      test('saveDraft does not keep plaintext JSON in SharedPreferences',
-          () async {
-        final answers = {'q1': 'answer-a'};
-        await draftService.saveDraft('v1', answers);
+      test(
+        'saveDraft does not keep plaintext JSON in SharedPreferences',
+        () async {
+          final answers = {'q1': 'answer-a'};
+          await draftService.saveDraft('v1', answers);
 
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getString('draft_voting_v1'), isNull);
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getString('draft_voting_v1'), isNull);
 
-        final snapshot = secureStorage.snapshot();
-        final rawDraftPayload = snapshot['draft_secure_v1_v1'];
-        expect(rawDraftPayload, isNotNull);
-        expect(rawDraftPayload, isNot(equals(jsonEncode(answers))));
-        expect(() => jsonDecode(rawDraftPayload!), throwsFormatException);
-      });
+          final snapshot = secureStorage.snapshot();
+          final rawDraftPayload = snapshot['draft_secure_v1_v1'];
+          expect(rawDraftPayload, isNotNull);
+          expect(rawDraftPayload, isNot(equals(jsonEncode(answers))));
+          expect(() => jsonDecode(rawDraftPayload!), throwsFormatException);
+        },
+      );
 
-      test('migrates legacy plaintext draft once and removes legacy key',
-          () async {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-          'draft_voting_v42',
-          jsonEncode({'q1': 'legacy-answer'}),
-        );
+      test(
+        'migrates legacy plaintext draft once and removes legacy key',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'draft_voting_v42',
+            jsonEncode({'q1': 'legacy-answer'}),
+          );
 
-        final loaded = await draftService.loadDraft('v42');
-        expect(loaded, equals({'q1': 'legacy-answer'}));
+          final loaded = await draftService.loadDraft('v42');
+          expect(loaded, equals({'q1': 'legacy-answer'}));
 
-        expect(prefs.getString('draft_voting_v42'), isNull);
-        expect(prefs.getBool('draft_secure_migration_v1_done'), isTrue);
+          expect(prefs.getString('draft_voting_v42'), isNull);
+          expect(prefs.getBool('draft_secure_migration_v1_done'), isTrue);
 
-        final loadedAgain = await draftService.loadDraft('v42');
-        expect(loadedAgain, equals({'q1': 'legacy-answer'}));
-      });
+          final loadedAgain = await draftService.loadDraft('v42');
+          expect(loadedAgain, equals({'q1': 'legacy-answer'}));
+        },
+      );
 
-      test('saved drafts persist across service restart with same secure store',
-          () async {
-        await draftService.saveDraft('v1', {'q1': 'a1'});
+      test(
+        'saved drafts persist across service restart with same secure store',
+        () async {
+          await draftService.saveDraft('v1', {'q1': 'a1'});
 
-        final restarted = DraftService(
-          secureStorage: secureStorage,
-          prefsFactory: SharedPreferences.getInstance,
-        );
-        final loaded = await restarted.loadDraft('v1');
+          final restarted = DraftService(
+            secureStorage: secureStorage,
+            prefsFactory: SharedPreferences.getInstance,
+          );
+          final loaded = await restarted.loadDraft('v1');
 
-        expect(loaded, equals({'q1': 'a1'}));
-      });
+          expect(loaded, equals({'q1': 'a1'}));
+        },
+      );
     });
 
     group('clearDraft', () {
@@ -143,10 +149,7 @@ void main() {
       });
 
       test('clearDraft on non-existent draft does not throw', () async {
-        await expectLater(
-          draftService.clearDraft('non-existent'),
-          completes,
-        );
+        await expectLater(draftService.clearDraft('non-existent'), completes);
       });
 
       test('clearDraft does not affect other drafts', () async {

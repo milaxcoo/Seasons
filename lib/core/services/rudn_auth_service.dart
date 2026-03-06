@@ -15,7 +15,7 @@ class FlutterSecureStorageAdapter implements SecureStorageInterface {
   final FlutterSecureStorage _storage;
 
   FlutterSecureStorageAdapter([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   @override
   Future<void> write({required String key, required String? value}) async {
@@ -46,9 +46,7 @@ class RudnAuthService {
 
   // Singleton instance with default storage
   static final RudnAuthService _instance = RudnAuthService._internal(
-    FlutterSecureStorageAdapter(
-      const FlutterSecureStorage(),
-    ),
+    FlutterSecureStorageAdapter(const FlutterSecureStorage()),
   );
 
   /// Default factory returns singleton with real storage
@@ -56,7 +54,7 @@ class RudnAuthService {
 
   /// Constructor for dependency injection (used in tests)
   RudnAuthService.withStorage(SecureStorageInterface storage)
-      : _storage = storage;
+    : _storage = storage;
 
   RudnAuthService._internal(this._storage);
 
@@ -64,15 +62,17 @@ class RudnAuthService {
   Future<bool> saveCookie(String cookie) async {
     try {
       await _storage.write(key: _cookieKey, value: cookie);
-      final persisted = await _storage.read(key: _cookieKey).timeout(
-        _storageTimeout,
-        onTimeout: () {
-          if (kDebugMode) {
-            debugPrint('Storage verification timed out on saveCookie');
-          }
-          return null;
-        },
-      );
+      final persisted = await _storage
+          .read(key: _cookieKey)
+          .timeout(
+            _storageTimeout,
+            onTimeout: () {
+              if (kDebugMode) {
+                debugPrint('Storage verification timed out on saveCookie');
+              }
+              return null;
+            },
+          );
       final isPersisted = persisted == cookie;
       if (!isPersisted) {
         if (kDebugMode) {
@@ -92,15 +92,17 @@ class RudnAuthService {
   Future<String?> getCookie() async {
     try {
       // Add timeout to prevent hanging if KeyStore is corrupted/slow
-      return await _storage.read(key: _cookieKey).timeout(
-        _storageTimeout,
-        onTimeout: () {
-          if (kDebugMode) {
-            debugPrint('Storage read timed out');
-          }
-          return null;
-        },
-      );
+      return await _storage
+          .read(key: _cookieKey)
+          .timeout(
+            _storageTimeout,
+            onTimeout: () {
+              if (kDebugMode) {
+                debugPrint('Storage read timed out');
+              }
+              return null;
+            },
+          );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error reading cookie: $e');
@@ -113,15 +115,17 @@ class RudnAuthService {
   Future<bool> logout() async {
     try {
       await _storage.delete(key: _cookieKey);
-      final remaining = await _storage.read(key: _cookieKey).timeout(
-        _storageTimeout,
-        onTimeout: () {
-          if (kDebugMode) {
-            debugPrint('Storage verification timed out on logout');
-          }
-          return null;
-        },
-      );
+      final remaining = await _storage
+          .read(key: _cookieKey)
+          .timeout(
+            _storageTimeout,
+            onTimeout: () {
+              if (kDebugMode) {
+                debugPrint('Storage verification timed out on logout');
+              }
+              return null;
+            },
+          );
       if (remaining == null || remaining.isEmpty) {
         return true;
       }

@@ -49,17 +49,14 @@ class VotingDetailsScreen extends StatelessWidget {
           title: Text(
             event.title,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: detailStyle.appBarTitleFontSize,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: detailStyle.appBarTitleFontSize,
+            ),
           ),
           centerTitle: true,
         ),
-        body: _VotingDetailsView(
-          event: event,
-          draftService: draftService,
-        ),
+        body: _VotingDetailsView(event: event, draftService: draftService),
       ),
     );
   }
@@ -69,10 +66,7 @@ class _VotingDetailsView extends StatefulWidget {
   final model.VotingEvent event;
   final DraftService? draftService;
 
-  const _VotingDetailsView({
-    required this.event,
-    this.draftService,
-  });
+  const _VotingDetailsView({required this.event, this.draftService});
 
   @override
   State<_VotingDetailsView> createState() => _VotingDetailsViewState();
@@ -114,20 +108,21 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
           child: AlertDialog(
             contentPadding: detailStyle.dialogContentPadding,
             titlePadding: detailStyle.dialogTitlePadding,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Text(
               l10n.areYouSure,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    fontSize: detailStyle.titleFontSize + 1.0,
-                  ),
+                fontWeight: FontWeight.w900,
+                fontSize: detailStyle.titleFontSize + 1.0,
+              ),
             ),
             content: Text(
               l10n.voteConfirmationMessage,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: detailStyle.titleFontSize - 2.0,
-                  ),
+                fontSize: detailStyle.titleFontSize - 2.0,
+              ),
             ),
             actionsPadding: detailStyle.dialogActionsPadding,
             actions: <Widget>[
@@ -169,11 +164,8 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
                   context.read<VotingBloc>().add(
-                        SubmitVote(
-                          event: widget.event,
-                          answers: _selectedAnswers,
-                        ),
-                      );
+                    SubmitVote(event: widget.event, answers: _selectedAnswers),
+                  );
                 },
               ),
             ],
@@ -197,10 +189,12 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(
-          content: Text(l10n.answerAllQuestions),
-          backgroundColor: Colors.orange,
-        ));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.answerAllQuestions),
+            backgroundColor: Colors.orange,
+          ),
+        );
       return;
     }
 
@@ -215,7 +209,9 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
 
     final locale = Localizations.localeOf(context);
     final dateFormat = DateFormat(
-        'dd.MM.yyyy HH:mm:ss', locale.languageCode == 'ru' ? 'ru' : 'en');
+      'dd.MM.yyyy HH:mm:ss',
+      locale.languageCode == 'ru' ? 'ru' : 'en',
+    );
     final l10n = AppLocalizations.of(context)!;
     final startDate = widget.event.votingStartDate != null
         ? dateFormat.format(widget.event.votingStartDate!)
@@ -225,11 +221,13 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
         : l10n.notSet;
 
     final statusText = widget.event.hasVoted ? l10n.voted : l10n.notVoted;
-    final statusColor =
-        widget.event.hasVoted ? AppTheme.rudnGreenColor : AppTheme.rudnRedColor;
+    final statusColor = widget.event.hasVoted
+        ? AppTheme.rudnGreenColor
+        : AppTheme.rudnRedColor;
 
     final now = DateTime.now();
-    final bool isOngoing = widget.event.votingStartDate != null &&
+    final bool isOngoing =
+        widget.event.votingStartDate != null &&
         widget.event.votingStartDate!.isBefore(now) &&
         (widget.event.votingEndDate == null ||
             widget.event.votingEndDate!.isAfter(now));
@@ -244,27 +242,29 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             barrierDismissible: false,
             builder: (dialogContext) => Center(
               child: ConstrainedBox(
-                constraints:
-                    BoxConstraints(maxWidth: detailStyle.dialogMaxWidth),
+                constraints: BoxConstraints(
+                  maxWidth: detailStyle.dialogMaxWidth,
+                ),
                 child: AlertDialog(
                   contentPadding: detailStyle.dialogContentPadding,
                   titlePadding: detailStyle.dialogTitlePadding,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   title: Text(
                     l10n.voteAccepted,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          fontSize: detailStyle.titleFontSize + 1.0,
-                        ),
+                      fontWeight: FontWeight.w900,
+                      fontSize: detailStyle.titleFontSize + 1.0,
+                    ),
                   ),
                   content: Text(
                     l10n.thankYou,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontSize: detailStyle.titleFontSize - 2.0,
-                        ),
+                      fontSize: detailStyle.titleFontSize - 2.0,
+                    ),
                   ),
                   actionsAlignment: MainAxisAlignment.center,
                   actionsPadding: detailStyle.dialogActionsPadding,
@@ -300,10 +300,12 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(
-                content: Text(l10n.alreadyVotedError),
-                backgroundColor: Colors.blue,
-              ));
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(l10n.alreadyVotedError),
+                  backgroundColor: Colors.blue,
+                ),
+              );
             Navigator.of(context).pop(true);
           } else {
             final l10n = AppLocalizations.of(context)!;
@@ -314,10 +316,12 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
             );
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(
-                content: Text(userMessage),
-                backgroundColor: AppTheme.rudnRedColor,
-              ));
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(userMessage),
+                  backgroundColor: AppTheme.rudnRedColor,
+                ),
+              );
           }
         }
       },
@@ -327,146 +331,234 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
           return Center(
             child: Text(
               l10n.noQuestionsAvailable,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(color: Colors.white),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.white),
             ),
           );
         }
 
-        return LayoutBuilder(builder: (context, constraints) {
-          final bool isPinnedButton = constraints.maxHeight >
-              (detailStyle.isExtremeCompact ? 420 : 500);
-          final double bottomPadding = isPinnedButton
-              ? (detailStyle.actionMinHeight +
-                  detailStyle.sectionGapLarge +
-                  20.0)
-              : detailStyle.sectionGapLarge;
-          return SafeArea(
-            child: Center(
-              child: Padding(
-                padding: detailStyle.outerPadding,
-                child: ConstrainedBox(
-                  constraints:
-                      BoxConstraints(maxWidth: detailStyle.maxContentWidth),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(26),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isPinnedButton =
+                constraints.maxHeight >
+                (detailStyle.isExtremeCompact ? 420 : 500);
+            final double bottomPadding = isPinnedButton
+                ? (detailStyle.actionMinHeight +
+                      detailStyle.sectionGapLarge +
+                      20.0)
+                : detailStyle.sectionGapLarge;
+            return SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: detailStyle.outerPadding,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: detailStyle.maxContentWidth,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(26),
-                      child: Stack(
-                        children: [
-                          NestedScrollView(
-                            headerSliverBuilder: (BuildContext context,
-                                bool innerBoxIsScrolled) {
-                              return <Widget>[
-                                SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: EdgeInsets.zero,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFe4dcc5)
-                                            .withValues(alpha: 0.9),
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                                bottom: Radius.circular(26)),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Padding(
-                                            padding: EdgeInsets.all(
-                                                detailStyle.cardPadding),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                if (widget.event.description
-                                                    .isNotEmpty) ...[
-                                                  Text(
-                                                    widget.event.description,
-                                                    textAlign: TextAlign.left,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(26),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(26),
+                        child: Stack(
+                          children: [
+                            NestedScrollView(
+                              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                                return <Widget>[
+                                  SliverToBoxAdapter(
+                                    child: Padding(
+                                      padding: EdgeInsets.zero,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(
+                                            0xFFe4dcc5,
+                                          ).withValues(alpha: 0.9),
+                                          borderRadius:
+                                              const BorderRadius.vertical(
+                                                bottom: Radius.circular(26),
+                                              ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding: EdgeInsets.all(
+                                                detailStyle.cardPadding,
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  if (widget
+                                                      .event
+                                                      .description
+                                                      .isNotEmpty) ...[
+                                                    Text(
+                                                      widget.event.description,
+                                                      textAlign: TextAlign.left,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyLarge
+                                                          ?.copyWith(
+                                                            color: Colors.black,
+                                                          ),
+                                                    ),
+                                                    SizedBox(
+                                                      height: detailStyle
+                                                          .sectionGap,
+                                                    ),
+                                                    const Divider(
+                                                      color: Colors.grey,
+                                                      height: 1,
+                                                    ),
+                                                    SizedBox(
+                                                      height: detailStyle
+                                                          .sectionGap,
+                                                    ),
+                                                  ],
+                                                  _InfoRow(
+                                                    label: l10n.votingStart,
+                                                    value: startDate,
+                                                    style: detailStyle,
+                                                  ),
+                                                  SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap,
+                                                  ),
+                                                  const Divider(
+                                                    color: Colors.grey,
+                                                    height: 1,
+                                                  ),
+                                                  SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap,
+                                                  ),
+                                                  _InfoRow(
+                                                    label: l10n.votingEnd,
+                                                    value: endDate,
+                                                    style: detailStyle,
+                                                  ),
+                                                  SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap,
+                                                  ),
+                                                  const Divider(
+                                                    color: Colors.grey,
+                                                    height: 1,
+                                                  ),
+                                                  SizedBox(
+                                                    height:
+                                                        detailStyle.sectionGap,
+                                                  ),
+                                                  _InfoRow(
+                                                    label: l10n.status,
+                                                    value: statusText,
+                                                    valueColor: statusColor,
+                                                    style: detailStyle,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            if (isOngoing &&
+                                                !widget.event.hasVoted)
+                                              Align(
+                                                alignment: Alignment.bottomLeft,
+                                                child: Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal:
+                                                        detailStyle
+                                                            .cardPadding -
+                                                        detailStyle
+                                                            .sectionGapSmall,
+                                                    vertical:
+                                                        detailStyle
+                                                            .sectionGapSmall +
+                                                        2.0,
+                                                  ),
+                                                  decoration: const BoxDecoration(
+                                                    color: Color(0xFF4a4a4a),
+                                                    borderRadius: BorderRadius.only(
+                                                      topRight: Radius.circular(
+                                                        26,
+                                                      ),
+                                                      bottomLeft: Radius.circular(
+                                                        26,
+                                                      ), // Match bottom corner
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    l10n.votingInProgress,
                                                     style: Theme.of(context)
                                                         .textTheme
                                                         .bodyLarge
                                                         ?.copyWith(
-                                                          color: Colors.black,
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.w900,
                                                         ),
                                                   ),
-                                                  SizedBox(
-                                                      height: detailStyle
-                                                          .sectionGap),
-                                                  const Divider(
-                                                      color: Colors.grey,
-                                                      height: 1),
-                                                  SizedBox(
-                                                      height: detailStyle
-                                                          .sectionGap),
-                                                ],
-                                                _InfoRow(
-                                                    label: l10n.votingStart,
-                                                    value: startDate,
-                                                    style: detailStyle),
-                                                SizedBox(
-                                                    height:
-                                                        detailStyle.sectionGap),
-                                                const Divider(
-                                                    color: Colors.grey,
-                                                    height: 1),
-                                                SizedBox(
-                                                    height:
-                                                        detailStyle.sectionGap),
-                                                _InfoRow(
-                                                    label: l10n.votingEnd,
-                                                    value: endDate,
-                                                    style: detailStyle),
-                                                SizedBox(
-                                                    height:
-                                                        detailStyle.sectionGap),
-                                                const Divider(
-                                                    color: Colors.grey,
-                                                    height: 1),
-                                                SizedBox(
-                                                    height:
-                                                        detailStyle.sectionGap),
-                                                _InfoRow(
-                                                  label: l10n.status,
-                                                  value: statusText,
-                                                  valueColor: statusColor,
-                                                  style: detailStyle,
                                                 ),
-                                              ],
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ];
+                              },
+                              body: ListView.builder(
+                                padding: EdgeInsets.fromLTRB(
+                                  0,
+                                  detailStyle.sectionGapSmall,
+                                  0,
+                                  bottomPadding,
+                                ),
+                                itemCount:
+                                    widget.event.questions.length +
+                                    (isPinnedButton ? 0 : 1),
+                                itemBuilder: (context, index) {
+                                  if (index == widget.event.questions.length) {
+                                    // Button inside the list (for Landscape/Small screens)
+                                    return Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: detailStyle.sectionGapLarge,
+                                      ),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            minimumSize: Size(
+                                              double.infinity,
+                                              detailStyle.actionMinHeight,
                                             ),
+                                            padding: EdgeInsets.symmetric(
+                                              vertical: detailStyle
+                                                  .actionVerticalPadding,
+                                            ),
+                                            backgroundColor:
+                                                widget.event.hasVoted
+                                                ? Colors.grey
+                                                : AppTheme.rudnGreenColor,
                                           ),
-                                          if (isOngoing &&
-                                              !widget.event.hasVoted)
-                                            Align(
-                                              alignment: Alignment.bottomLeft,
-                                              child: Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    horizontal: detailStyle
-                                                            .cardPadding -
-                                                        detailStyle
-                                                            .sectionGapSmall,
-                                                    vertical: detailStyle
-                                                            .sectionGapSmall +
-                                                        2.0),
-                                                decoration: const BoxDecoration(
-                                                  color: Color(0xFF4a4a4a),
-                                                  borderRadius:
-                                                      BorderRadius.only(
-                                                    topRight:
-                                                        Radius.circular(26),
-                                                    bottomLeft: Radius.circular(
-                                                        26), // Match bottom corner
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  l10n.votingInProgress,
+                                          onPressed:
+                                              (state is VotingLoadInProgress ||
+                                                  _selectedAnswers.isEmpty ||
+                                                  widget.event.hasVoted)
+                                              ? null
+                                              : _submitVote,
+                                          child: state is VotingLoadInProgress
+                                              ? const SeasonsLoader(
+                                                  size: 24,
+                                                  color: Colors.white,
+                                                )
+                                              : Text(
+                                                  widget.event.hasVoted
+                                                      ? l10n.alreadyVoted
+                                                      : l10n.vote,
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .bodyLarge
@@ -476,142 +568,94 @@ class _VotingDetailsViewState extends State<_VotingDetailsView> {
                                                             FontWeight.w900,
                                                       ),
                                                 ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ];
-                            },
-                            body: ListView.builder(
-                              padding: EdgeInsets.fromLTRB(
-                                  0,
-                                  detailStyle.sectionGapSmall,
-                                  0,
-                                  bottomPadding),
-                              itemCount: widget.event.questions.length +
-                                  (isPinnedButton ? 0 : 1),
-                              itemBuilder: (context, index) {
-                                if (index == widget.event.questions.length) {
-                                  // Button inside the list (for Landscape/Small screens)
-                                  return Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: detailStyle.sectionGapLarge),
-                                    child: SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          minimumSize: Size(double.infinity,
-                                              detailStyle.actionMinHeight),
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: detailStyle
-                                                  .actionVerticalPadding),
-                                          backgroundColor: widget.event.hasVoted
-                                              ? Colors.grey
-                                              : AppTheme.rudnGreenColor,
                                         ),
-                                        onPressed:
-                                            (state is VotingLoadInProgress ||
-                                                    _selectedAnswers.isEmpty ||
-                                                    widget.event.hasVoted)
-                                                ? null
-                                                : _submitVote,
-                                        child: state is VotingLoadInProgress
-                                            ? const SeasonsLoader(
-                                                size: 24, color: Colors.white)
-                                            : Text(
-                                                widget.event.hasVoted
-                                                    ? l10n.alreadyVoted
-                                                    : l10n.vote,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyLarge
-                                                    ?.copyWith(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.w900),
-                                              ),
                                       ),
-                                    ),
+                                    );
+                                  }
+                                  final question =
+                                      widget.event.questions[index];
+                                  return _QuestionCard(
+                                    question: question,
+                                    selectedAnswers: _selectedAnswers,
+                                    onAnswerSelected: (key, answerId) {
+                                      setState(() {
+                                        _selectedAnswers[key] = answerId;
+                                      });
+                                      _saveDraft();
+                                    },
+                                    hasVoted: widget.event.hasVoted,
+                                    isLoadingDraft: _isLoadingDraft,
                                   );
-                                }
-                                final question = widget.event.questions[index];
-                                return _QuestionCard(
-                                  question: question,
-                                  selectedAnswers: _selectedAnswers,
-                                  onAnswerSelected: (key, answerId) {
-                                    setState(() {
-                                      _selectedAnswers[key] = answerId;
-                                    });
-                                    _saveDraft();
-                                  },
-                                  hasVoted: widget.event.hasVoted,
-                                  isLoadingDraft: _isLoadingDraft,
-                                );
-                              },
+                                },
+                              ),
                             ),
-                          ),
 
-                          // Pinned Button (for Portrait/Large screens)
-                          if (isPinnedButton)
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              child: Padding(
-                                padding: EdgeInsets.fromLTRB(
+                            // Pinned Button (for Portrait/Large screens)
+                            if (isPinnedButton)
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: Padding(
+                                  padding: EdgeInsets.fromLTRB(
                                     detailStyle.cardPadding,
                                     detailStyle.sectionGap,
                                     detailStyle.cardPadding,
-                                    detailStyle.sectionGapSmall + 2.0),
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize: Size(double.infinity,
-                                          detailStyle.actionMinHeight),
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: detailStyle
-                                              .actionVerticalPadding),
-                                      backgroundColor: widget.event.hasVoted
-                                          ? Colors.grey
-                                          : AppTheme.rudnGreenColor,
-                                    ),
-                                    onPressed: (state is VotingLoadInProgress ||
-                                            _selectedAnswers.isEmpty ||
-                                            widget.event.hasVoted)
-                                        ? null
-                                        : _submitVote,
-                                    child: state is VotingLoadInProgress
-                                        ? const SeasonsLoader(
-                                            size: 24, color: Colors.white)
-                                        : Text(
-                                            widget.event.hasVoted
-                                                ? l10n.alreadyVoted
-                                                : l10n.vote,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyLarge
-                                                ?.copyWith(
+                                    detailStyle.sectionGapSmall + 2.0,
+                                  ),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        minimumSize: Size(
+                                          double.infinity,
+                                          detailStyle.actionMinHeight,
+                                        ),
+                                        padding: EdgeInsets.symmetric(
+                                          vertical:
+                                              detailStyle.actionVerticalPadding,
+                                        ),
+                                        backgroundColor: widget.event.hasVoted
+                                            ? Colors.grey
+                                            : AppTheme.rudnGreenColor,
+                                      ),
+                                      onPressed:
+                                          (state is VotingLoadInProgress ||
+                                              _selectedAnswers.isEmpty ||
+                                              widget.event.hasVoted)
+                                          ? null
+                                          : _submitVote,
+                                      child: state is VotingLoadInProgress
+                                          ? const SeasonsLoader(
+                                              size: 24,
+                                              color: Colors.white,
+                                            )
+                                          : Text(
+                                              widget.event.hasVoted
+                                                  ? l10n.alreadyVoted
+                                                  : l10n.vote,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyLarge
+                                                  ?.copyWith(
                                                     color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.w900),
-                                          ),
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                            ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
@@ -651,9 +695,9 @@ class _QuestionCard extends StatelessWidget {
             Text(
               question.name,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    fontSize: detailStyle.titleFontSize,
-                  ),
+                fontWeight: FontWeight.w900,
+                fontSize: detailStyle.titleFontSize,
+              ),
             ),
             Divider(height: detailStyle.sectionGapLarge, color: Colors.grey),
             if (isSimpleQuestion)
@@ -710,10 +754,7 @@ class _SubjectWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            subject.name,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+          Text(subject.name, style: Theme.of(context).textTheme.bodyLarge),
           ...subject.answers.map((answer) {
             return _CustomCheckboxTile(
               title: answer.name,
@@ -747,56 +788,59 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final shouldStack = style.isExtremeCompact || constraints.maxWidth < 350;
-      if (shouldStack) {
-        return Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shouldStack =
+            style.isExtremeCompact || constraints.maxWidth < 350;
+        if (shouldStack) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: style.sectionGapSmall),
+              Text(
+                value,
+                textAlign: TextAlign.left,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: valueColor ?? Colors.black,
+                ),
+              ),
+            ],
+          );
+        }
+        return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w900,
-                  ),
+            SizedBox(
+              width: style.rowLabelWidth,
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
-            SizedBox(height: style.sectionGapSmall),
-            Text(
-              value,
-              textAlign: TextAlign.left,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: valueColor ?? Colors.black,
-                  ),
+            SizedBox(width: style.rowGap),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: valueColor ?? Colors.black,
+                ),
+              ),
             ),
           ],
         );
-      }
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: style.rowLabelWidth,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-          ),
-          SizedBox(width: style.rowGap),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: valueColor ?? Colors.black,
-                  ),
-            ),
-          ),
-        ],
-      );
-    });
+      },
+    );
   }
 }
 
@@ -827,9 +871,9 @@ class _CustomCheckboxTile extends StatelessWidget {
               color: onChanged == null
                   ? Colors.grey
                   : (value
-                      ? AppTheme.rudnGreenColor
-                      : Theme.of(context).textTheme.bodyLarge?.color ??
-                          Colors.black),
+                        ? AppTheme.rudnGreenColor
+                        : Theme.of(context).textTheme.bodyLarge?.color ??
+                              Colors.black),
               size: iconSize,
             ),
             SizedBox(width: detailStyle.rowGap),
@@ -837,11 +881,11 @@ class _CustomCheckboxTile extends StatelessWidget {
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: onChanged == null
-                          ? Colors.grey
-                          : (Theme.of(context).textTheme.bodyLarge?.color ??
-                              Colors.black),
-                    ),
+                  color: onChanged == null
+                      ? Colors.grey
+                      : (Theme.of(context).textTheme.bodyLarge?.color ??
+                            Colors.black),
+                ),
               ),
             ),
           ],

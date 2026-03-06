@@ -46,8 +46,9 @@ void main() {
     expect(find.text('Details'), findsNothing);
   });
 
-  testWidgets('short left-edge swipe does not pop corporate route',
-      (tester) async {
+  testWidgets('short left-edge swipe does not pop corporate route', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Builder(

@@ -17,8 +17,10 @@ class Subject extends Equatable {
     List<Nominee> parsedAnswers = [];
     if (json['answers'] is List) {
       parsedAnswers = (json['answers'] as List)
-          .map((answerJson) =>
-              Nominee.fromJson(answerJson as Map<String, dynamic>))
+          .map(
+            (answerJson) =>
+                Nominee.fromJson(answerJson as Map<String, dynamic>),
+          )
           .toList();
     }
 

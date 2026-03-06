@@ -4,8 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:seasons/core/theme.dart';
 
 void main() {
-  testWidgets('AppTheme.lightTheme keeps key color and typography invariants',
-      (tester) async {
+  testWidgets('AppTheme.lightTheme keeps key color and typography invariants', (
+    tester,
+  ) async {
     GoogleFonts.config.allowRuntimeFetching = false;
     final ThemeData theme = AppTheme.lightTheme;
 

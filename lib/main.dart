@@ -36,42 +36,43 @@ const String appVersion = '1.1.0+9';
 
 void main() async {
   // Run app inside error-catching zone
-  await runZonedGuarded(() async {
-    try {
-      WidgetsFlutterBinding.ensureInitialized();
+  await runZonedGuarded(
+    () async {
+      try {
+        WidgetsFlutterBinding.ensureInitialized();
 
-      // Initialize error reporting service
-      await ErrorReportingService().initialize(appVersion: appVersion);
+        // Initialize error reporting service
+        await ErrorReportingService().initialize(appVersion: appVersion);
 
-      // Set up Flutter framework error handler
-      FlutterError.onError = (FlutterErrorDetails details) {
-        FlutterError.presentError(details);
-        ErrorReportingService().reportFlutterError(details);
-      };
+        // Set up Flutter framework error handler
+        FlutterError.onError = (FlutterErrorDetails details) {
+          FlutterError.presentError(details);
+          ErrorReportingService().reportFlutterError(details);
+        };
 
-      await initializeDateFormatting('ru_RU', null);
-      await initializeDateFormatting('en_US', null);
-      await AppInstallService().ensureInstallConsistency();
+        await initializeDateFormatting('ru_RU', null);
+        await initializeDateFormatting('en_US', null);
+        await AppInstallService().ensureInstallConsistency();
 
-      runApp(const SeasonsApp());
+        runApp(const SeasonsApp());
 
-      // Post-launch initialization
-      await _initializeNotifications();
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint(
-          'App initialization failed: ${sanitizeObjectForLog(e)}',
-        );
+        // Post-launch initialization
+        await _initializeNotifications();
+      } catch (e, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('App initialization failed: ${sanitizeObjectForLog(e)}');
+        }
+        ErrorReportingService().reportCrash(e, stackTrace);
       }
-      ErrorReportingService().reportCrash(e, stackTrace);
-    }
-  }, (error, stackTrace) {
-    // Catch any unhandled async errors
-    if (kDebugMode) {
-      debugPrint('Unhandled error: ${sanitizeObjectForLog(error)}');
-    }
-    ErrorReportingService().reportCrash(error, stackTrace);
-  });
+    },
+    (error, stackTrace) {
+      // Catch any unhandled async errors
+      if (kDebugMode) {
+        debugPrint('Unhandled error: ${sanitizeObjectForLog(error)}');
+      }
+      ErrorReportingService().reportCrash(error, stackTrace);
+    },
+  );
 }
 
 /// Initialize local notifications with tap response handler
@@ -94,8 +95,8 @@ Future<void> _initializeNotifications() async {
   );
 
   // Check if app was launched from notification
-  final launchDetails =
-      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+  final launchDetails = await flutterLocalNotificationsPlugin
+      .getNotificationAppLaunchDetails();
   if (launchDetails?.didNotificationLaunchApp ?? false) {
     final payload = launchDetails?.notificationResponse?.payload;
     if (payload != null) {
@@ -125,11 +126,13 @@ void _handleNotificationPayload(String payload) {
       final parsedIndex = int.tryParse(parts[2]);
       final tabIndex =
           (parsedIndex != null && parsedIndex >= 0 && parsedIndex <= 2)
-              ? parsedIndex
-              : 0;
+          ? parsedIndex
+          : 0;
       // Signal HomeScreen to navigate to this tab and refresh
-      NotificationNavigationService()
-          .navigateToTab(tabIndex, shouldRefresh: true);
+      NotificationNavigationService().navigateToTab(
+        tabIndex,
+        shouldRefresh: true,
+      );
     }
   }
 }
@@ -179,19 +182,19 @@ class SeasonsApp extends StatelessWidget {
           ),
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(
-              votingRepository:
-                  RepositoryProvider.of<VotingRepository>(context),
+              votingRepository: RepositoryProvider.of<VotingRepository>(
+                context,
+              ),
             )..add(AppStarted()),
           ),
           BlocProvider<VotingBloc>(
             create: (context) => VotingBloc(
-              votingRepository:
-                  RepositoryProvider.of<VotingRepository>(context),
+              votingRepository: RepositoryProvider.of<VotingRepository>(
+                context,
+              ),
             ),
           ),
-          BlocProvider<HomeTabCubit>(
-            create: (_) => HomeTabCubit(),
-          ),
+          BlocProvider<HomeTabCubit>(create: (_) => HomeTabCubit()),
         ],
         child: BlocBuilder<LocaleBloc, LocaleState>(
           builder: (context, localeState) {
@@ -200,10 +203,7 @@ class SeasonsApp extends StatelessWidget {
               theme: AppTheme.lightTheme,
               debugShowCheckedModeBanner: false,
               locale: localeState.locale,
-              supportedLocales: const [
-                Locale('ru'),
-                Locale('en'),
-              ],
+              supportedLocales: const [Locale('ru'), Locale('en')],
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
@@ -222,23 +222,26 @@ class SeasonsApp extends StatelessWidget {
                   if (shouldStartBackgroundServiceForState(state)) {
                     unawaited(
                       BackgroundService().startService(
-                        reason:
-                            backgroundServiceTransitionReasonForState(state),
+                        reason: backgroundServiceTransitionReasonForState(
+                          state,
+                        ),
                       ),
                     );
                   } else {
                     unawaited(
                       BackgroundService().stopService(
-                        reason:
-                            backgroundServiceTransitionReasonForState(state),
+                        reason: backgroundServiceTransitionReasonForState(
+                          state,
+                        ),
                       ),
                     );
                   }
                 },
                 child: BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    final authScreenKey =
-                        ValueKey(authScreenKeyForState(state));
+                    final authScreenKey = ValueKey(
+                      authScreenKeyForState(state),
+                    );
                     final Widget targetScreen;
                     if (state is AuthInitial || state is AuthChecking) {
                       targetScreen = Scaffold(

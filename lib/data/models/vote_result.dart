@@ -6,10 +6,7 @@ class SubjectResult extends Equatable {
   // FIXED: Храним результаты в виде карты, чтобы поддерживать любые варианты
   final Map<String, int> voteCounts;
 
-  const SubjectResult({
-    required this.name,
-    required this.voteCounts,
-  });
+  const SubjectResult({required this.name, required this.voteCounts});
 
   // Вспомогательный геттер для получения всех колонок (За, Против, и т.д.)
   List<String> get columns => voteCounts.keys.toList();

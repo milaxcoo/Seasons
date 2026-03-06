@@ -59,7 +59,8 @@ class VotingEvent extends Equatable {
       try {
         // If the server already provides timezone info, parse directly;
         // otherwise assume UTC by appending 'Z'.
-        final normalized = dateString.contains('Z') ||
+        final normalized =
+            dateString.contains('Z') ||
                 dateString.contains('+') ||
                 RegExp(r'-\d{2}:\d{2}$').hasMatch(dateString)
             ? dateString
@@ -105,30 +106,35 @@ class VotingEvent extends Equatable {
             if (subjectsMap['details'] is Map) {
               final details = subjectsMap['details'] as Map<String, dynamic>;
               details.forEach((variantName, voteCount) {
-                subjectResults.add(SubjectResult(
-                  name: variantName,
-                  voteCounts: {variantName: voteCount as int? ?? 0},
-                ));
+                subjectResults.add(
+                  SubjectResult(
+                    name: variantName,
+                    voteCounts: {variantName: voteCount as int? ?? 0},
+                  ),
+                );
               });
             } else {
               // Стандартный парсинг для yes_no, yes_no_abstained, subject_oriented
               subjectsMap.forEach((subjectName, subjectData) {
                 final details =
                     subjectData['details'] as Map<String, dynamic>? ?? {};
-                final voteCounts = details
-                    .map((key, value) => MapEntry(key, value as int? ?? 0));
+                final voteCounts = details.map(
+                  (key, value) => MapEntry(key, value as int? ?? 0),
+                );
 
-                subjectResults.add(SubjectResult(
-                  name: subjectName,
-                  voteCounts: voteCounts,
-                ));
+                subjectResults.add(
+                  SubjectResult(name: subjectName, voteCounts: voteCounts),
+                );
               });
             }
           }
-          parsedResults.add(QuestionResult(
+          parsedResults.add(
+            QuestionResult(
               name: questionName,
               type: questionType,
-              subjectResults: subjectResults));
+              subjectResults: subjectResults,
+            ),
+          );
         });
       }
     } catch (e) {
@@ -145,11 +151,12 @@ class VotingEvent extends Equatable {
       status: status,
       registrationEndDate:
           parseDate(votingData['end_registration_at'] as String?) ??
-              parseDate(votingData['registration_ended_at'] as String?),
+          parseDate(votingData['registration_ended_at'] as String?),
       votingStartDate:
           parseDate(votingData['registration_started_at'] as String?) ??
-              parseDate(votingData['voting_started_at'] as String?),
-      votingEndDate: parseDate(votingData['end_voting_at'] as String?) ??
+          parseDate(votingData['voting_started_at'] as String?),
+      votingEndDate:
+          parseDate(votingData['end_voting_at'] as String?) ??
           parseDate(votingData['voting_ended_at'] as String?),
       isRegistered: votingData['registered'] == 1,
       questions: parsedQuestions, // Передаем распарсенный список вопросов
@@ -160,16 +167,16 @@ class VotingEvent extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        description,
-        status,
-        registrationEndDate,
-        votingStartDate,
-        votingEndDate,
-        isRegistered,
-        questions,
-        hasVoted,
-        results, // Добавлено в props
-      ];
+    id,
+    title,
+    description,
+    status,
+    registrationEndDate,
+    votingStartDate,
+    votingEndDate,
+    isRegistered,
+    questions,
+    hasVoted,
+    results, // Добавлено в props
+  ];
 }
