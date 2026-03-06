@@ -24,6 +24,13 @@ jobs:
       - name: ⬇️ Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: 🧰 Install CI tooling
+        run: |
+          if ! command -v rg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ripgrep
+          fi
+
       - name: 🔐 Secret hygiene gate
         run: bash tool/check_secret_hygiene.sh --ci
 
