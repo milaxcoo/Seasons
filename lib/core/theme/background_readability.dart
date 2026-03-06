@@ -2,11 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-enum BackgroundReadabilityLevel {
-  normal,
-  dark,
-  veryDark,
-}
+enum BackgroundReadabilityLevel { normal, dark, veryDark }
 
 @immutable
 class BackgroundBrightnessSnapshot {

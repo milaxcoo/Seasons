@@ -66,8 +66,10 @@ class AnimatedPanelSelector extends StatelessWidget {
                 maxUsableInternalPadding,
               );
               // Effective width for buttons is barWidth minus internal padding.
-              final double effectiveButtonAreaWidth =
-                  math.max(0.0, barWidth - (resolvedInternalPadding * 2));
+              final double effectiveButtonAreaWidth = math.max(
+                0.0,
+                barWidth - (resolvedInternalPadding * 2),
+              );
               final double buttonSlotWidth = effectiveButtonAreaWidth / 3;
 
               return TweenAnimationBuilder<double>(
@@ -118,7 +120,8 @@ class AnimatedPanelSelector extends StatelessWidget {
                         height: barHeight,
                         child: Padding(
                           padding: EdgeInsets.symmetric(
-                              horizontal: resolvedInternalPadding),
+                            horizontal: resolvedInternalPadding,
+                          ),
                           child: Row(
                             children: [
                               // Button 1 - Registration
@@ -438,11 +441,7 @@ class _UnifiedShapeClipper extends CustomClipper<Path> {
     blobPath.close();
 
     // ===== STEP 3: MERGE into Single Path =====
-    final unifiedPath = Path.combine(
-      PathOperation.union,
-      basePath,
-      blobPath,
-    );
+    final unifiedPath = Path.combine(PathOperation.union, basePath, blobPath);
 
     return unifiedPath;
   }

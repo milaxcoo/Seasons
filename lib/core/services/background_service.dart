@@ -61,11 +61,7 @@ class BackgroundService {
   // Completer to ensure config is done before starting
   final Completer<void> _initCompleter = Completer<void>();
 
-  void _logLifecycle(
-    String event, {
-    required String reason,
-    bool? isRunning,
-  }) {
+  void _logLifecycle(String event, {required String reason, bool? isRunning}) {
     if (!kDebugMode) return;
     final payload = <String, Object?>{
       'event': event,
@@ -87,6 +83,8 @@ class BackgroundService {
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,
         autoStart: false, // Don't start until user is logged in
+        // Keep startup auth-driven; prevents unnecessary boot auto-start paths.
+        autoStartOnBoot: false,
         isForegroundMode: true,
         notificationChannelId: serviceChannelId,
         initialNotificationTitle: 'Seasons',
@@ -97,7 +95,6 @@ class BackgroundService {
       iosConfiguration: IosConfiguration(
         autoStart: false,
         onForeground: onStart,
-        onBackground: onIosBackground,
       ),
     );
 
@@ -152,9 +149,7 @@ class BackgroundService {
   }
 
   /// Start the background service (call after user logs in)
-  Future<void> startService({
-    String reason = 'unspecified',
-  }) async {
+  Future<void> startService({String reason = 'unspecified'}) async {
     _logLifecycle('start.requested', reason: reason);
 
     // Lazily initialize to avoid app-start work before authentication.
@@ -164,8 +159,11 @@ class BackgroundService {
 
     final isRunning = await _service.isRunning();
     if (isRunning) {
-      _logLifecycle('start.skipped_already_running',
-          reason: reason, isRunning: true);
+      _logLifecycle(
+        'start.skipped_already_running',
+        reason: reason,
+        isRunning: true,
+      );
       return;
     }
 
@@ -174,15 +172,16 @@ class BackgroundService {
   }
 
   /// Stop the background service (call on logout)
-  Future<void> stopService({
-    String reason = 'unspecified',
-  }) async {
+  Future<void> stopService({String reason = 'unspecified'}) async {
     _logLifecycle('stop.requested', reason: reason);
 
     final isRunning = await _service.isRunning();
     if (!isRunning) {
-      _logLifecycle('stop.skipped_not_running',
-          reason: reason, isRunning: false);
+      _logLifecycle(
+        'stop.skipped_not_running',
+        reason: reason,
+        isRunning: false,
+      );
       return;
     }
 
@@ -351,10 +350,7 @@ void onStart(ServiceInstance service) async {
 
       // Step 1: Get the actual WebSocket URL
       final response = await http
-          .get(
-            Uri.parse(BackgroundService._wsNegotiateUrl),
-            headers: headers,
-          )
+          .get(Uri.parse(BackgroundService._wsNegotiateUrl), headers: headers)
           .timeout(const Duration(seconds: 10));
 
       if (shouldStopReconnectForAuth(
@@ -409,10 +405,7 @@ void onStart(ServiceInstance service) async {
       // Step 2: Connect to the dynamic URL
       channel = IOWebSocketChannel.connect(
         Uri.parse(wsUrl),
-        headers: {
-          ...headers,
-          'Origin': 'https://seasons.rudn.ru',
-        },
+        headers: {...headers, 'Origin': 'https://seasons.rudn.ru'},
       );
       if (isStopped) {
         cancelRuntimeResources();
@@ -429,9 +422,9 @@ void onStart(ServiceInstance service) async {
         (message) {
           if (isStopped) return;
           if (kDebugMode) {
-            final sanitized = sanitizeObjectForLog(message)
-                .replaceAll('\n', ' ')
-                .replaceAll('\r', ' ');
+            final sanitized = sanitizeObjectForLog(
+              message,
+            ).replaceAll('\n', ' ').replaceAll('\r', ' ');
             final preview = sanitized.length > 200
                 ? '${sanitized.substring(0, 200)}...'
                 : sanitized;
@@ -473,7 +466,8 @@ void onStart(ServiceInstance service) async {
           }
           if (kDebugMode) {
             debugPrint(
-                "BackgroundService: WS Error: ${sanitizeObjectForLog(error)}");
+              "BackgroundService: WS Error: ${sanitizeObjectForLog(error)}",
+            );
           }
           isConnected = false;
           channel = null;
@@ -493,7 +487,8 @@ void onStart(ServiceInstance service) async {
       if (isStopped) return;
       if (kDebugMode) {
         debugPrint(
-            "BackgroundService: Connection failed: ${sanitizeObjectForLog(e)}");
+          "BackgroundService: Connection failed: ${sanitizeObjectForLog(e)}",
+        );
       }
       emitConnectionAction(
         isLikelyNetworkIssue(e)
@@ -515,8 +510,9 @@ void onStart(ServiceInstance service) async {
 
   // Keep service alive with periodic updates (Android foreground requirement)
   if (service is AndroidServiceInstance) {
-    foregroundNotificationTimer =
-        Timer.periodic(const Duration(seconds: 30), (timer) async {
+    foregroundNotificationTimer = Timer.periodic(const Duration(seconds: 30), (
+      timer,
+    ) async {
       if (isStopped) {
         timer.cancel();
         return;
@@ -545,9 +541,12 @@ void onStart(ServiceInstance service) async {
 }
 
 /// Handle incoming WebSocket message
-Future<void> _handleMessage(dynamic message, ServiceInstance service,
-    FlutterLocalNotificationsPlugin notificationsPlugin,
-    {bool Function()? isStopped}) async {
+Future<void> _handleMessage(
+  dynamic message,
+  ServiceInstance service,
+  FlutterLocalNotificationsPlugin notificationsPlugin, {
+  bool Function()? isStopped,
+}) async {
   if (message is String) {
     // Skip control messages
     if (message.startsWith('Connection') || message.startsWith('Ping')) {
@@ -580,7 +579,8 @@ Future<void> _handleMessage(dynamic message, ServiceInstance service,
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-            "BackgroundService: Parse error: ${sanitizeObjectForLog(e)}");
+          "BackgroundService: Parse error: ${sanitizeObjectForLog(e)}",
+        );
       }
       // Still trigger refresh for unrecognized messages
       if (isStopped?.call() ?? false) return;
@@ -627,7 +627,8 @@ Future<void> _showAlertNotification(
   if (title == null || body == null) {
     if (kDebugMode) {
       debugPrint(
-          "BackgroundService: Action '$action' ignored for notification");
+        "BackgroundService: Action '$action' ignored for notification",
+      );
     }
     return;
   }
@@ -661,14 +662,13 @@ Timer _scheduleReconnect(Timer? timer, Function() connect, {int attempts = 0}) {
   final delaySec = (5 * (1 << attempts)).clamp(5, 300);
   if (kDebugMode) {
     debugPrint(
-        "BackgroundService: Scheduling reconnect in ${delaySec}s (attempt ${attempts + 1})...");
+      "BackgroundService: Scheduling reconnect in ${delaySec}s (attempt ${attempts + 1})...",
+    );
   }
   return Timer(Duration(seconds: delaySec), connect);
 }
 
-const Set<String> _trustedWebSocketHosts = {
-  'seasons.rudn.ru',
-};
+const Set<String> _trustedWebSocketHosts = {'seasons.rudn.ru'};
 
 @visibleForTesting
 bool canAttemptBackgroundConnect({
@@ -680,10 +680,7 @@ bool canAttemptBackgroundConnect({
 }
 
 @visibleForTesting
-bool shouldStopReconnectForAuth({
-  String? cookie,
-  int? negotiateStatusCode,
-}) {
+bool shouldStopReconnectForAuth({String? cookie, int? negotiateStatusCode}) {
   if (cookie != null && cookie.isEmpty) return true;
   if (cookie == null && negotiateStatusCode == null) return true;
   if (negotiateStatusCode == 401 || negotiateStatusCode == 403) return true;
@@ -736,9 +733,12 @@ Future<http.Response> negotiateWsUrlWithTimeout({
 }
 
 @visibleForTesting
-Future<void> handleMessageForTest(dynamic message, ServiceInstance service,
-    FlutterLocalNotificationsPlugin notificationsPlugin,
-    {bool Function()? isStopped}) {
+Future<void> handleMessageForTest(
+  dynamic message,
+  ServiceInstance service,
+  FlutterLocalNotificationsPlugin notificationsPlugin, {
+  bool Function()? isStopped,
+}) {
   return _handleMessage(
     message,
     service,

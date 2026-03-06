@@ -22,9 +22,7 @@ void main() {
   Widget createTestWidget() {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<VotingRepository>.value(
-          value: mockRepository,
-        ),
+        RepositoryProvider<VotingRepository>.value(value: mockRepository),
         RepositoryProvider<MonthlyThemeService>(
           create: (_) => MonthlyThemeService(
             currentDateProvider: () => DateTime(2026, 2, 22),
@@ -55,8 +53,9 @@ void main() {
         email: 'ivanov@rudn.ru',
         jobTitle: 'Студент',
       );
-      when(() => mockRepository.getUserProfile())
-          .thenAnswer((_) async => testProfile);
+      when(
+        () => mockRepository.getUserProfile(),
+      ).thenAnswer((_) async => testProfile);
 
       // Act
       await tester.pumpWidget(createTestWidget());
@@ -84,14 +83,15 @@ void main() {
 
     testWidgets('back button pops navigation', (tester) async {
       // Arrange
-      when(() => mockRepository.getUserProfile())
-          .thenAnswer((_) async => UserProfile(
-                surname: 'Test',
-                name: 'User',
-                patronymic: '',
-                email: 'test@test.com',
-                jobTitle: 'Tester',
-              ));
+      when(() => mockRepository.getUserProfile()).thenAnswer(
+        (_) async => UserProfile(
+          surname: 'Test',
+          name: 'User',
+          patronymic: '',
+          email: 'test@test.com',
+          jobTitle: 'Tester',
+        ),
+      );
 
       // Create a navigator to verify pop behavior
       final navigatorKey = GlobalKey<NavigatorState>();
@@ -99,9 +99,7 @@ void main() {
       await tester.pumpWidget(
         MultiRepositoryProvider(
           providers: [
-            RepositoryProvider<VotingRepository>.value(
-              value: mockRepository,
-            ),
+            RepositoryProvider<VotingRepository>.value(value: mockRepository),
             RepositoryProvider<MonthlyThemeService>(
               create: (_) => MonthlyThemeService(
                 currentDateProvider: () => DateTime(2026, 2, 22),
@@ -150,14 +148,15 @@ void main() {
 
     testWidgets('renders AppBar with correct title', (tester) async {
       // Arrange
-      when(() => mockRepository.getUserProfile())
-          .thenAnswer((_) async => UserProfile(
-                surname: 'Test',
-                name: 'User',
-                patronymic: '',
-                email: 'test@test.com',
-                jobTitle: 'Tester',
-              ));
+      when(() => mockRepository.getUserProfile()).thenAnswer(
+        (_) async => UserProfile(
+          surname: 'Test',
+          name: 'User',
+          patronymic: '',
+          email: 'test@test.com',
+          jobTitle: 'Tester',
+        ),
+      );
 
       // Act
       await tester.pumpWidget(createTestWidget());
@@ -169,14 +168,15 @@ void main() {
 
     testWidgets('dividers are rendered between profile fields', (tester) async {
       // Arrange
-      when(() => mockRepository.getUserProfile())
-          .thenAnswer((_) async => UserProfile(
-                surname: 'Test',
-                name: 'User',
-                patronymic: 'Patronymic',
-                email: 'test@test.com',
-                jobTitle: 'Tester',
-              ));
+      when(() => mockRepository.getUserProfile()).thenAnswer(
+        (_) async => UserProfile(
+          surname: 'Test',
+          name: 'User',
+          patronymic: 'Patronymic',
+          email: 'test@test.com',
+          jobTitle: 'Tester',
+        ),
+      );
 
       // Act
       await tester.pumpWidget(createTestWidget());

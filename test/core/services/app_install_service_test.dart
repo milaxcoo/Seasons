@@ -21,22 +21,24 @@ void main() {
     when(() => mockDraftService.clearAllDrafts()).thenAnswer((_) async {});
   });
 
-  test('clears secure/cached auth state and sets install id on fresh install',
-      () async {
-    final service = AppInstallService(
-      authService: mockAuthService,
-      draftService: mockDraftService,
-      idGenerator: () => 'install-123',
-    );
+  test(
+    'clears secure/cached auth state and sets install id on fresh install',
+    () async {
+      final service = AppInstallService(
+        authService: mockAuthService,
+        draftService: mockDraftService,
+        idGenerator: () => 'install-123',
+      );
 
-    await service.ensureInstallConsistency();
+      await service.ensureInstallConsistency();
 
-    verify(() => mockAuthService.clearSecureData()).called(1);
-    verify(() => mockDraftService.clearAllDrafts()).called(1);
+      verify(() => mockAuthService.clearSecureData()).called(1);
+      verify(() => mockDraftService.clearAllDrafts()).called(1);
 
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString(AppInstallService.installIdKey), 'install-123');
-  });
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(AppInstallService.installIdKey), 'install-123');
+    },
+  );
 
   test('does not clear secure data when install id already exists', () async {
     SharedPreferences.setMockInitialValues({
@@ -54,9 +56,6 @@ void main() {
     verifyNever(() => mockDraftService.clearAllDrafts());
 
     final prefs = await SharedPreferences.getInstance();
-    expect(
-      prefs.getString(AppInstallService.installIdKey),
-      'existing-install',
-    );
+    expect(prefs.getString(AppInstallService.installIdKey), 'existing-install');
   });
 }

@@ -39,10 +39,7 @@ class ResultsScreen extends StatelessWidget {
           ),
           Scaffold(
             backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-            ),
+            appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
             body: _ResultsView(event: event),
           ),
         ],
@@ -129,14 +126,12 @@ class _ResultsView extends StatelessWidget {
                         style: detailStyle,
                       ),
                       SizedBox(height: detailStyle.sectionGapLarge),
-                      _ResultsTable(
-                        results: event.results,
-                        style: detailStyle,
-                      ),
+                      _ResultsTable(results: event.results, style: detailStyle),
                       SizedBox(height: detailStyle.sectionGapLarge),
                       Container(
                         padding: EdgeInsets.symmetric(
-                            vertical: detailStyle.actionVerticalPadding),
+                          vertical: detailStyle.actionVerticalPadding,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(26),
@@ -230,7 +225,10 @@ class _ResultsTable extends StatelessWidget {
   }
 
   Widget _buildDataTable(
-      BuildContext context, QuestionResult data, AppLocalizations l10n) {
+    BuildContext context,
+    QuestionResult data,
+    AppLocalizations l10n,
+  ) {
     // Определяем колонки
     List<String> columns;
     if (data.type == 'qualification_council') {
@@ -262,18 +260,20 @@ class _ResultsTable extends StatelessWidget {
     );
 
     // Вспомогательная функция для ячейки
-    Widget buildCell(String text,
-        {bool isHeader = false, bool alignCenter = false}) {
+    Widget buildCell(
+      String text, {
+      bool isHeader = false,
+      bool alignCenter = false,
+    }) {
       return Padding(
         padding: cellPadding,
         child: Text(
           text,
           textAlign: alignCenter ? TextAlign.center : TextAlign.start,
           style: isHeader
-              ? Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w900)
+              ? Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w900)
               : Theme.of(context).textTheme.bodyLarge,
         ),
       );
@@ -337,8 +337,11 @@ class _ResultsTable extends StatelessWidget {
               color: Colors.black.withValues(alpha: 0.1),
             ),
             children: columns.map((colName) {
-              return buildCell(colName,
-                  isHeader: true, alignCenter: colName.isNotEmpty);
+              return buildCell(
+                colName,
+                isHeader: true,
+                alignCenter: colName.isNotEmpty,
+              );
             }).toList(),
           ),
           // Строки
@@ -383,47 +386,52 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final shouldStack = style.isExtremeCompact || constraints.maxWidth < 350;
-      if (shouldStack) {
-        return Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shouldStack =
+            style.isExtremeCompact || constraints.maxWidth < 350;
+        if (shouldStack) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
+              ),
+              SizedBox(height: style.sectionGapSmall),
+              Text(
+                value,
+                textAlign: TextAlign.left,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
+          );
+        }
+        return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: Colors.black54)),
-            SizedBox(height: style.sectionGapSmall),
-            Text(
-              value,
-              textAlign: TextAlign.left,
-              style: Theme.of(context).textTheme.bodyLarge,
+            SizedBox(
+              width: style.rowLabelWidth,
+              child: Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
+              ),
+            ),
+            SizedBox(width: style.rowGap),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
           ],
         );
-      }
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: style.rowLabelWidth,
-            child: Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: Colors.black54)),
-          ),
-          SizedBox(width: style.rowGap),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-        ],
-      );
-    });
+      },
+    );
   }
 }

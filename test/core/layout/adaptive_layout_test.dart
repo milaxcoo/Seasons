@@ -66,7 +66,8 @@ void main() {
       expect(layout.homeLayoutMode, HomeLayoutMode.stacked);
       expect(
         layout.resolveStableHomeLayoutMode(
-            previousMode: HomeLayoutMode.stacked),
+          previousMode: HomeLayoutMode.stacked,
+        ),
         HomeLayoutMode.stacked,
       );
     });
@@ -83,20 +84,22 @@ void main() {
       expect(footerReserved, lessThanOrEqualTo(contentRegion * 0.5));
     });
 
-    test('split mode keeps normal footer sizing unless parity clamp is needed',
-        () {
-      final layout = _layout(size: const Size(1194, 834));
-      final homeMode = layout.homeLayoutMode;
-      final footerMode = layout.footerModeForLayout(homeLayoutMode: homeMode);
-      final style = layout.footerStyleForModeWithLayout(
-        mode: footerMode,
-        homeLayoutMode: homeMode,
-      );
-      final parityCap = layout.footerReservedHeightCapForLayout(homeMode);
+    test(
+      'split mode keeps normal footer sizing unless parity clamp is needed',
+      () {
+        final layout = _layout(size: const Size(1194, 834));
+        final homeMode = layout.homeLayoutMode;
+        final footerMode = layout.footerModeForLayout(homeLayoutMode: homeMode);
+        final style = layout.footerStyleForModeWithLayout(
+          mode: footerMode,
+          homeLayoutMode: homeMode,
+        );
+        final parityCap = layout.footerReservedHeightCapForLayout(homeMode);
 
-      expect(homeMode, HomeLayoutMode.split);
-      expect(style.maxTotalHeight, lessThan(parityCap));
-    });
+        expect(homeMode, HomeLayoutMode.split);
+        expect(style.maxTotalHeight, lessThan(parityCap));
+      },
+    );
 
     test('footer mode degrades in highly constrained landscape windows', () {
       final compact = _layout(size: const Size(740, 580));
@@ -144,7 +147,8 @@ void main() {
       );
       expect(
         layout.resolveStableHomeLayoutMode(
-            previousMode: HomeLayoutMode.stacked),
+          previousMode: HomeLayoutMode.stacked,
+        ),
         HomeLayoutMode.stacked,
       );
     });

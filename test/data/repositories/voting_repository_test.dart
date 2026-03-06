@@ -8,19 +8,21 @@ import '../../mocks.dart';
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(VotingEvent(
-      id: 'test',
-      title: 'Test',
-      description: '',
-      status: VotingStatus.active,
-      registrationEndDate: null,
-      votingStartDate: null,
-      votingEndDate: null,
-      isRegistered: false,
-      questions: [],
-      hasVoted: false,
-      results: [],
-    ));
+    registerFallbackValue(
+      VotingEvent(
+        id: 'test',
+        title: 'Test',
+        description: '',
+        status: VotingStatus.active,
+        registrationEndDate: null,
+        votingStartDate: null,
+        votingEndDate: null,
+        isRegistered: false,
+        questions: [],
+        hasVoted: false,
+        results: [],
+      ),
+    );
     registerFallbackValue(VotingStatus.active);
   });
 
@@ -34,8 +36,9 @@ void main() {
     group('Authentication', () {
       test('login returns token on successful authentication', () async {
         // Arrange
-        when(() => mockRepository.login('user', 'pass'))
-            .thenAnswer((_) async => 'auth_token_12345');
+        when(
+          () => mockRepository.login('user', 'pass'),
+        ).thenAnswer((_) async => 'auth_token_12345');
 
         // Act
         final result = await mockRepository.login('user', 'pass');
@@ -47,8 +50,9 @@ void main() {
 
       test('login throws exception on failed authentication', () async {
         // Arrange
-        when(() => mockRepository.login(any(), any()))
-            .thenThrow(Exception('Invalid credentials'));
+        when(
+          () => mockRepository.login(any(), any()),
+        ).thenThrow(Exception('Invalid credentials'));
 
         // Act & Assert
         expect(
@@ -70,8 +74,9 @@ void main() {
 
       test('getAuthToken returns token when authenticated', () async {
         // Arrange
-        when(() => mockRepository.getAuthToken())
-            .thenAnswer((_) async => 'stored_token');
+        when(
+          () => mockRepository.getAuthToken(),
+        ).thenAnswer((_) async => 'stored_token');
 
         // Act
         final result = await mockRepository.getAuthToken();
@@ -93,8 +98,9 @@ void main() {
 
       test('getUserLogin returns user login', () async {
         // Arrange
-        when(() => mockRepository.getUserLogin())
-            .thenAnswer((_) async => 'testuser');
+        when(
+          () => mockRepository.getUserLogin(),
+        ).thenAnswer((_) async => 'testuser');
 
         // Act
         final result = await mockRepository.getUserLogin();
@@ -119,12 +125,14 @@ void main() {
             results: const [],
           ),
         ];
-        when(() => mockRepository.getEventsByStatus(VotingStatus.registration))
-            .thenAnswer((_) async => events);
+        when(
+          () => mockRepository.getEventsByStatus(VotingStatus.registration),
+        ).thenAnswer((_) async => events);
 
         // Act
-        final result =
-            await mockRepository.getEventsByStatus(VotingStatus.registration);
+        final result = await mockRepository.getEventsByStatus(
+          VotingStatus.registration,
+        );
 
         // Assert
         expect(result, hasLength(1));
@@ -145,12 +153,14 @@ void main() {
             results: const [],
           ),
         ];
-        when(() => mockRepository.getEventsByStatus(VotingStatus.active))
-            .thenAnswer((_) async => events);
+        when(
+          () => mockRepository.getEventsByStatus(VotingStatus.active),
+        ).thenAnswer((_) async => events);
 
         // Act
-        final result =
-            await mockRepository.getEventsByStatus(VotingStatus.active);
+        final result = await mockRepository.getEventsByStatus(
+          VotingStatus.active,
+        );
 
         // Assert
         expect(result, hasLength(1));
@@ -171,12 +181,14 @@ void main() {
             results: const [],
           ),
         ];
-        when(() => mockRepository.getEventsByStatus(VotingStatus.completed))
-            .thenAnswer((_) async => events);
+        when(
+          () => mockRepository.getEventsByStatus(VotingStatus.completed),
+        ).thenAnswer((_) async => events);
 
         // Act
-        final result =
-            await mockRepository.getEventsByStatus(VotingStatus.completed);
+        final result = await mockRepository.getEventsByStatus(
+          VotingStatus.completed,
+        );
 
         // Assert
         expect(result, hasLength(1));
@@ -185,12 +197,14 @@ void main() {
 
       test('getEventsByStatus returns empty list when no events', () async {
         // Arrange
-        when(() => mockRepository.getEventsByStatus(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getEventsByStatus(any()),
+        ).thenAnswer((_) async => []);
 
         // Act
-        final result =
-            await mockRepository.getEventsByStatus(VotingStatus.registration);
+        final result = await mockRepository.getEventsByStatus(
+          VotingStatus.registration,
+        );
 
         // Assert
         expect(result, isEmpty);
@@ -198,8 +212,9 @@ void main() {
 
       test('getEventsByStatus throws exception on error', () async {
         // Arrange
-        when(() => mockRepository.getEventsByStatus(any()))
-            .thenThrow(Exception('Failed to fetch events'));
+        when(
+          () => mockRepository.getEventsByStatus(any()),
+        ).thenThrow(Exception('Failed to fetch events'));
 
         // Act & Assert
         expect(
@@ -212,8 +227,9 @@ void main() {
     group('Registration', () {
       test('registerForEvent completes successfully', () async {
         // Arrange
-        when(() => mockRepository.registerForEvent('event-01'))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepository.registerForEvent('event-01'),
+        ).thenAnswer((_) async {});
 
         // Act
         await mockRepository.registerForEvent('event-01');
@@ -222,23 +238,27 @@ void main() {
         verify(() => mockRepository.registerForEvent('event-01')).called(1);
       });
 
-      test('registerForEvent throws exception when already registered',
-          () async {
-        // Arrange
-        when(() => mockRepository.registerForEvent(any()))
-            .thenThrow(Exception('Already registered'));
+      test(
+        'registerForEvent throws exception when already registered',
+        () async {
+          // Arrange
+          when(
+            () => mockRepository.registerForEvent(any()),
+          ).thenThrow(Exception('Already registered'));
 
-        // Act & Assert
-        expect(
-          () => mockRepository.registerForEvent('event-01'),
-          throwsA(isA<Exception>()),
-        );
-      });
+          // Act & Assert
+          expect(
+            () => mockRepository.registerForEvent('event-01'),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
       test('registerForEvent throws exception when event is full', () async {
         // Arrange
-        when(() => mockRepository.registerForEvent(any()))
-            .thenThrow(Exception('Event is full'));
+        when(
+          () => mockRepository.registerForEvent(any()),
+        ).thenThrow(Exception('Event is full'));
 
         // Act & Assert
         expect(
@@ -261,8 +281,9 @@ void main() {
           hasVoted: false,
           results: const [],
         );
-        when(() => mockRepository.submitVote(any(), any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockRepository.submitVote(any(), any()),
+        ).thenAnswer((_) async => true);
 
         // Act
         final result = await mockRepository.submitVote(event, {'q1': 'a1'});
@@ -284,8 +305,9 @@ void main() {
           hasVoted: true,
           results: const [],
         );
-        when(() => mockRepository.submitVote(any(), any()))
-            .thenThrow(Exception('User already voted'));
+        when(
+          () => mockRepository.submitVote(any(), any()),
+        ).thenThrow(Exception('User already voted'));
 
         // Act & Assert
         expect(
@@ -306,8 +328,9 @@ void main() {
           hasVoted: false,
           results: const [],
         );
-        when(() => mockRepository.submitVote(any(), any()))
-            .thenThrow(Exception('Network error'));
+        when(
+          () => mockRepository.submitVote(any(), any()),
+        ).thenThrow(Exception('Network error'));
 
         // Act & Assert
         expect(
@@ -327,8 +350,9 @@ void main() {
           email: 'ivanov@rudn.ru',
           jobTitle: 'Студент',
         );
-        when(() => mockRepository.getUserProfile())
-            .thenAnswer((_) async => profile);
+        when(
+          () => mockRepository.getUserProfile(),
+        ).thenAnswer((_) async => profile);
 
         // Act
         final result = await mockRepository.getUserProfile();
@@ -342,8 +366,9 @@ void main() {
 
       test('getUserProfile returns null when not available', () async {
         // Arrange
-        when(() => mockRepository.getUserProfile())
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getUserProfile(),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await mockRepository.getUserProfile();
@@ -354,8 +379,9 @@ void main() {
 
       test('getUserProfile throws exception on error', () async {
         // Arrange
-        when(() => mockRepository.getUserProfile())
-            .thenThrow(Exception('Failed to fetch profile'));
+        when(
+          () => mockRepository.getUserProfile(),
+        ).thenThrow(Exception('Failed to fetch profile'));
 
         // Act & Assert
         expect(
@@ -368,21 +394,24 @@ void main() {
     group('Device Token', () {
       test('registerDeviceToken completes successfully', () async {
         // Arrange
-        when(() => mockRepository.registerDeviceToken(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepository.registerDeviceToken(any()),
+        ).thenAnswer((_) async {});
 
         // Act
         await mockRepository.registerDeviceToken('fcm_token_123');
 
         // Assert
-        verify(() => mockRepository.registerDeviceToken('fcm_token_123'))
-            .called(1);
+        verify(
+          () => mockRepository.registerDeviceToken('fcm_token_123'),
+        ).called(1);
       });
 
       test('registerDeviceToken handles error gracefully', () async {
         // Arrange
-        when(() => mockRepository.registerDeviceToken(any()))
-            .thenThrow(Exception('Network error'));
+        when(
+          () => mockRepository.registerDeviceToken(any()),
+        ).thenThrow(Exception('Network error'));
 
         // Act & Assert
         expect(

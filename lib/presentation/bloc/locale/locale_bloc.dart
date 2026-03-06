@@ -41,8 +41,9 @@ class LocaleBloc extends Bloc<LocaleEvent, LocaleState> {
       return;
     }
 
-    final resolvedLocale =
-        resolveDefaultLocaleForSystem(_systemLocaleProvider());
+    final resolvedLocale = resolveDefaultLocaleForSystem(
+      _systemLocaleProvider(),
+    );
     await prefs.setString(_localeKey, resolvedLocale.languageCode);
     emit(LocaleState(resolvedLocale));
   }

@@ -46,10 +46,7 @@ class RegistrationDetailsScreen extends StatelessWidget {
           ),
           Scaffold(
             backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-            ),
+            appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
             body: _RegistrationDetailsView(event: event),
           ),
         ],
@@ -66,7 +63,9 @@ class _RegistrationDetailsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = Localizations.localeOf(context);
     final dateFormat = DateFormat(
-        'dd.MM.yyyy HH:mm:ss', locale.languageCode == 'ru' ? 'ru' : 'en');
+      'dd.MM.yyyy HH:mm:ss',
+      locale.languageCode == 'ru' ? 'ru' : 'en',
+    );
     final l10n = AppLocalizations.of(context)!;
 
     final startDate = event.votingStartDate != null
@@ -83,8 +82,9 @@ class _RegistrationDetailsView extends StatelessWidget {
         if (state is RegistrationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(l10n.registrationSuccess),
-                backgroundColor: AppTheme.rudnGreenColor),
+              content: Text(l10n.registrationSuccess),
+              backgroundColor: AppTheme.rudnGreenColor,
+            ),
           );
           Navigator.of(context).pop(true);
         }
@@ -96,8 +96,9 @@ class _RegistrationDetailsView extends StatelessWidget {
           );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(userMessage),
-                backgroundColor: AppTheme.rudnRedColor),
+              content: Text(userMessage),
+              backgroundColor: AppTheme.rudnRedColor,
+            ),
           );
         }
       },
@@ -107,8 +108,9 @@ class _RegistrationDetailsView extends StatelessWidget {
           child: Padding(
             padding: detailStyle.outerPadding,
             child: ConstrainedBox(
-              constraints:
-                  BoxConstraints(maxWidth: detailStyle.maxContentWidth),
+              constraints: BoxConstraints(
+                maxWidth: detailStyle.maxContentWidth,
+              ),
               child: Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
@@ -198,8 +200,8 @@ class _RegistrationDetailsView extends StatelessWidget {
                               if (state is RegistrationInProgress) {
                                 return Container(
                                   padding: EdgeInsets.symmetric(
-                                      vertical:
-                                          detailStyle.actionVerticalPadding),
+                                    vertical: detailStyle.actionVerticalPadding,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withValues(alpha: 0.6),
                                     borderRadius: BorderRadius.circular(26),
@@ -218,37 +220,43 @@ class _RegistrationDetailsView extends StatelessWidget {
 
                               final isRegistrationClosed =
                                   event.registrationEndDate != null &&
-                                      DateTime.now()
-                                          .isAfter(event.registrationEndDate!);
+                                      DateTime.now().isAfter(
+                                        event.registrationEndDate!,
+                                      );
 
                               return ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   side: BorderSide(
-                                      color: (event.isRegistered ||
-                                              isRegistrationClosed)
-                                          ? Colors.grey
-                                          : const Color(0xFF6A9457),
-                                      width: 2),
+                                    color: (event.isRegistered ||
+                                            isRegistrationClosed)
+                                        ? Colors.grey
+                                        : const Color(0xFF6A9457),
+                                    width: 2,
+                                  ),
                                   backgroundColor: (event.isRegistered ||
                                           isRegistrationClosed)
                                       ? Colors.grey.shade300
                                       : Colors.transparent,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(26)),
-                                  minimumSize: Size(double.infinity,
-                                      detailStyle.actionMinHeight),
+                                    borderRadius: BorderRadius.circular(26),
+                                  ),
+                                  minimumSize: Size(
+                                    double.infinity,
+                                    detailStyle.actionMinHeight,
+                                  ),
                                   padding: EdgeInsets.symmetric(
-                                      vertical:
-                                          detailStyle.actionVerticalPadding),
+                                    vertical: detailStyle.actionVerticalPadding,
+                                  ),
                                 ),
                                 onPressed:
                                     (event.isRegistered || isRegistrationClosed)
                                         ? null
                                         : () {
                                             context.read<VotingBloc>().add(
-                                                RegisterForEvent(
-                                                    eventId: event.id));
+                                                  RegisterForEvent(
+                                                      eventId: event.id),
+                                                );
                                           },
                                 child: Text(
                                   event.isRegistered
@@ -298,54 +306,59 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final shouldStack = style.isExtremeCompact || constraints.maxWidth < 350;
-      if (shouldStack) {
-        return Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shouldStack =
+            style.isExtremeCompact || constraints.maxWidth < 350;
+        if (shouldStack) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
+              ),
+              SizedBox(height: style.sectionGapSmall),
+              Text(
+                value,
+                textAlign: TextAlign.left,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: valueColor ?? Colors.black,
+                    ),
+              ),
+            ],
+          );
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: Colors.black54)),
-            SizedBox(height: style.sectionGapSmall),
-            Text(
-              value,
-              textAlign: TextAlign.left,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? Colors.black,
-                  ),
+            SizedBox(
+              width: style.rowLabelWidth,
+              child: Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
+              ),
+            ),
+            SizedBox(width: style.rowGap),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: valueColor ?? Colors.black,
+                    ),
+              ),
             ),
           ],
         );
-      }
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: style.rowLabelWidth,
-            child: Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: Colors.black54)),
-          ),
-          SizedBox(width: style.rowGap),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? Colors.black,
-                  ),
-            ),
-          ),
-        ],
-      );
-    });
+      },
+    );
   }
 }

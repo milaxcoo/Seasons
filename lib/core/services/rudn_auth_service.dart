@@ -46,9 +46,7 @@ class RudnAuthService {
 
   // Singleton instance with default storage
   static final RudnAuthService _instance = RudnAuthService._internal(
-    FlutterSecureStorageAdapter(
-      const FlutterSecureStorage(),
-    ),
+    FlutterSecureStorageAdapter(const FlutterSecureStorage()),
   );
 
   /// Default factory returns singleton with real storage

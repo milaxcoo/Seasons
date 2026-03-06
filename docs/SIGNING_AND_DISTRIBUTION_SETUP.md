@@ -20,6 +20,21 @@ Required environment variables for local release builds:
 - `KEY_ALIAS`
 - `KEY_PASSWORD`
 
+Preferred local workflow:
+- Keep signing values in macOS Keychain (account: current `$USER`).
+- Inject them only for the build command via `bash tool/with_release_env.sh ...`.
+- Keep `.env`, `.secrets`, and `.local_signing/android-signing.env` redacted placeholders only.
+
+Expected keychain service names used by `tool/with_release_env.sh`:
+- `votepfurapp_keystore_path`
+- `votepfurapp_keystore_password`
+- `votepfurapp_key_alias`
+- `votepfurapp_key_password`
+
+Optional telemetry keychain services:
+- `votepfurapp_error_report_relay_url`
+- `votepfurapp_error_report_relay_api_key`
+
 CI secret mapping:
 - `ANDROID_KEYSTORE_BASE64` -> decoded to `KEYSTORE_PATH` in workflow
 - `KEYSTORE_PASSWORD`
@@ -41,7 +56,21 @@ Required (managed outside git):
 - Track who has access to each signing asset.
 - Rotate/revoke access when maintainers change.
 
-## 5. Handoff checklist
+## 5. Production telemetry relay expectations
+
+- Direct Telegram transport is debug-only and must not be used in release/profile.
+- Keep `ENABLE_ERROR_REPORTING=false` in production until secure relay is validated.
+- The app reads relay settings via `String.fromEnvironment(...)`, so values must be
+  embedded at build time using `--dart-define`.
+- If enabling production telemetry, provide:
+  - `--dart-define=ERROR_REPORT_RELAY_URL=<https-endpoint>`
+  - optional `--dart-define=ERROR_REPORT_RELAY_API_KEY=<api-key>`
+- `tool/with_release_env.sh` bridges keychain/env values into build-time defines for
+  `flutter build ...` commands.
+- If bypassing `tool/with_release_env.sh`, you must pass relay defines manually.
+- Update store privacy disclosures when telemetry transport behavior changes.
+
+## 6. Handoff checklist
 
 - [ ] Android keystore custody owner documented
 - [ ] Android passphrase custody owner documented

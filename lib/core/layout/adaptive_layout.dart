@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
 
-enum AdaptiveSizeClass {
-  compact,
-  medium,
-  expanded,
-}
+enum AdaptiveSizeClass { compact, medium, expanded }
 
-enum HomeLayoutMode {
-  stacked,
-  split,
-}
+enum HomeLayoutMode { stacked, split }
 
 enum HomeLandscapeGeometryClass {
   phoneLandscape,
@@ -17,18 +10,9 @@ enum HomeLandscapeGeometryClass {
   regularTabletLandscape,
 }
 
-enum AdaptiveFooterMode {
-  full,
-  compact,
-  minimal,
-  hidden,
-}
+enum AdaptiveFooterMode { full, compact, minimal, hidden }
 
-enum AdaptiveDensityMode {
-  regular,
-  compact,
-  extremeCompact,
-}
+enum AdaptiveDensityMode { regular, compact, extremeCompact }
 
 @immutable
 class AdaptiveNavDimensions {
@@ -365,8 +349,10 @@ class AdaptiveLayoutData {
       AdaptiveDensityMode.compact => 18.5,
       AdaptiveDensityMode.extremeCompact => 17.0,
     };
-    final double rowLabelWidth =
-        ((availableWidth * 0.33).clamp(104.0, 190.0)).toDouble();
+    final double rowLabelWidth = ((availableWidth * 0.33).clamp(
+      104.0,
+      190.0,
+    )).toDouble();
     final double tableCellHorizontalPadding = switch (density) {
       AdaptiveDensityMode.regular => isLandscape ? 12.0 : 16.0,
       AdaptiveDensityMode.compact => isLandscape ? 10.0 : 12.0,
@@ -386,7 +372,9 @@ class AdaptiveLayoutData {
     return AdaptiveDetailLayoutStyle(
       densityMode: density,
       outerPadding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding, vertical: verticalPadding),
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
       maxContentWidth: maxContentWidth,
       cardPadding: cardPadding,
       sectionGap: sectionGap,
@@ -418,24 +406,44 @@ class AdaptiveLayoutData {
         AdaptiveSizeClass.expanded => 580.0,
       },
       dialogContentPadding: switch (density) {
-        AdaptiveDensityMode.regular =>
-          const EdgeInsets.fromLTRB(24, 20, 24, 24),
-        AdaptiveDensityMode.compact =>
-          const EdgeInsets.fromLTRB(20, 18, 20, 20),
-        AdaptiveDensityMode.extremeCompact =>
-          const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(
+            24,
+            20,
+            24,
+            24,
+          ),
+        AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(
+            20,
+            18,
+            20,
+            20,
+          ),
+        AdaptiveDensityMode.extremeCompact => const EdgeInsets.fromLTRB(
+            16,
+            14,
+            16,
+            16,
+          ),
       },
       dialogTitlePadding: switch (density) {
         AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(24, 24, 24, 0),
         AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(20, 20, 20, 0),
-        AdaptiveDensityMode.extremeCompact =>
-          const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        AdaptiveDensityMode.extremeCompact => const EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            0,
+          ),
       },
       dialogActionsPadding: switch (density) {
         AdaptiveDensityMode.regular => const EdgeInsets.fromLTRB(24, 0, 24, 24),
         AdaptiveDensityMode.compact => const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        AdaptiveDensityMode.extremeCompact =>
-          const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        AdaptiveDensityMode.extremeCompact => const EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            16,
+          ),
       },
     );
   }
@@ -783,7 +791,8 @@ class AdaptiveLayoutData {
   }
 
   double footerBudgetAfterContentProtectionForLayout(
-      HomeLayoutMode layoutMode) {
+    HomeLayoutMode layoutMode,
+  ) {
     return _footerNormalBudgetForLayout(layoutMode);
   }
 
@@ -844,8 +853,9 @@ class AdaptiveLayoutData {
     HomeLayoutMode? layoutMode,
   }) {
     final resolvedLayoutMode = layoutMode ?? homeLayoutMode;
-    final budget =
-        footerBudgetAfterContentProtectionForLayout(resolvedLayoutMode);
+    final budget = footerBudgetAfterContentProtectionForLayout(
+      resolvedLayoutMode,
+    );
     final buffer = _footerModeStabilityBuffer;
 
     switch (previousMode) {
@@ -960,8 +970,9 @@ class AdaptiveLayoutData {
         outerBottomPadding +
         (contentPadding * 2) +
         normalDesiredContentHeight;
-    final maxAllowedTotalHeight =
-        footerReservedHeightCapForLayout(homeLayoutMode);
+    final maxAllowedTotalHeight = footerReservedHeightCapForLayout(
+      homeLayoutMode,
+    );
     final resolvedMaxTotalHeight =
         normalDesiredTotalHeight > maxAllowedTotalHeight
             ? maxAllowedTotalHeight
@@ -998,7 +1009,9 @@ class AdaptiveLayoutData {
   }
 
   AdaptiveFooterStyle get footerStyle => footerStyleForModeWithLayout(
-      mode: footerMode, homeLayoutMode: homeLayoutMode);
+        mode: footerMode,
+        homeLayoutMode: homeLayoutMode,
+      );
 
   double get outerHorizontalPadding {
     if (isPhoneLikeLandscape) {

@@ -5,9 +5,8 @@
 -keep class io.flutter.plugins.** { *; }
 -dontwarn io.flutter.embedding.**
 
-# Keep Dart runtime
--keep class android.** { *; }
--keep class androidx.** { *; }
+# Do not keep entire android/androidx namespaces: this defeats shrinking
+# and obfuscation for release builds.
 
 # Keep all classes with native methods
 -keepclasseswithmembernames class * {
@@ -44,4 +43,3 @@
 
 # Background Service
 -keep class id.flutter.flutter_background_service.** { *; }
-

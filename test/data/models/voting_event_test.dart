@@ -115,10 +115,7 @@ void main() {
             'questions': [
               {
                 'data': {
-                  'question': {
-                    'id': 'q1',
-                    'name': 'Question 1',
-                  },
+                  'question': {'id': 'q1', 'name': 'Question 1'},
                   'answers': [
                     {'id': 'a1', 'name': 'Answer 1'},
                     {'id': 'a2', 'name': 'Answer 2'},
@@ -191,10 +188,12 @@ void main() {
 
         // Dates are converted from UTC to local time in the model
         final expectedRegEnd = DateTime.parse('2026-12-31T23:59:59Z').toLocal();
-        final expectedVotingStart =
-            DateTime.parse('2026-01-01T00:00:00Z').toLocal();
-        final expectedVotingEnd =
-            DateTime.parse('2026-01-31T23:59:59Z').toLocal();
+        final expectedVotingStart = DateTime.parse(
+          '2026-01-01T00:00:00Z',
+        ).toLocal();
+        final expectedVotingEnd = DateTime.parse(
+          '2026-01-31T23:59:59Z',
+        ).toLocal();
 
         expect(event.registrationEndDate, isNotNull);
         expect(event.votingStartDate, isNotNull);

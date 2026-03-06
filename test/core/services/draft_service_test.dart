@@ -1,13 +1,52 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:seasons/core/services/draft_service.dart';
+import '../../helpers/in_memory_secure_storage.dart';
+
+class FlakySecureStorage implements SecureStorageInterface {
+  final Map<String, String?> _storage = <String, String?>{};
+  bool failDraftWrites;
+
+  FlakySecureStorage({required this.failDraftWrites});
+
+  @override
+  Future<void> delete({required String key}) async {
+    _storage.remove(key);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    _storage.clear();
+  }
+
+  @override
+  Future<String?> read({required String key}) async {
+    return _storage[key];
+  }
+
+  @override
+  Future<void> write({required String key, required String? value}) async {
+    if (failDraftWrites && key.startsWith('draft_secure_v1_')) {
+      throw Exception('simulated secure write failure');
+    }
+    _storage[key] = value;
+  }
+}
 
 void main() {
   late DraftService draftService;
+  late InMemorySecureStorage secureStorage;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    draftService = DraftService();
+    secureStorage = InMemorySecureStorage();
+    draftService = DraftService(
+      secureStorage: secureStorage,
+      prefsFactory: SharedPreferences.getInstance,
+    );
   });
 
   group('DraftService', () {
@@ -51,6 +90,87 @@ void main() {
         final loaded = await draftService.loadDraft('v1');
         expect(loaded, isEmpty);
       });
+
+      test(
+        'saveDraft does not keep plaintext JSON in SharedPreferences',
+        () async {
+          final answers = {'q1': 'answer-a'};
+          await draftService.saveDraft('v1', answers);
+
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getString('draft_voting_v1'), isNull);
+
+          final snapshot = secureStorage.snapshot();
+          final rawDraftPayload = snapshot['draft_secure_v1_v1'];
+          expect(rawDraftPayload, isNotNull);
+          expect(rawDraftPayload, isNot(equals(jsonEncode(answers))));
+          expect(() => jsonDecode(rawDraftPayload!), throwsFormatException);
+        },
+      );
+
+      test(
+        'migrates legacy plaintext draft once and removes legacy key',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'draft_voting_v42',
+            jsonEncode({'q1': 'legacy-answer'}),
+          );
+
+          final loaded = await draftService.loadDraft('v42');
+          expect(loaded, equals({'q1': 'legacy-answer'}));
+
+          expect(prefs.getString('draft_voting_v42'), isNull);
+          expect(prefs.getBool('draft_secure_migration_v1_done'), isTrue);
+
+          final loadedAgain = await draftService.loadDraft('v42');
+          expect(loadedAgain, equals({'q1': 'legacy-answer'}));
+        },
+      );
+
+      test(
+        'keeps legacy draft and retries migration after secure write failure',
+        () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'draft_voting_v99',
+            jsonEncode({'q1': 'legacy-answer'}),
+          );
+
+          final flakyStorage = FlakySecureStorage(failDraftWrites: true);
+          final flakyService = DraftService(
+            secureStorage: flakyStorage,
+            prefsFactory: SharedPreferences.getInstance,
+          );
+
+          final firstLoad = await flakyService.loadDraft('v99');
+          expect(firstLoad, isEmpty);
+          expect(prefs.getString('draft_voting_v99'), isNotNull);
+          expect(prefs.getBool('draft_secure_migration_v1_done'), isNot(true));
+
+          flakyStorage.failDraftWrites = false;
+
+          final secondLoad = await flakyService.loadDraft('v99');
+          expect(secondLoad, equals({'q1': 'legacy-answer'}));
+          expect(prefs.getString('draft_voting_v99'), isNull);
+          expect(prefs.getBool('draft_secure_migration_v1_done'), isTrue);
+        },
+      );
+
+      test(
+        'saved drafts persist across service restart with same secure store',
+        () async {
+          await draftService.saveDraft('v1', {'q1': 'a1'});
+
+          final restarted = DraftService(
+            secureStorage: secureStorage,
+            prefsFactory: SharedPreferences.getInstance,
+          );
+          final loaded = await restarted.loadDraft('v1');
+
+          expect(loaded, equals({'q1': 'a1'}));
+        },
+      );
     });
 
     group('clearDraft', () {
@@ -63,10 +183,7 @@ void main() {
       });
 
       test('clearDraft on non-existent draft does not throw', () async {
-        await expectLater(
-          draftService.clearDraft('non-existent'),
-          completes,
-        );
+        await expectLater(draftService.clearDraft('non-existent'), completes);
       });
 
       test('clearDraft does not affect other drafts', () async {

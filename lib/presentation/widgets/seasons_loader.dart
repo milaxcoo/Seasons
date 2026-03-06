@@ -5,11 +5,7 @@ class SeasonsLoader extends StatefulWidget {
   final double size;
   final Color? color; // Optional override
 
-  const SeasonsLoader({
-    super.key,
-    this.size = 50.0,
-    this.color,
-  });
+  const SeasonsLoader({super.key, this.size = 50.0, this.color});
 
   @override
   State<SeasonsLoader> createState() => _SeasonsLoaderState();
@@ -73,13 +69,15 @@ class _SeasonsLoaderState extends State<SeasonsLoader>
                   height: widget.size / 4,
                   decoration: BoxDecoration(
                     // Make colors less noticeable (more transparent)
-                    color:
-                        (widget.color ?? colors[index]).withValues(alpha: 0.8),
+                    color: (widget.color ?? colors[index]).withValues(
+                      alpha: 0.8,
+                    ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (widget.color ?? colors[index])
-                            .withValues(alpha: 0.3),
+                        color: (widget.color ?? colors[index]).withValues(
+                          alpha: 0.3,
+                        ),
                         blurRadius: 4,
                         spreadRadius: 1,
                       ),

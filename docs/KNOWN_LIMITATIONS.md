@@ -20,6 +20,7 @@ This file lists current limitations accepted for release planning transparency.
 - Some behavior depends on real backend availability and real network conditions.
 - VPN or campus-network conditions can affect authentication flow and must be tested manually.
 - Notification behavior (especially cold-start routing) requires device-level validation.
+- Production telemetry relay is disabled by default until secure endpoint configuration is validated.
 
 ## Quality gate limits
 

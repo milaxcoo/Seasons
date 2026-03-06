@@ -42,7 +42,8 @@ void main() {
     registerFallbackValue(LoggedOut());
     registerFallbackValue(const LoggedIn());
     registerFallbackValue(
-        const FetchEventsByStatus(status: model.VotingStatus.active));
+      const FetchEventsByStatus(status: model.VotingStatus.active),
+    );
     registerFallbackValue(const RegisterForEvent(eventId: ''));
     registerFallbackValue(SubmitVote(event: fakeEvent, answers: const {}));
   });
@@ -119,39 +120,44 @@ void main() {
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
 
-    testWidgets('navigates to HomeScreen when AuthAuthenticated',
-        (tester) async {
-      // Arrange
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockVotingBloc.state).thenReturn(VotingInitial());
-      when(() => mockVotingBloc.stream).thenAnswer((_) => const Stream.empty());
-      when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
+    testWidgets(
+      'navigates to HomeScreen when AuthAuthenticated',
+      (tester) async {
+        // Arrange
+        when(() => mockAuthBloc.state).thenReturn(AuthInitial());
+        when(() => mockVotingBloc.state).thenReturn(VotingInitial());
+        when(
+          () => mockVotingBloc.stream,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
 
-      // Create a broadcast stream controller to emit states
-      final stateController = StreamController<AuthState>.broadcast();
-      when(() => mockAuthBloc.stream).thenAnswer((_) => stateController.stream);
-      when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
+        // Create a broadcast stream controller to emit states
+        final stateController = StreamController<AuthState>.broadcast();
+        when(
+          () => mockAuthBloc.stream,
+        ).thenAnswer((_) => stateController.stream);
+        when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
 
-      // Act
-      await tester.pumpWidget(createTestWidgetWithNavigation());
-      await tester.pump();
+        // Act
+        await tester.pumpWidget(createTestWidgetWithNavigation());
+        await tester.pump();
 
-      // Emit AuthAuthenticated state to trigger navigation
-      stateController.add(const AuthAuthenticated(userLogin: 'testuser'));
+        // Emit AuthAuthenticated state to trigger navigation
+        stateController.add(const AuthAuthenticated(userLogin: 'testuser'));
 
-      // Wait for navigation animation to start
-      // Note: HomeScreen has complex dependencies that cause build errors in tests
-      // This test verifies navigation is attempted by checking LoginScreen disappears
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        // Wait for navigation animation to start
+        // Note: HomeScreen has complex dependencies that cause build errors in tests
+        // This test verifies navigation is attempted by checking LoginScreen disappears
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      // Assert: Login button disappears (navigation away from LoginScreen started)
-      expect(find.text('Войти'), findsNothing);
+        // Assert: Login button disappears (navigation away from LoginScreen started)
+        expect(find.text('Войти'), findsNothing);
 
-      stateController.close();
-    },
-        skip:
-            true); // HomeScreen dependencies cause build errors in widget tests - navigation logic works in integration tests
+        stateController.close();
+      },
+      skip: true,
+    ); // HomeScreen dependencies cause build errors in widget tests - navigation logic works in integration tests
 
     testWidgets('shows loading state when AuthLoading', (tester) async {
       // Arrange
@@ -184,8 +190,9 @@ void main() {
 
     testWidgets('renders with AuthFailure state', (tester) async {
       // Arrange
-      when(() => mockAuthBloc.state)
-          .thenReturn(const AuthFailure(error: 'Login failed'));
+      when(
+        () => mockAuthBloc.state,
+      ).thenReturn(const AuthFailure(error: 'Login failed'));
       when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
 
       // Act
@@ -195,13 +202,16 @@ void main() {
       // Assert: The screen should still render normally
       expect(find.text('Seasons'), findsOneWidget);
       expect(find.text('Войти'), findsOneWidget);
-      expect(find.text('Произошла непредвиденная ошибка. Попробуйте снова.'),
-          findsOneWidget);
+      expect(
+        find.text('Произошла непредвиденная ошибка. Попробуйте снова.'),
+        findsOneWidget,
+      );
       expect(find.text('Login failed'), findsNothing);
     });
 
-    testWidgets('has correct copyright and contact information',
-        (tester) async {
+    testWidgets('has correct copyright and contact information', (
+      tester,
+    ) async {
       // Arrange
       when(() => mockAuthBloc.state).thenReturn(AuthInitial());
       when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
@@ -229,37 +239,41 @@ void main() {
     });
 
     testWidgets(
-        'keeps blur layer mounted and fades scrim smoothly to zero at animation end',
-        (tester) async {
-      when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-      when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
+      'keeps blur layer mounted and fades scrim smoothly to zero at animation end',
+      (tester) async {
+        when(() => mockAuthBloc.state).thenReturn(AuthInitial());
+        when(() => mockAuthBloc.stream).thenAnswer((_) => const Stream.empty());
 
-      await tester.pumpWidget(createTestWidget());
+        await tester.pumpWidget(createTestWidget());
 
-      final backdropFinder = find.byType(BackdropFilter);
-      final scrimFinder = find.descendant(
-        of: backdropFinder,
-        matching: find.byType(ColoredBox),
-      );
+        final backdropFinder = find.byType(BackdropFilter);
+        final scrimFinder = find.descendant(
+          of: backdropFinder,
+          matching: find.byType(ColoredBox),
+        );
 
-      expect(backdropFinder, findsOneWidget);
-      final initialScrim = tester.widget<ColoredBox>(scrimFinder);
-      expect(initialScrim.color.a, greaterThan(0));
-
-      final sampledOpacities = <double>[initialScrim.color.a];
-      for (var i = 0; i < 7; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
         expect(backdropFinder, findsOneWidget);
-        sampledOpacities.add(tester.widget<ColoredBox>(scrimFinder).color.a);
-      }
+        final initialScrim = tester.widget<ColoredBox>(scrimFinder);
+        expect(initialScrim.color.a, greaterThan(0));
 
-      for (var i = 1; i < sampledOpacities.length; i++) {
-        expect(sampledOpacities[i], lessThanOrEqualTo(sampledOpacities[i - 1]));
-      }
+        final sampledOpacities = <double>[initialScrim.color.a];
+        for (var i = 0; i < 7; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+          expect(backdropFinder, findsOneWidget);
+          sampledOpacities.add(tester.widget<ColoredBox>(scrimFinder).color.a);
+        }
 
-      expect(backdropFinder, findsOneWidget);
-      final finalScrim = tester.widget<ColoredBox>(scrimFinder);
-      expect(finalScrim.color.a, closeTo(0, 0.01));
-    });
+        for (var i = 1; i < sampledOpacities.length; i++) {
+          expect(
+            sampledOpacities[i],
+            lessThanOrEqualTo(sampledOpacities[i - 1]),
+          );
+        }
+
+        expect(backdropFinder, findsOneWidget);
+        final finalScrim = tester.widget<ColoredBox>(scrimFinder);
+        expect(finalScrim.color.a, closeTo(0, 0.01));
+      },
+    );
   });
 }

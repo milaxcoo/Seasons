@@ -15,13 +15,15 @@ void main() {
   // escapeHtml
   // ─────────────────────────────────────────────────────────────────────────
   group('escapeHtml', () {
-    test('escapes ampersand before other characters to prevent double-escaping',
-        () {
-      expect(
-        ErrorReportingService.escapeHtml('a & b < c > d'),
-        equals('a &amp; b &lt; c &gt; d'),
-      );
-    });
+    test(
+      'escapes ampersand before other characters to prevent double-escaping',
+      () {
+        expect(
+          ErrorReportingService.escapeHtml('a & b < c > d'),
+          equals('a &amp; b &lt; c &gt; d'),
+        );
+      },
+    );
 
     test('escapes only ampersand when text contains only &', () {
       expect(ErrorReportingService.escapeHtml('&'), equals('&amp;'));
@@ -32,8 +34,10 @@ void main() {
     });
 
     test('leaves plain text unchanged', () {
-      expect(ErrorReportingService.escapeHtml('hello world'),
-          equals('hello world'));
+      expect(
+        ErrorReportingService.escapeHtml('hello world'),
+        equals('hello world'),
+      );
     });
 
     test('escapes combined special characters correctly', () {
@@ -93,8 +97,11 @@ void main() {
       final result = ErrorReportingService.truncateTelegramHtml(html, 60);
       // Count occurrences of </b> — should be exactly one (the original).
       final closeCount = '</b>'.allMatches(result).length;
-      expect(closeCount, equals(1),
-          reason: 'Only the original </b> should be present, no extra added');
+      expect(
+        closeCount,
+        equals(1),
+        reason: 'Only the original </b> should be present, no extra added',
+      );
       expect(result.length, lessThanOrEqualTo(60));
     });
 
@@ -109,8 +116,11 @@ void main() {
       final lastGt = result.lastIndexOf('>');
       // Either there's no '<', or every '<' has a matching '>'
       if (lastLt != -1) {
-        expect(lastGt, greaterThan(lastLt),
-            reason: 'Result must not end with a partial tag');
+        expect(
+          lastGt,
+          greaterThan(lastLt),
+          reason: 'Result must not end with a partial tag',
+        );
       }
       expect(result.length, lessThanOrEqualTo(limit));
     });
@@ -177,7 +187,7 @@ void main() {
           'windows',
           'web',
           'unknown',
-          Platform.operatingSystem
+          Platform.operatingSystem,
         ]),
       );
     });
@@ -198,26 +208,31 @@ void main() {
   // sendTestMessage (with mock HTTP client)
   // ─────────────────────────────────────────────────────────────────────────
   group('sendTestMessage', () {
-    test('returns true when Telegram is not configured (no error thrown)',
-        () async {
-      // Default env has empty TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID,
-      // so _sendToTelegram returns without calling the HTTP client.
-      final mockClient = MockHttpClient();
-      final service = ErrorReportingService.withHttpClient(mockClient);
-      await service.initialize(appVersion: '1.0.0');
+    test(
+      'returns true when Telegram is not configured (no error thrown)',
+      () async {
+        // Default env has empty TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID,
+        // so _sendToTelegram returns without calling the HTTP client.
+        final mockClient = MockHttpClient();
+        final service = ErrorReportingService.withHttpClient(mockClient);
+        await service.initialize(appVersion: '1.0.0');
 
-      final result = await service.sendTestMessage();
+        final result = await service.sendTestMessage();
 
-      // sendTestMessage wraps _sendToTelegram in a try/catch and always
-      // returns true on no-throw, but _sendToTelegram returns early when
-      // unconfigured – so no HTTP call is made.
-      verifyNever(
-        () => mockClient.post(any(),
-            headers: any(named: 'headers'), body: any(named: 'body')),
-      );
-      // The service does not throw, so result is true (early return, no error)
-      expect(result, isTrue);
-    });
+        // sendTestMessage wraps _sendToTelegram in a try/catch and always
+        // returns true on no-throw, but _sendToTelegram returns early when
+        // unconfigured – so no HTTP call is made.
+        verifyNever(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        );
+        // The service does not throw, so result is true (early return, no error)
+        expect(result, isTrue);
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -1,12 +1,6 @@
 import 'package:seasons/l10n/app_localizations.dart';
 
-enum UserErrorContext {
-  generic,
-  registration,
-  voteSubmit,
-  dataLoad,
-  auth,
-}
+enum UserErrorContext { generic, registration, voteSubmit, dataLoad, auth }
 
 class UserFriendlyErrorMapper {
   static String toMessage(

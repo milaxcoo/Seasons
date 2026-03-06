@@ -28,8 +28,6 @@ const Set<String> _allowedTelemetryDetailKeys = {
 };
 
 /// Privacy-first error reporting service.
-///
-/// Sends error reports to Telegram without collecting any PII.
 class ErrorReportingService {
   static final ErrorReportingService _instance =
       ErrorReportingService._internal();
@@ -46,16 +44,27 @@ class ErrorReportingService {
   // CONFIGURATION
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Telegram Bot Token - passed via --dart-define=TELEGRAM_BOT_TOKEN=xxx
-  /// To build: flutter build apk --dart-define=TELEGRAM_BOT_TOKEN=your_token
+  /// Telegram Bot Token for local debug telemetry.
   static const String _telegramBotToken = String.fromEnvironment(
     'TELEGRAM_BOT_TOKEN',
     defaultValue: '',
   );
 
-  /// Telegram Chat ID - passed via --dart-define=TELEGRAM_CHAT_ID=xxx
+  /// Telegram Chat ID for local debug telemetry.
   static const String _telegramChatId = String.fromEnvironment(
     'TELEGRAM_CHAT_ID',
+    defaultValue: '',
+  );
+
+  /// Secure production relay URL for release/profile telemetry.
+  static const String _errorReportRelayUrl = String.fromEnvironment(
+    'ERROR_REPORT_RELAY_URL',
+    defaultValue: '',
+  );
+
+  /// Optional bearer token for secure relay authentication.
+  static const String _errorReportRelayApiKey = String.fromEnvironment(
+    'ERROR_REPORT_RELAY_API_KEY',
     defaultValue: '',
   );
 
@@ -79,6 +88,7 @@ class ErrorReportingService {
   String _appVersion = 'unknown';
   String _currentScreen = 'unknown';
   bool _isInitialized = false;
+  ErrorReportTransport? _reportTransport;
 
   @visibleForTesting
   static String sanitizeTelemetryText(String value, {required int maxLength}) {
@@ -113,11 +123,12 @@ class ErrorReportingService {
     if (_isInitialized) return;
 
     _appVersion = appVersion;
+    _reportTransport = _buildTransport();
     _isInitialized = true;
 
     if (kDebugMode) {
       debugPrint(
-        'ErrorReportingService: Initialized (v$_appVersion, errors=$_enableErrorReporting, diagnostics=$_enableDiagnosticEvents)',
+        'ErrorReportingService: Initialized (v$_appVersion, errors=$_enableErrorReporting, diagnostics=$_enableDiagnosticEvents, relay=${_errorReportRelayUrl.isNotEmpty}, transport=${_reportTransport.runtimeType})',
       );
     }
   }
@@ -144,7 +155,7 @@ class ErrorReportingService {
     );
 
     try {
-      await _sendToTelegram(testReport);
+      await _sendViaTransport(testReport);
       return true;
     } catch (e) {
       return false;
@@ -167,7 +178,8 @@ class ErrorReportingService {
         maxLength: _kMaxTelemetryMessageLength,
       );
       debugPrint(
-          'ErrorReportingService: ${severity.name.toUpperCase()} - $sanitizedError');
+        'ErrorReportingService: ${severity.name.toUpperCase()} - $sanitizedError',
+      );
       if (stackTrace != null) {
         debugPrint(
           sanitizeTelemetryText(
@@ -197,7 +209,8 @@ class ErrorReportingService {
 
     if (kDebugMode) {
       debugPrint(
-          'ErrorReportingService: EVENT - $sanitizedEvent ${detailStr.isNotEmpty ? "($detailStr)" : ""}');
+        'ErrorReportingService: EVENT - $sanitizedEvent ${detailStr.isNotEmpty ? "($detailStr)" : ""}',
+      );
       if (!_enableDiagnosticEvents) return;
     }
 
@@ -211,10 +224,7 @@ class ErrorReportingService {
   }
 
   /// Report a fatal crash (unhandled exception).
-  Future<void> reportCrash(
-    dynamic error,
-    StackTrace stackTrace,
-  ) async {
+  Future<void> reportCrash(dynamic error, StackTrace stackTrace) async {
     if (!_enableErrorReporting) return;
 
     if (kDebugMode) {
@@ -243,7 +253,8 @@ class ErrorReportingService {
 
     if (kDebugMode) {
       debugPrint(
-          'ErrorReportingService: FLUTTER_ERROR - ${sanitizeTelemetryText(details.exceptionAsString(), maxLength: _kMaxTelemetryMessageLength)}');
+        'ErrorReportingService: FLUTTER_ERROR - ${sanitizeTelemetryText(details.exceptionAsString(), maxLength: _kMaxTelemetryMessageLength)}',
+      );
       return;
     }
 
@@ -264,24 +275,38 @@ class ErrorReportingService {
     if (!_isReportingEnabledForType(type)) return;
 
     final sanitizedType = sanitizeTelemetryText(type, maxLength: 32);
-    final sanitizedMessage =
-        sanitizeTelemetryText(message, maxLength: _kMaxTelemetryMessageLength);
+    final sanitizedMessage = sanitizeTelemetryText(
+      message,
+      maxLength: _kMaxTelemetryMessageLength,
+    );
     final sanitizedContext = context == null
         ? null
-        : sanitizeTelemetryText(context,
-            maxLength: _kMaxTelemetryContextLength);
+        : sanitizeTelemetryText(
+            context,
+            maxLength: _kMaxTelemetryContextLength,
+          );
     final sanitizedStack = stackTrace == null
         ? null
-        : sanitizeTelemetryText(stackTrace,
-            maxLength: _kMaxTelemetryStackLength);
-    final sanitizedAppVersion =
-        sanitizeTelemetryText(_appVersion, maxLength: 40);
-    final sanitizedPlatform =
-        sanitizeTelemetryText(detectPlatform(), maxLength: 20);
-    final sanitizedOsVersion =
-        sanitizeTelemetryText(detectOsVersion(), maxLength: 120);
-    final sanitizedScreen =
-        sanitizeTelemetryText(_currentScreen, maxLength: 80);
+        : sanitizeTelemetryText(
+            stackTrace,
+            maxLength: _kMaxTelemetryStackLength,
+          );
+    final sanitizedAppVersion = sanitizeTelemetryText(
+      _appVersion,
+      maxLength: 40,
+    );
+    final sanitizedPlatform = sanitizeTelemetryText(
+      detectPlatform(),
+      maxLength: 20,
+    );
+    final sanitizedOsVersion = sanitizeTelemetryText(
+      detectOsVersion(),
+      maxLength: 120,
+    );
+    final sanitizedScreen = sanitizeTelemetryText(
+      _currentScreen,
+      maxLength: 80,
+    );
 
     final report = ErrorReport(
       type: sanitizedType,
@@ -295,8 +320,8 @@ class ErrorReportingService {
       screenName: sanitizedScreen,
     );
 
-    // Send to Telegram (fire and forget, don't block)
-    unawaited(_sendToTelegram(report));
+    // Send via configured transport (fire and forget, don't block).
+    unawaited(_sendViaTransport(report));
   }
 
   bool _isReportingEnabledForType(String type) {
@@ -333,90 +358,55 @@ class ErrorReportingService {
     }
   }
 
-  /// Send error report to Telegram bot (with single retry on transient errors).
-  Future<void> _sendToTelegram(ErrorReport report) async {
-    if (kReleaseMode || kProfileMode) {
-      if (kDebugMode) {
-        debugPrint(
-            'ErrorReportingService: Telegram disabled in release/profile');
+  bool get _isReleaseLike => kReleaseMode || kProfileMode;
+
+  @visibleForTesting
+  bool get isRelayConfigured => _errorReportRelayUrl.isNotEmpty;
+
+  ErrorReportTransport _buildTransport() {
+    if (_isReleaseLike) {
+      if (_errorReportRelayUrl.isEmpty) {
+        return const DisabledErrorReportTransport(
+          reason: 'release_transport_not_configured',
+        );
       }
-      return;
+      return HttpRelayErrorReportTransport(
+        client: _httpClient,
+        relayUrl: _errorReportRelayUrl,
+        apiKey: _errorReportRelayApiKey,
+      );
     }
 
-    if (_telegramBotToken.isEmpty || _telegramChatId.isEmpty) {
-      if (kDebugMode) {
-        debugPrint(
-            'ErrorReportingService: Telegram not configured (missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID)');
-      }
-      return;
+    if (_telegramBotToken.isNotEmpty && _telegramChatId.isNotEmpty) {
+      return TelegramErrorReportTransport(
+        client: _httpClient,
+        botToken: _telegramBotToken,
+        chatId: _telegramChatId,
+        maxContextLength: _kMaxTelemetryContextLength,
+      );
     }
 
-    for (var attempt = 0; attempt < 2; attempt++) {
-      try {
-        final message = _formatMessage(report);
-        final telegramUrl = Uri.parse(
-            'https://api.telegram.org/bot$_telegramBotToken/sendMessage');
-
-        final response = await _httpClient
-            .post(
-              telegramUrl,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'chat_id': _telegramChatId,
-                'text': message,
-                'parse_mode': 'HTML',
-                'disable_notification': report.type == 'warning',
-              }),
-            )
-            .timeout(const Duration(seconds: 10));
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          return; // Success
-        }
-
-        // Retryable statuses: 429 (rate limit) and 5xx (server errors).
-        // All other non-2xx codes (4xx client errors) are non-retryable.
-        final isRetryable =
-            response.statusCode == 429 || response.statusCode >= 500;
-        if (!isRetryable) {
-          if (kDebugMode) {
-            debugPrint(
-                'ErrorReportingService: Telegram API error ${response.statusCode}: ${sanitizeTelemetryText(response.body, maxLength: _kMaxTelemetryContextLength)}');
-          }
-          return; // Don't retry non-retryable client errors
-        }
-
-        if (kDebugMode) {
-          debugPrint(
-              'ErrorReportingService: Telegram HTTP ${response.statusCode}, attempt ${attempt + 1}');
-        }
-      } on SocketException catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-              'ErrorReportingService: Network error (attempt ${attempt + 1}): ${sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}');
-        }
-      } on TimeoutException catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-              'ErrorReportingService: Timeout (attempt ${attempt + 1}): ${sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-              'ErrorReportingService: Failed to send to Telegram: ${sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}');
-        }
-        return; // Unknown errors are not retried
-      }
-
-      // Wait before retry
-      if (attempt == 0) {
-        await Future<void>.delayed(const Duration(seconds: 2));
-      }
+    if (_errorReportRelayUrl.isNotEmpty) {
+      return HttpRelayErrorReportTransport(
+        client: _httpClient,
+        relayUrl: _errorReportRelayUrl,
+        apiKey: _errorReportRelayApiKey,
+      );
     }
+
+    return const DisabledErrorReportTransport(
+      reason: 'no_transport_configured',
+    );
+  }
+
+  Future<void> _sendViaTransport(ErrorReport report) async {
+    final transport = _reportTransport ?? _buildTransport();
+    await transport.send(report);
   }
 
   /// Format the error report as an HTML message for Telegram.
-  String _formatMessage(ErrorReport report) {
+  @visibleForTesting
+  static String formatTelegramMessage(ErrorReport report) {
     final emoji = switch (report.type) {
       'crash' => '🔴',
       'flutter_error' => '🟠',
@@ -429,10 +419,12 @@ class ErrorReportingService {
 
     final buffer = StringBuffer();
     buffer.writeln(
-        '$emoji <b>${escapeHtml(report.type.toUpperCase())}</b> в Seasons');
+      '$emoji <b>${escapeHtml(report.type.toUpperCase())}</b> в Seasons',
+    );
     buffer.writeln();
     buffer.writeln(
-        '📱 ${escapeHtml(report.platform)} ${escapeHtml(report.osVersion)}');
+      '📱 ${escapeHtml(report.platform)} ${escapeHtml(report.osVersion)}',
+    );
     buffer.writeln('📦 Версия: ${escapeHtml(report.appVersion)}');
     buffer.writeln('📍 Экран: ${escapeHtml(report.screenName)}');
     buffer.writeln('🕐 ${escapeHtml(report.timestamp)}');
@@ -542,12 +534,194 @@ class ErrorReportingService {
   }
 }
 
-/// Error severity levels.
-enum ErrorSeverity {
-  warning,
-  error,
-  critical,
+abstract class ErrorReportTransport {
+  Future<void> send(ErrorReport report);
 }
+
+class DisabledErrorReportTransport implements ErrorReportTransport {
+  final String reason;
+
+  const DisabledErrorReportTransport({required this.reason});
+
+  @override
+  Future<void> send(ErrorReport report) async {
+    if (kDebugMode) {
+      debugPrint(
+        'ErrorReportingService: transport disabled ($reason), report=${report.type}',
+      );
+    }
+  }
+}
+
+class TelegramErrorReportTransport implements ErrorReportTransport {
+  final http.Client client;
+  final String botToken;
+  final String chatId;
+  final int maxContextLength;
+
+  TelegramErrorReportTransport({
+    required this.client,
+    required this.botToken,
+    required this.chatId,
+    required this.maxContextLength,
+  });
+
+  @override
+  Future<void> send(ErrorReport report) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final message = ErrorReportingService.formatTelegramMessage(report);
+        final telegramUrl = Uri.parse(
+          'https://api.telegram.org/bot$botToken/sendMessage',
+        );
+
+        final response = await client
+            .post(
+              telegramUrl,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'chat_id': chatId,
+                'text': message,
+                'parse_mode': 'HTML',
+                'disable_notification': report.type == 'warning',
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return;
+        }
+
+        final isRetryable =
+            response.statusCode == 429 || response.statusCode >= 500;
+        if (!isRetryable) {
+          if (kDebugMode) {
+            debugPrint(
+              'ErrorReportingService: Telegram API error ${response.statusCode}: ${ErrorReportingService.sanitizeTelemetryText(response.body, maxLength: maxContextLength)}',
+            );
+          }
+          return;
+        }
+      } on SocketException catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'ErrorReportingService: Telegram network error (attempt ${attempt + 1}): ${ErrorReportingService.sanitizeTelemetryText(e.toString(), maxLength: maxContextLength)}',
+          );
+        }
+      } on TimeoutException catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'ErrorReportingService: Telegram timeout (attempt ${attempt + 1}): ${ErrorReportingService.sanitizeTelemetryText(e.toString(), maxLength: maxContextLength)}',
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'ErrorReportingService: Telegram send failed: ${ErrorReportingService.sanitizeTelemetryText(e.toString(), maxLength: maxContextLength)}',
+          );
+        }
+        return;
+      }
+
+      if (attempt == 0) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+    }
+  }
+}
+
+class HttpRelayErrorReportTransport implements ErrorReportTransport {
+  final http.Client client;
+  final String relayUrl;
+  final String apiKey;
+
+  HttpRelayErrorReportTransport({
+    required this.client,
+    required this.relayUrl,
+    required this.apiKey,
+  });
+
+  @override
+  Future<void> send(ErrorReport report) async {
+    final endpoint = Uri.tryParse(relayUrl);
+    if (endpoint == null) {
+      if (kDebugMode) {
+        debugPrint('ErrorReportingService: invalid relay URL');
+      }
+      return;
+    }
+    if (endpoint.scheme != 'https') {
+      if (kDebugMode) {
+        debugPrint(
+          'ErrorReportingService: insecure relay URL scheme "${endpoint.scheme}". Only "https" is allowed.',
+        );
+      }
+      return;
+    }
+    if (endpoint.host.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+          'ErrorReportingService: relay URL must include a non-empty host.',
+        );
+      }
+      return;
+    }
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final headers = <String, String>{'Content-Type': 'application/json'};
+        if (apiKey.isNotEmpty) {
+          headers['Authorization'] = 'Bearer $apiKey';
+        }
+
+        final response = await client
+            .post(endpoint, headers: headers, body: jsonEncode(report.toJson()))
+            .timeout(const Duration(seconds: 10));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return;
+        }
+
+        final isRetryable =
+            response.statusCode == 429 || response.statusCode >= 500;
+        if (!isRetryable) {
+          if (kDebugMode) {
+            debugPrint(
+              'ErrorReportingService: relay error ${response.statusCode}: ${ErrorReportingService.sanitizeTelemetryText(response.body, maxLength: _kMaxTelemetryContextLength)}',
+            );
+          }
+          return;
+        }
+      } on SocketException catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'ErrorReportingService: relay network error (attempt ${attempt + 1}): ${ErrorReportingService.sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}',
+          );
+        }
+      } on TimeoutException catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'ErrorReportingService: relay timeout (attempt ${attempt + 1}): ${ErrorReportingService.sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}',
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'ErrorReportingService: relay send failed: ${ErrorReportingService.sanitizeTelemetryText(e.toString(), maxLength: _kMaxTelemetryContextLength)}',
+          );
+        }
+        return;
+      }
+
+      if (attempt == 0) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+    }
+  }
+}
+
+/// Error severity levels.
+enum ErrorSeverity { warning, error, critical }
 
 /// Error report data model.
 /// Contains only non-PII information.

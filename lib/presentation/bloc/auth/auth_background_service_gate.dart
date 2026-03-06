@@ -1,10 +1,6 @@
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 
-enum AuthBackgroundServiceAction {
-  none,
-  start,
-  stop,
-}
+enum AuthBackgroundServiceAction { none, start, stop }
 
 AuthBackgroundServiceAction backgroundServiceActionForAuthTransition({
   required AuthState previous,

@@ -11,10 +11,7 @@ import 'package:seasons/presentation/widgets/seasons_loader.dart';
 class ProfileScreen extends StatefulWidget {
   final String? imagePathOverride;
 
-  const ProfileScreen({
-    super.key,
-    this.imagePathOverride,
-  });
+  const ProfileScreen({super.key, this.imagePathOverride});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -78,8 +75,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Padding(
                   padding: detailStyle.outerPadding,
                   child: ConstrainedBox(
-                    constraints:
-                        BoxConstraints(maxWidth: detailStyle.maxContentWidth),
+                    constraints: BoxConstraints(
+                      maxWidth: detailStyle.maxContentWidth,
+                    ),
                     child: Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFE4DCC5).withValues(alpha: 0.9),
@@ -117,8 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 const Divider(color: Colors.grey, height: 1),
                                 SizedBox(height: detailStyle.sectionGap),
                                 _UserInfoRow(
-                                  label:
-                                      AppLocalizations.of(context)!.patronymic,
+                                  label: AppLocalizations.of(
+                                    context,
+                                  )!
+                                      .patronymic,
                                   value: profile.patronymic,
                                   style: detailStyle,
                                 ),
@@ -201,9 +201,9 @@ class _UserInfoRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.black54,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
               ),
               SizedBox(height: style.sectionGapSmall),
               GestureDetector(
@@ -229,9 +229,9 @@ class _UserInfoRow extends StatelessWidget {
               width: style.rowLabelWidth,
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.black54,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.black54),
               ),
             ),
             SizedBox(width: style.rowGap),

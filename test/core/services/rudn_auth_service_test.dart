@@ -80,8 +80,9 @@ void main() {
     });
 
     test('getCookie returns value when fast', () async {
-      final fastStorage =
-          MockSlowStorage(delay: const Duration(milliseconds: 100));
+      final fastStorage = MockSlowStorage(
+        delay: const Duration(milliseconds: 100),
+      );
       final service = RudnAuthService.withStorage(fastStorage);
 
       // Pre-populate directly
@@ -106,13 +107,15 @@ void main() {
       expect(await service.saveCookie('cookie'), isFalse);
     });
 
-    test('saveCookie returns false when persistence verification fails',
-        () async {
-      final mismatchStorage = MockWriteMismatchStorage();
-      final service = RudnAuthService.withStorage(mismatchStorage);
+    test(
+      'saveCookie returns false when persistence verification fails',
+      () async {
+        final mismatchStorage = MockWriteMismatchStorage();
+        final service = RudnAuthService.withStorage(mismatchStorage);
 
-      expect(await service.saveCookie('cookie'), isFalse);
-    });
+        expect(await service.saveCookie('cookie'), isFalse);
+      },
+    );
 
     test('isAuthenticated returns true when cookie exists', () async {
       final storage = MockSlowStorage();
@@ -167,15 +170,17 @@ void main() {
       expect(await service.logout(), isFalse);
     });
 
-    test('logout returns false when cookie remains after delete attempt',
-        () async {
-      final storage = MockDeleteNoopStorage();
-      final service = RudnAuthService.withStorage(storage);
+    test(
+      'logout returns false when cookie remains after delete attempt',
+      () async {
+        final storage = MockDeleteNoopStorage();
+        final service = RudnAuthService.withStorage(storage);
 
-      expect(await service.saveCookie('some_cookie'), isTrue);
-      expect(await service.logout(), isFalse);
-      expect(await service.isAuthenticated(), isTrue);
-    });
+        expect(await service.saveCookie('some_cookie'), isTrue);
+        expect(await service.logout(), isFalse);
+        expect(await service.isAuthenticated(), isTrue);
+      },
+    );
 
     test('clearSecureData removes all stored values', () async {
       final storage = MockSlowStorage();

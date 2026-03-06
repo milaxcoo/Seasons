@@ -2,19 +2,22 @@ import 'dart:async';
 import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:seasons/core/services/draft_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
-import 'package:seasons/core/utils/safe_log.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   static const int _maxStartupValidationAttempts = 2;
-  static const Duration _startupValidationRetryDelay =
-      Duration(milliseconds: 250);
+  static const Duration _startupValidationRetryDelay = Duration(
+    milliseconds: 250,
+  );
+  static const int _maxPostLoginValidationAttempts = 2;
+  static const Duration _postLoginValidationRetryDelay = Duration(
+    milliseconds: 250,
+  );
 
   final VotingRepository _votingRepository;
   final DraftService _draftService;
@@ -28,7 +31,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AppStarted>(_onAppStarted);
     on<LoggedIn>(_onLoggedIn);
     on<LoggedOut>(_onLoggedOut);
-    on<_UpdateUserLogin>(_onUpdateUserLogin);
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -119,7 +121,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _clearSessionAndEmitUnauthenticated(
-      Emitter<AuthState> emit) async {
+    Emitter<AuthState> emit,
+  ) async {
     try {
       await _votingRepository.logout();
     } catch (_) {
@@ -137,33 +140,96 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onLoggedIn(LoggedIn event, Emitter<AuthState> emit) async {
     ErrorReportingService().reportEvent('auth_bloc_logged_in_received');
-    // Cookie is already saved by WebView before popping.
-    // No need to re-read it from storage — just authenticate immediately.
-    emit(const AuthAuthenticated(userLogin: 'RUDN User'));
-    ErrorReportingService().reportEvent('auth_bloc_authenticated_emitted');
+    emit(AuthChecking());
 
-    // Fetch real name asynchronously (non-blocking)
-    Future<String?>.sync(_votingRepository.getUserLogin).then((name) {
-      if (name != null) {
-        add(_UpdateUserLogin(name));
-        ErrorReportingService().reportEvent('auth_bloc_name_fetched');
-      }
-    }).catchError((e) {
-      if (kDebugMode) {
-        debugPrint('Failed to fetch user login: ${sanitizeObjectForLog(e)}');
-      }
-      ErrorReportingService()
-          .reportEvent('auth_bloc_name_fetch_failed', details: {
-        'exception_type': e.runtimeType.toString(),
-      });
-    });
-  }
+    for (var attempt = 1;
+        attempt <= _maxPostLoginValidationAttempts;
+        attempt++) {
+      try {
+        final userLogin = await _votingRepository.getUserLogin();
+        if (userLogin != null && userLogin.isNotEmpty) {
+          emit(AuthAuthenticated(userLogin: userLogin));
+          ErrorReportingService().reportEvent(
+            'auth_bloc_authenticated_emitted',
+          );
+          return;
+        }
 
-  void _onUpdateUserLogin(_UpdateUserLogin event, Emitter<AuthState> emit) {
-    // Only update if still authenticated
-    if (state is AuthAuthenticated) {
-      emit(AuthAuthenticated(userLogin: event.userLogin));
+        await _clearSessionAndEmitUnauthenticated(emit);
+        emit(
+          const AuthFailure(
+            error: 'Login session could not be validated. Please try again.',
+          ),
+        );
+        ErrorReportingService().reportEvent('auth_bloc_validation_failed');
+        return;
+      } on UnauthorizedSessionException catch (e) {
+        await _clearSessionAndEmitUnauthenticated(emit);
+        emit(
+          const AuthFailure(
+            error: 'Login session expired. Please sign in again.',
+          ),
+        );
+        ErrorReportingService().reportEvent(
+          'auth_bloc_validation_failed',
+          details: {'exception_type': e.runtimeType.toString()},
+        );
+        return;
+      } on SessionValidationException catch (e) {
+        final shouldRetry = attempt < _maxPostLoginValidationAttempts;
+        if (!shouldRetry) break;
+        ErrorReportingService().reportEvent(
+          'auth_bloc_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        await Future<void>.delayed(_postLoginValidationRetryDelay);
+      } on TimeoutException catch (e) {
+        final shouldRetry = attempt < _maxPostLoginValidationAttempts;
+        if (!shouldRetry) break;
+        ErrorReportingService().reportEvent(
+          'auth_bloc_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        await Future<void>.delayed(_postLoginValidationRetryDelay);
+      } on SocketException catch (e) {
+        final shouldRetry = attempt < _maxPostLoginValidationAttempts;
+        if (!shouldRetry) break;
+        ErrorReportingService().reportEvent(
+          'auth_bloc_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        await Future<void>.delayed(_postLoginValidationRetryDelay);
+      } catch (e) {
+        final shouldRetry = attempt < _maxPostLoginValidationAttempts;
+        if (!shouldRetry) break;
+        ErrorReportingService().reportEvent(
+          'auth_bloc_validation_transient',
+          details: {
+            'attempt': '$attempt',
+            'exception_type': e.runtimeType.toString(),
+          },
+        );
+        await Future<void>.delayed(_postLoginValidationRetryDelay);
+      }
     }
+
+    await _clearSessionAndEmitUnauthenticated(emit);
+    emit(
+      const AuthFailure(
+        error:
+            'Unable to validate login session. Check connection and try again.',
+      ),
+    );
+    ErrorReportingService().reportEvent('auth_bloc_validation_fallback_unauth');
   }
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {
@@ -179,22 +245,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final hasTokenAfterLogout =
           tokenAfterLogout != null && tokenAfterLogout.isNotEmpty;
       if (hasTokenAfterLogout) {
-        emit(const AuthFailure(
-          error: 'Could not clear local session. Please try logging out again.',
-        ));
+        emit(
+          const AuthFailure(
+            error:
+                'Could not clear local session. Please try logging out again.',
+          ),
+        );
         return;
       }
     } catch (_) {
-      emit(const AuthFailure(
-        error: 'Could not verify logout. Please try again.',
-      ));
+      emit(
+        const AuthFailure(error: 'Could not verify logout. Please try again.'),
+      );
       return;
     }
 
     if (logoutInvocationFailed) {
-      emit(const AuthFailure(
-        error: 'Logout did not complete cleanly. Please try again.',
-      ));
+      emit(
+        const AuthFailure(
+          error: 'Logout did not complete cleanly. Please try again.',
+        ),
+      );
       return;
     }
 

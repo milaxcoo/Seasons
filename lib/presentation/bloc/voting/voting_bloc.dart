@@ -137,12 +137,17 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
   ) async {
     try {
       final events = await _votingRepository.getEventsByStatus(status);
-      emit(VotingEventsLoadSuccess(
-        events: events,
-        status: status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
       return true;
+    } on UnauthorizedSessionException {
+      _notifyAuthInvalid();
+      return false;
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -168,11 +173,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
         );
       }
 
-      emit(VotingEventsLoadSuccess(
-        events: filtered,
-        status: currentState.status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: filtered,
+          status: currentState.status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
     }
   }
 
@@ -186,11 +193,13 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
         return e;
       }).toList();
 
-      emit(VotingEventsLoadSuccess(
-        events: updatedEvents,
-        status: currentState.status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: updatedEvents,
+          status: currentState.status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
     }
   }
 
@@ -211,12 +220,22 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     emit(VotingLoadInProgress());
     try {
       final events = await _votingRepository.getEventsByStatus(event.status);
-      emit(VotingEventsLoadSuccess(
-        events: events,
-        status: event.status,
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-      ));
+      emit(
+        VotingEventsLoadSuccess(
+          events: events,
+          status: event.status,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+    } on UnauthorizedSessionException {
+      _notifyAuthInvalid();
+      emit(const VotingFailure(error: 'auth_invalid'));
     } catch (e) {
+      if (_isUnauthorizedError(e)) {
+        _notifyAuthInvalid();
+        emit(const VotingFailure(error: 'auth_invalid'));
+        return;
+      }
       emit(VotingFailure(error: e.toString()));
     }
   }
@@ -239,38 +258,65 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     ];
 
     // Fetch all statuses in parallel.
-    final results = await Future.wait(statuses.map((status) async {
-      try {
-        final events = await _votingRepository.getEventsByStatus(status);
-        return (status: status, events: events, success: true);
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-            'Silent refresh failed for $status: ${sanitizeObjectForLog(e)}',
+    final results = await Future.wait(
+      statuses.map((status) async {
+        try {
+          final events = await _votingRepository.getEventsByStatus(status);
+          return (
+            status: status,
+            events: events,
+            success: true,
+            unauthorized: false,
+          );
+        } on UnauthorizedSessionException {
+          return (
+            status: status,
+            events: <model.VotingEvent>[],
+            success: false,
+            unauthorized: true,
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              'Silent refresh failed for $status: ${sanitizeObjectForLog(e)}',
+            );
+          }
+          return (
+            status: status,
+            events: <model.VotingEvent>[],
+            success: false,
+            unauthorized: _isUnauthorizedError(e),
           );
         }
-        return (
-          status: status,
-          events: <model.VotingEvent>[],
-          success: false,
-        );
-      }
-    }));
+      }),
+    );
 
     // Emit results sequentially (Emitter does not support concurrent emissions).
     var hasSuccess = false;
     var hasFailure = false;
+    var hasUnauthorized = false;
     for (final result in results) {
       if (result.success) {
         hasSuccess = true;
-        emit(VotingEventsLoadSuccess(
-          events: result.events,
-          status: result.status,
-          timestamp: DateTime.now().millisecondsSinceEpoch,
-        ));
+        emit(
+          VotingEventsLoadSuccess(
+            events: result.events,
+            status: result.status,
+            timestamp: DateTime.now().millisecondsSinceEpoch,
+          ),
+        );
       } else {
+        if (result.unauthorized) {
+          hasUnauthorized = true;
+        }
         hasFailure = true;
       }
+    }
+
+    if (hasUnauthorized) {
+      _notifyAuthInvalid();
+      _emitConnectionStatus(VotingConnectionStatus.disconnected);
+      return;
     }
 
     if (!hasSuccess) {
@@ -299,24 +345,61 @@ class VotingBloc extends Bloc<VotingEvent, VotingState> {
     try {
       await _votingRepository.registerForEvent(event.eventId);
       emit(RegistrationSuccess());
+    } on UnauthorizedSessionException {
+      _notifyAuthInvalid();
+      emit(const RegistrationFailure(error: 'auth_invalid'));
     } catch (e) {
+      if (_isUnauthorizedError(e)) {
+        _notifyAuthInvalid();
+        emit(const RegistrationFailure(error: 'auth_invalid'));
+        return;
+      }
       emit(RegistrationFailure(error: e.toString()));
     }
   }
 
   Future<void> _onSubmitVote(
-      SubmitVote event, Emitter<VotingState> emit) async {
+    SubmitVote event,
+    Emitter<VotingState> emit,
+  ) async {
     emit(VotingLoadInProgress());
     try {
-      final isVoteAccepted =
-          await _votingRepository.submitVote(event.event, event.answers);
+      final isVoteAccepted = await _votingRepository.submitVote(
+        event.event,
+        event.answers,
+      );
       if (isVoteAccepted) {
         emit(VotingSubmissionSuccess());
       } else {
         emit(const VotingFailure(error: 'User already voted'));
       }
+    } on UnauthorizedSessionException {
+      _notifyAuthInvalid();
+      emit(const VotingFailure(error: 'auth_invalid'));
     } catch (e) {
+      if (_isUnauthorizedError(e)) {
+        _notifyAuthInvalid();
+        emit(const VotingFailure(error: 'auth_invalid'));
+        return;
+      }
       emit(VotingFailure(error: e.toString()));
     }
+  }
+
+  void _notifyAuthInvalid() {
+    _authInvalidController.add(null);
+  }
+
+  bool _isUnauthorizedError(Object error) {
+    if (error is UnauthorizedSessionException) {
+      return true;
+    }
+    final value = error.toString().toLowerCase();
+    return value.contains('unauthorizedsessionexception') ||
+        value.contains('auth_invalid') ||
+        value.contains('unauthorized') ||
+        value.contains('forbidden') ||
+        value.contains('401') ||
+        value.contains('403');
   }
 }

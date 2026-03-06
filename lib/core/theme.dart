@@ -12,8 +12,9 @@ class AppTheme {
 
   // --- RUDN BRAND COLORS ---
   static const Color rudnGreenColor = Color(0xFF23a74c);
-  static const Color rudnRedColor =
-      Color(0xFFD32F2F); // Standard red for alerts/errors
+  static const Color rudnRedColor = Color(
+    0xFFD32F2F,
+  ); // Standard red for alerts/errors
 
   // --- THEME ---
   static final ThemeData lightTheme = _buildLightTheme();
@@ -87,10 +88,7 @@ class AppTheme {
                 shadows: textShadow,
               ),
             )
-            .apply(
-              bodyColor: textColor,
-              displayColor: textColor,
-            );
+            .apply(bodyColor: textColor, displayColor: textColor);
 
     // 2. --- FIX ---
     // Now overriding HEADLINES to use 'HemiHead'

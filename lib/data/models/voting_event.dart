@@ -105,30 +105,35 @@ class VotingEvent extends Equatable {
             if (subjectsMap['details'] is Map) {
               final details = subjectsMap['details'] as Map<String, dynamic>;
               details.forEach((variantName, voteCount) {
-                subjectResults.add(SubjectResult(
-                  name: variantName,
-                  voteCounts: {variantName: voteCount as int? ?? 0},
-                ));
+                subjectResults.add(
+                  SubjectResult(
+                    name: variantName,
+                    voteCounts: {variantName: voteCount as int? ?? 0},
+                  ),
+                );
               });
             } else {
               // Стандартный парсинг для yes_no, yes_no_abstained, subject_oriented
               subjectsMap.forEach((subjectName, subjectData) {
                 final details =
                     subjectData['details'] as Map<String, dynamic>? ?? {};
-                final voteCounts = details
-                    .map((key, value) => MapEntry(key, value as int? ?? 0));
+                final voteCounts = details.map(
+                  (key, value) => MapEntry(key, value as int? ?? 0),
+                );
 
-                subjectResults.add(SubjectResult(
-                  name: subjectName,
-                  voteCounts: voteCounts,
-                ));
+                subjectResults.add(
+                  SubjectResult(name: subjectName, voteCounts: voteCounts),
+                );
               });
             }
           }
-          parsedResults.add(QuestionResult(
+          parsedResults.add(
+            QuestionResult(
               name: questionName,
               type: questionType,
-              subjectResults: subjectResults));
+              subjectResults: subjectResults,
+            ),
+          );
         });
       }
     } catch (e) {

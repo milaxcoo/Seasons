@@ -30,10 +30,7 @@ class ApiVotingRepository implements VotingRepository {
   // Helper to retrieve the current headers with the valid cookie
   Future<Map<String, String>> get _headers async {
     final cookie = await _authService.getCookie() ?? '';
-    return {
-      'Cookie': 'session=$cookie',
-      'X-Requested-With': 'XMLHttpRequest',
-    };
+    return {'Cookie': 'session=$cookie', 'X-Requested-With': 'XMLHttpRequest'};
   }
 
   Uri _buildSeasonsUri(String path, [Map<String, String>? queryParameters]) {
@@ -53,8 +50,10 @@ class ApiVotingRepository implements VotingRepository {
   }
 
   @visibleForTesting
-  Uri buildSeasonsUriForTest(String path,
-      [Map<String, String>? queryParameters]) {
+  Uri buildSeasonsUriForTest(
+    String path, [
+    Map<String, String>? queryParameters,
+  ]) {
     return _buildSeasonsUri(path, queryParameters);
   }
 
@@ -106,6 +105,12 @@ class ApiVotingRepository implements VotingRepository {
   @override
   Future<String?> getAuthToken() async => await _authService.getCookie();
 
+  @override
+  Future<bool> validateSession() async {
+    final userLogin = await getUserLogin();
+    return userLogin != null && userLogin.isNotEmpty;
+  }
+
   // --- Методы для голосований ---
   @override
   Future<List<VotingEvent>> getEventsByStatus(VotingStatus status) async {
@@ -128,6 +133,11 @@ class ApiVotingRepository implements VotingRepository {
       final response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw UnauthorizedSessionException(
+          'Events request unauthorized: ${response.statusCode}',
+        );
+      }
       if (response.statusCode == 200) {
         // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);
@@ -157,8 +167,11 @@ class ApiVotingRepository implements VotingRepository {
         return data.map((json) => VotingEvent.fromJson(json)).toList();
       } else {
         throw Exception(
-            'Не удалось загрузить события. Код ответа: ${response.statusCode}');
+          'Не удалось загрузить события. Код ответа: ${response.statusCode}',
+        );
       }
+    } on UnauthorizedSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Ошибка при получении событий: $e');
     }
@@ -177,10 +190,18 @@ class ApiVotingRepository implements VotingRepository {
       final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
-      if (response.statusCode != 200 ||
-          !response.body.contains('"status":"registered"')) {
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw UnauthorizedSessionException(
+          'Registration request unauthorized: ${response.statusCode}',
+        );
+      }
+      final responseJson = _tryDecodeJsonObject(response.body);
+      final status = _readResponseStatus(responseJson);
+      if (response.statusCode != 200 || status != 'registered') {
         throw Exception('Ошибка регистрации. Сервер ответил: ${response.body}');
       }
+    } on UnauthorizedSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Не удалось зарегистрироваться: $e');
     }
@@ -189,7 +210,9 @@ class ApiVotingRepository implements VotingRepository {
   // FIXED: Полностью переписан метод для отправки голоса
   @override
   Future<bool> submitVote(
-      VotingEvent event, Map<String, String> answers) async {
+    VotingEvent event,
+    Map<String, String> answers,
+  ) async {
     final url = _buildSeasonsUri('/api/v1/voter/vote');
 
     final baseHeaders = await _headers;
@@ -199,9 +222,7 @@ class ApiVotingRepository implements VotingRepository {
     };
 
     // Собираем тело запроса в ПРАВИЛЬНОМ формате
-    final body = <String, String>{
-      'voting_id': event.id,
-    };
+    final body = <String, String>{'voting_id': event.id};
 
     int index = 0;
     // Проходим по всем вопросам в том порядке, в котором они есть в голосовании
@@ -231,6 +252,11 @@ class ApiVotingRepository implements VotingRepository {
       final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw UnauthorizedSessionException(
+          'Vote submission unauthorized: ${response.statusCode}',
+        );
+      }
 
       if (kDebugMode) {
         debugPrint(
@@ -240,22 +266,25 @@ class ApiVotingRepository implements VotingRepository {
           'Vote submit response: status=${response.statusCode}, body=${redactSensitive(response.body)}',
         );
       }
+      final responseJson = _tryDecodeJsonObject(response.body);
+      final status = _readResponseStatus(responseJson);
 
       // Успешный ответ
-      if (response.statusCode == 200 &&
-          response.body.contains('"status":"voted"')) {
+      if (response.statusCode == 200 && status == 'voted') {
         return true; // Голос УСПЕШНО принят
       }
 
-      // Ошибка "Уже проголосовал"
-      if (response.statusCode == 409 &&
-          response.body.contains("User already voted")) {
+      // Backend uses HTTP 409 to indicate the user already voted.
+      if (response.statusCode == 409) {
         return false; // Голос НЕ принят (но это не ошибка)
       }
 
       // Любая другая ошибка
       throw Exception(
-          'Ошибка при отправке голоса. Сервер ответил: ${response.body}');
+        'Ошибка при отправке голоса. Сервер ответил: ${response.body}',
+      );
+    } on UnauthorizedSessionException {
+      rethrow;
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -295,9 +324,10 @@ class ApiVotingRepository implements VotingRepository {
         // We use a flexible regex to handle potential attributes or whitespace
         // dotAll: true allows '.' to match newlines
         final RegExp nameRegExp = RegExp(
-            r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
-            caseSensitive: false,
-            dotAll: true);
+          r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
+          caseSensitive: false,
+          dotAll: true,
+        );
         final match = nameRegExp.firstMatch(response.body);
 
         if (match != null) {
@@ -363,9 +393,10 @@ class ApiVotingRepository implements VotingRepository {
         // 1. Extract Full Name (from header)
         // Regex: <a href="/account" ...>(Name)</a>
         final RegExp nameRegExp = RegExp(
-            r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
-            caseSensitive: false,
-            dotAll: true);
+          r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
+          caseSensitive: false,
+          dotAll: true,
+        );
         final nameMatch = nameRegExp.firstMatch(response.body);
         if (nameMatch != null) {
           final fullNameRaw = nameMatch.group(1)?.trim() ?? "";
@@ -382,8 +413,9 @@ class ApiVotingRepository implements VotingRepository {
         // HTML: <th style="...">Email</th> ... <td>value</td>
         // Regex must handle attributes in <th> and newlines
         final RegExp emailRegExp = RegExp(
-            r'<th[^>]*>\s*Email\s*</th>[\s\S]*?<td>([^<]+)</td>',
-            caseSensitive: false);
+          r'<th[^>]*>\s*Email\s*</th>[\s\S]*?<td>([^<]+)</td>',
+          caseSensitive: false,
+        );
         final emailMatch = emailRegExp.firstMatch(response.body);
         if (emailMatch != null) {
           email = emailMatch.group(1)?.trim() ?? "";
@@ -391,8 +423,9 @@ class ApiVotingRepository implements VotingRepository {
 
         // 3. Extract Job Title (Position / Должность / Job Title)
         final RegExp jobRegExp = RegExp(
-            r'<th[^>]*>\s*(?:Position|Должность|Job\s*Title)\s*</th>[\s\S]*?<td>([\s\S]*?)</td>',
-            caseSensitive: false);
+          r'<th[^>]*>\s*(?:Position|Должность|Job\s*Title)\s*</th>[\s\S]*?<td>([\s\S]*?)</td>',
+          caseSensitive: false,
+        );
         final jobMatch = jobRegExp.firstMatch(response.body);
         if (jobMatch != null) {
           // Value might be empty or &nbsp;, or contain tags
@@ -421,6 +454,22 @@ class ApiVotingRepository implements VotingRepository {
       }
     }
     return null;
+  }
+
+  Map<String, dynamic>? _tryDecodeJsonObject(String rawBody) {
+    try {
+      final decoded = jsonDecode(rawBody);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _readResponseStatus(Map<String, dynamic>? decodedBody) {
+    if (decodedBody == null) return null;
+    final status = decodedBody['status'];
+    if (status is! String) return null;
+    return status.trim().toLowerCase();
   }
 
   // Formats "Ivanov Ivan Ivanovich" -> "Ivanov I.I."
@@ -468,7 +517,8 @@ class ApiVotingRepository implements VotingRepository {
           .timeout(const Duration(seconds: 15));
       if (kDebugMode) {
         debugPrint(
-            'Device token registration response: ${response.statusCode}');
+          'Device token registration response: ${response.statusCode}',
+        );
       }
       // Silently accept any response - backend may not have endpoint yet
     } catch (e) {
