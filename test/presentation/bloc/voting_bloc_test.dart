@@ -464,5 +464,104 @@ void main() {
         ],
       );
     });
+
+    group('Unauthorized session handling', () {
+      test(
+          'fetch emits auth_invalid failure and notifies auth invalid stream',
+          () async {
+        when(() => mockVotingRepository.getEventsByStatus(any())).thenThrow(
+          const UnauthorizedSessionException('expired'),
+        );
+
+        final authInvalid = Completer<void>();
+        final subscription = votingBloc.onAuthInvalid.listen((_) {
+          if (!authInvalid.isCompleted) {
+            authInvalid.complete();
+          }
+        });
+
+        votingBloc.add(
+          const FetchEventsByStatus(status: model.VotingStatus.active),
+        );
+
+        await expectLater(
+          votingBloc.stream,
+          emitsInOrder([
+            isA<VotingLoadInProgress>(),
+            isA<VotingFailure>()
+                .having((s) => s.error, 'error', equals('auth_invalid')),
+          ]),
+        );
+        await expectLater(authInvalid.future, completes);
+        await subscription.cancel();
+      });
+
+      test(
+          'register emits auth_invalid failure and notifies auth invalid stream',
+          () async {
+        when(() => mockVotingRepository.registerForEvent(any())).thenThrow(
+          const UnauthorizedSessionException('expired'),
+        );
+
+        final authInvalid = Completer<void>();
+        final subscription = votingBloc.onAuthInvalid.listen((_) {
+          if (!authInvalid.isCompleted) {
+            authInvalid.complete();
+          }
+        });
+
+        votingBloc.add(const RegisterForEvent(eventId: 'event-1'));
+
+        await expectLater(
+          votingBloc.stream,
+          emitsInOrder([
+            isA<RegistrationInProgress>(),
+            isA<RegistrationFailure>()
+                .having((s) => s.error, 'error', equals('auth_invalid')),
+          ]),
+        );
+        await expectLater(authInvalid.future, completes);
+        await subscription.cancel();
+      });
+
+      test(
+          'submit vote emits auth_invalid failure and notifies auth invalid stream',
+          () async {
+        const testEvent = model.VotingEvent(
+          id: 'event-1',
+          title: 'Test Voting Event',
+          description: 'Vote for your favorite',
+          status: model.VotingStatus.active,
+          isRegistered: true,
+          questions: [],
+          hasVoted: false,
+          results: [],
+        );
+
+        when(() => mockVotingRepository.submitVote(any(), any())).thenThrow(
+          const UnauthorizedSessionException('expired'),
+        );
+
+        final authInvalid = Completer<void>();
+        final subscription = votingBloc.onAuthInvalid.listen((_) {
+          if (!authInvalid.isCompleted) {
+            authInvalid.complete();
+          }
+        });
+
+        votingBloc.add(SubmitVote(event: testEvent, answers: const {}));
+
+        await expectLater(
+          votingBloc.stream,
+          emitsInOrder([
+            isA<VotingLoadInProgress>(),
+            isA<VotingFailure>()
+                .having((s) => s.error, 'error', equals('auth_invalid')),
+          ]),
+        );
+        await expectLater(authInvalid.future, completes);
+        await subscription.cancel();
+      });
+    });
   });
 }

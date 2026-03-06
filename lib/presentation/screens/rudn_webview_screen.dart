@@ -31,9 +31,9 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   bool _isRetryInProgress = false;
   String? _webResourceErrorMessage;
   String? _lastCallbackUrl;
+  String? _lastCommittedUrl;
   String? _lastForcedNavigationUrl;
   int _finalizationRunId = 0;
-  Timer? _cookieCheckTimer;
   Timer? _finalizationTimeoutTimer;
   bool _hasPopped = false;
 
@@ -56,6 +56,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
         NavigationDelegate(
           onPageStarted: (String url) {
             if (!mounted) return;
+            _lastCommittedUrl = url;
             if (_webViewHiddenAfterCallback) return;
             setState(() {
               _isLoading = true;
@@ -64,6 +65,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
           },
           onPageFinished: (String url) async {
             if (!mounted) return;
+            _lastCommittedUrl = url;
             setState(() {
               _isLoading = false;
               _webResourceErrorMessage = null;
@@ -103,8 +105,6 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
                 })();
               ''');
             }
-
-            await _checkCookies();
           },
           onWebResourceError: (WebResourceError error) {
             if (!mounted || _hasPopped) return;
@@ -186,33 +186,12 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     );
     _controller.loadRequest(
         Uri.parse('https://seasons.rudn.ru?lang=${widget.languageCode}'));
-
-    // Start periodic check for session cookie (increased frequency for speed)
-    _startCookieCheckTimer();
   }
 
   @override
   void dispose() {
-    _cookieCheckTimer?.cancel();
     _finalizationTimeoutTimer?.cancel();
     super.dispose();
-  }
-
-  Future<void> _checkCookies() async {
-    if (!mounted ||
-        _hasPopped ||
-        _isFinishingLogin ||
-        _webViewHiddenAfterCallback) {
-      return;
-    }
-    try {
-      final sessionCookie = await _readSessionCookieFromDocument();
-      if (sessionCookie != null) {
-        await _completeLoginAndPop(sessionCookie);
-      }
-    } catch (e) {
-      // Error ignored - page might not be ready yet
-    }
   }
 
   void _startFinishingLogin(String callbackUrl) {
@@ -237,7 +216,6 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       _finalizationState = _finalizationState.onCallbackDetected();
       _isLoading = false;
     });
-    _cookieCheckTimer?.cancel();
     _finalizationRunId += 1;
     _startFinalizationTimeout(_finalizationRunId);
     unawaited(_startCookiePollingPhase(callbackUrl, _finalizationRunId));
@@ -366,14 +344,32 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     _showFinalizationTimeoutError();
   }
 
-  void _startCookieCheckTimer() {
-    _cookieCheckTimer?.cancel();
-    _cookieCheckTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      unawaited(_checkCookies());
-    });
-  }
-
   Future<String?> _readSessionCookieFromDocument() async {
+    if (!canReadSessionCookie(
+      isFinishingLogin: _isFinishingLogin,
+      hasPopped: _hasPopped,
+      callbackUrl: _lastCallbackUrl,
+      committedUrl: _lastCommittedUrl,
+    )) {
+      return null;
+    }
+
+    String? currentUrl;
+    try {
+      currentUrl = await _controller.currentUrl();
+    } catch (_) {}
+    if (currentUrl != null && currentUrl.isNotEmpty) {
+      _lastCommittedUrl = currentUrl;
+    }
+    if (!canReadSessionCookie(
+      isFinishingLogin: _isFinishingLogin,
+      hasPopped: _hasPopped,
+      callbackUrl: _lastCallbackUrl,
+      committedUrl: _lastCommittedUrl,
+    )) {
+      return null;
+    }
+
     final cookieString = await _controller.runJavaScriptReturningResult(
       'document.cookie',
     );
@@ -395,7 +391,6 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
 
     if (mounted && !_hasPopped) {
       _hasPopped = true;
-      _cookieCheckTimer?.cancel();
       _finalizationTimeoutTimer?.cancel();
       ErrorReportingService().reportEvent('webview_popping');
       Navigator.of(context).pop(true);
@@ -429,7 +424,6 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     if (!mounted || _hasPopped || _isRetryInProgress || !userInitiated) return;
     _isRetryInProgress = true;
 
-    _cookieCheckTimer?.cancel();
     _finalizationTimeoutTimer?.cancel();
     _isCallbackCompletionInProgress = false;
     _lastForcedNavigationUrl = null;
@@ -475,7 +469,6 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
     if (!mounted || _hasPopped) return;
     _hasPopped = true;
     _isRetryInProgress = false;
-    _cookieCheckTimer?.cancel();
     _finalizationTimeoutTimer?.cancel();
     Navigator.of(context).pop(false);
   }
@@ -964,6 +957,27 @@ bool shouldStartCallbackCompletion({
     return false;
   }
   return true;
+}
+
+@visibleForTesting
+bool canReadSessionCookie({
+  required bool isFinishingLogin,
+  required bool hasPopped,
+  required String? callbackUrl,
+  required String? committedUrl,
+}) {
+  if (!isFinishingLogin || hasPopped) return false;
+  if (!isExpectedAuthCallbackUrl(callbackUrl ?? '')) return false;
+  if (!isTrustedPostCallbackCookieReadUrl(committedUrl ?? '')) return false;
+  return true;
+}
+
+@visibleForTesting
+bool isTrustedPostCallbackCookieReadUrl(String rawUrl) {
+  final uri = Uri.tryParse(rawUrl);
+  if (uri == null || !uri.hasScheme) return false;
+  return uri.scheme.toLowerCase() == 'https' &&
+      uri.host.toLowerCase() == _seasonsHost;
 }
 
 @visibleForTesting

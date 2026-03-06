@@ -148,16 +148,16 @@ void main() {
 
     group('LoggedIn', () {
       blocTest<AuthBloc, AuthState>(
-        'emits placeholder auth state first, then resolved user name',
+        'emits [AuthChecking, AuthAuthenticated] when login session validates',
         build: () {
           when(() => mockVotingRepository.getUserLogin())
               .thenAnswer((_) async => 'user');
           return authBloc;
         },
         act: (bloc) => bloc.add(const LoggedIn()),
-        expect: () => const [
-          AuthAuthenticated(userLogin: 'RUDN User'),
-          AuthAuthenticated(userLogin: 'user'),
+        expect: () => [
+          AuthChecking(),
+          const AuthAuthenticated(userLogin: 'user'),
         ],
         verify: (_) {
           verifyNever(() => mockVotingRepository.login(any(), any()));
@@ -166,29 +166,48 @@ void main() {
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits only placeholder auth state when resolved user name is null',
+        'emits [AuthChecking, AuthUnauthenticated, AuthFailure] when login session is invalid',
         build: () {
           when(() => mockVotingRepository.getUserLogin())
               .thenAnswer((_) async => null);
+          when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
           return authBloc;
         },
         act: (bloc) => bloc.add(const LoggedIn()),
-        expect: () => const [
-          AuthAuthenticated(userLogin: 'RUDN User'),
+        expect: () => [
+          AuthChecking(),
+          AuthUnauthenticated(),
+          const AuthFailure(
+            error: 'Login session could not be validated. Please try again.',
+          ),
         ],
+        verify: (_) {
+          verify(() => mockVotingRepository.logout()).called(1);
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
+        },
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits only placeholder auth state when name lookup throws',
+        'emits [AuthChecking, AuthUnauthenticated, AuthFailure] when validation throws repeatedly',
         build: () {
           when(() => mockVotingRepository.getUserLogin())
               .thenThrow(Exception('Lookup failed'));
+          when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
           return authBloc;
         },
         act: (bloc) => bloc.add(const LoggedIn()),
-        expect: () => const [
-          AuthAuthenticated(userLogin: 'RUDN User'),
+        wait: const Duration(milliseconds: 300),
+        expect: () => [
+          AuthChecking(),
+          AuthUnauthenticated(),
+          const AuthFailure(
+            error:
+                'Unable to validate login session. Check connection and try again.',
+          ),
         ],
+        verify: (_) {
+          verify(() => mockVotingRepository.getUserLogin()).called(2);
+        },
       );
     });
 
@@ -268,7 +287,7 @@ void main() {
         bloc.add(LoggedOut());
       },
       expect: () => [
-        const AuthAuthenticated(userLogin: 'RUDN User'),
+        AuthChecking(),
         const AuthAuthenticated(userLogin: 'testuser'),
         AuthUnauthenticated(),
       ],

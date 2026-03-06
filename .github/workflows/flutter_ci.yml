@@ -24,6 +24,9 @@ jobs:
       - name: ⬇️ Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: 🔐 Secret hygiene gate
+        run: bash tool/check_secret_hygiene.sh --ci
+
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff
         with:
@@ -152,13 +155,13 @@ jobs:
       - name: 🏗️ Build Release APK
         run: |
           flutter build apk --release \
-            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_ERROR_REPORTING=false \
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 🏗️ Build Release AAB
         run: |
           flutter build appbundle --release \
-            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_ERROR_REPORTING=false \
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 📦 Upload APK artifact
@@ -216,7 +219,7 @@ jobs:
       - name: 📱 Build iOS (no codesign)
         run: |
           flutter build ios --release --no-codesign \
-            --dart-define=ENABLE_ERROR_REPORTING=true \
+            --dart-define=ENABLE_ERROR_REPORTING=false \
             --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 
       - name: 📦 Upload iOS artifact

@@ -106,6 +106,12 @@ class ApiVotingRepository implements VotingRepository {
   @override
   Future<String?> getAuthToken() async => await _authService.getCookie();
 
+  @override
+  Future<bool> validateSession() async {
+    final userLogin = await getUserLogin();
+    return userLogin != null && userLogin.isNotEmpty;
+  }
+
   // --- Методы для голосований ---
   @override
   Future<List<VotingEvent>> getEventsByStatus(VotingStatus status) async {
@@ -128,6 +134,11 @@ class ApiVotingRepository implements VotingRepository {
       final response = await _httpClient
           .get(url, headers: headers)
           .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw UnauthorizedSessionException(
+          'Events request unauthorized: ${response.statusCode}',
+        );
+      }
       if (response.statusCode == 200) {
         // ...
         final Map<String, dynamic> decodedBody = json.decode(response.body);
@@ -159,6 +170,8 @@ class ApiVotingRepository implements VotingRepository {
         throw Exception(
             'Не удалось загрузить события. Код ответа: ${response.statusCode}');
       }
+    } on UnauthorizedSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Ошибка при получении событий: $e');
     }
@@ -177,11 +190,18 @@ class ApiVotingRepository implements VotingRepository {
       final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw UnauthorizedSessionException(
+          'Registration request unauthorized: ${response.statusCode}',
+        );
+      }
       final responseJson = _tryDecodeJsonObject(response.body);
       final status = _readResponseStatus(responseJson);
       if (response.statusCode != 200 || status != 'registered') {
         throw Exception('Ошибка регистрации. Сервер ответил: ${response.body}');
       }
+    } on UnauthorizedSessionException {
+      rethrow;
     } catch (e) {
       throw Exception('Не удалось зарегистрироваться: $e');
     }
@@ -232,6 +252,11 @@ class ApiVotingRepository implements VotingRepository {
       final response = await _httpClient
           .post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw UnauthorizedSessionException(
+          'Vote submission unauthorized: ${response.statusCode}',
+        );
+      }
 
       if (kDebugMode) {
         debugPrint(
@@ -257,6 +282,8 @@ class ApiVotingRepository implements VotingRepository {
       // Любая другая ошибка
       throw Exception(
           'Ошибка при отправке голоса. Сервер ответил: ${response.body}');
+    } on UnauthorizedSessionException {
+      rethrow;
     } catch (e) {
       throw Exception(e.toString());
     }

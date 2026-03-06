@@ -35,14 +35,15 @@ A privacy-focused mobile app for voting at RUDN / PFUR University.
 - ❌ No Crashlytics
 - ❌ No third-party SDKs that collect data
 - ✅ All data stays on RUDN servers
-- ✅ Optional Telegram crash reporting (disabled by default)
+- ✅ Optional secure relay crash reporting (disabled by default)
 - ✅ Diagnostic auth telemetry is opt-in and disabled by default
 
 ### Security note (release/profile builds)
 
 - Never pass `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` to release/profile builds.
 - Direct Telegram sending is disabled in release/profile builds.
-- Production monitoring will be routed through an on-prem relay in a follow-up rollout.
+- Production monitoring is allowed only through a first-party secure relay (`ERROR_REPORT_RELAY_URL`).
+- For local release signing, inject secrets from macOS Keychain via `bash tool/with_release_env.sh ...` (no plaintext secret files).
 
 ## 🚀 Getting Started
 

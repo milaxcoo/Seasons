@@ -130,6 +130,20 @@ void main() {
       );
     });
 
+    test('getEventsByStatus throws UnauthorizedSessionException on 401',
+        () async {
+      when(() => client.get(
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voters_page/registration_votings'),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('Unauthorized', 401));
+
+      expect(
+        () => repository.getEventsByStatus(VotingStatus.registration),
+        throwsA(isA<UnauthorizedSessionException>()),
+      );
+    });
+
     test('registerForEvent succeeds on registered response', () async {
       when(() => client.post(
                 Uri.parse(
@@ -203,6 +217,21 @@ void main() {
             contains('Не удалось зарегистрироваться'),
           ),
         ),
+      );
+    });
+
+    test('registerForEvent throws UnauthorizedSessionException on 403',
+        () async {
+      when(() => client.post(
+            Uri.parse(
+                'https://seasons.rudn.ru/api/v1/voter/register_in_voting'),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response('Forbidden', 403));
+
+      expect(
+        () => repository.registerForEvent('event-77'),
+        throwsA(isA<UnauthorizedSessionException>()),
       );
     });
 
@@ -341,6 +370,30 @@ void main() {
       );
     });
 
+    test('submitVote throws UnauthorizedSessionException on 401', () async {
+      const event = VotingEvent(
+        id: 'vote-5',
+        title: 'Vote',
+        description: 'Desc',
+        status: VotingStatus.active,
+        isRegistered: true,
+        questions: [],
+        hasVoted: false,
+        results: [],
+      );
+
+      when(() => client.post(
+            Uri.parse('https://seasons.rudn.ru/api/v1/voter/vote'),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response('Unauthorized', 401));
+
+      expect(
+        () => repository.submitVote(event, const {}),
+        throwsA(isA<UnauthorizedSessionException>()),
+      );
+    });
+
     test('getUserLogin parses HTML and formats FIO', () async {
       when(() => client.get(
             Uri.parse('https://seasons.rudn.ru/'),
@@ -413,6 +466,29 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('validateSession returns true when session resolves to user login',
+        () async {
+      when(() => client.get(
+            Uri.parse('https://seasons.rudn.ru/'),
+            headers: any(named: 'headers'),
+          )).thenAnswer(
+        (_) async => http.Response(_fixture('user_login_page.html'), 200),
+      );
+
+      final isValid = await repository.validateSession();
+      expect(isValid, isTrue);
+    });
+
+    test('validateSession returns false when session is unauthorized', () async {
+      when(() => client.get(
+            Uri.parse('https://seasons.rudn.ru/'),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('Unauthorized', 401));
+
+      final isValid = await repository.validateSession();
+      expect(isValid, isFalse);
     });
 
     test('getUserProfile parses account page fields', () async {

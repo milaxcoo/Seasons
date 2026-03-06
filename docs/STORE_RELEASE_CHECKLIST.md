@@ -39,6 +39,7 @@ This file is a release-readiness snapshot. For step-by-step execution, use:
 - [x] Coverage threshold enforced in CI
 - [x] Android signing secrets required and validated in CI
 - [x] CodeQL runs for Android (`java-kotlin`) only; Swift/iOS native code is not currently scanned
+- [x] Release defaults keep `ENABLE_ERROR_REPORTING=false` unless secure relay is explicitly configured
 
 ## Policy references to track before submission
 
@@ -53,6 +54,7 @@ This file is a release-readiness snapshot. For step-by-step execution, use:
 - [ ] Google Play: declare foreground service usage with accurate use case text
 - [ ] Google Play: verify app content rating and target audience
 - [ ] Google Play: upload production privacy policy URL
+- [ ] Google Play: if telemetry relay is enabled, ensure Data safety declarations match
 - [ ] Google Play: verify store listing assets (icon, screenshots, feature graphic)
 - [ ] Google Play: create release notes for this version
 - [ ] App Store Connect: update privacy nutrition labels

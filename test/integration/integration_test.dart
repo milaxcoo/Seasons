@@ -160,19 +160,21 @@ void main() {
       verify(() => mockRepository.submitVote(any(), any())).called(1);
     });
 
-    test('Error handling: failed user-name lookup still keeps local auth',
+    test('Error handling: failed user-name lookup invalidates local auth',
         () async {
       // Arrange
       when(() => mockRepository.getUserLogin())
           .thenThrow(Exception('Lookup failed'));
+      when(() => mockRepository.logout()).thenAnswer((_) async {});
 
       // Act
       authBloc.add(const LoggedIn());
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+      await Future<void>.delayed(const Duration(milliseconds: 320));
 
       // Verify
-      expect(authBloc.state, const AuthAuthenticated(userLogin: 'RUDN User'));
-      verify(() => mockRepository.getUserLogin()).called(1);
+      expect(authBloc.state, isA<AuthFailure>());
+      verify(() => mockRepository.getUserLogin()).called(2);
+      verify(() => mockRepository.logout()).called(1);
       verifyNever(() => mockRepository.login(any(), any()));
     });
 

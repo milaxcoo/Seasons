@@ -23,12 +23,26 @@ class SessionValidationException implements Exception {
   }
 }
 
+class UnauthorizedSessionException implements Exception {
+  final String message;
+
+  const UnauthorizedSessionException([
+    this.message = 'Unauthorized session',
+  ]);
+
+  @override
+  String toString() {
+    return 'UnauthorizedSessionException(message: $message)';
+  }
+}
+
 abstract class VotingRepository {
   // --- Методы аутентификации ---
   Future<String> login(String login, String password);
   Future<void> logout();
   Future<String?> getAuthToken();
   Future<String?> getUserLogin();
+  Future<bool> validateSession();
   Future<UserProfile?> getUserProfile();
 
   // --- Методы для голосований ---

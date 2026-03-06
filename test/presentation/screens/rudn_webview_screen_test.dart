@@ -453,6 +453,88 @@ void main() {
       );
     });
 
+    test('canReadSessionCookie allows reads only during callback finalization',
+        () {
+      expect(
+        canReadSessionCookie(
+          isFinishingLogin: true,
+          hasPopped: false,
+          callbackUrl:
+              'https://seasons.rudn.ru/oauth/login_callback?code=abc123',
+          committedUrl:
+              'https://seasons.rudn.ru/oauth/login_callback?code=abc123',
+        ),
+        isTrue,
+      );
+
+      expect(
+        canReadSessionCookie(
+          isFinishingLogin: true,
+          hasPopped: false,
+          callbackUrl:
+              'https://seasons.rudn.ru/oauth/login_callback?code=abc123',
+          committedUrl: 'https://seasons.rudn.ru/votings',
+        ),
+        isTrue,
+      );
+
+      expect(
+        canReadSessionCookie(
+          isFinishingLogin: true,
+          hasPopped: false,
+          callbackUrl:
+              'https://seasons.rudn.ru/oauth/login_callback?code=abc123',
+          committedUrl: 'https://id.rudn.ru/sign-in',
+        ),
+        isFalse,
+      );
+
+      expect(
+        canReadSessionCookie(
+          isFinishingLogin: true,
+          hasPopped: false,
+          callbackUrl: 'https://seasons.rudn.ru/account',
+          committedUrl:
+              'https://seasons.rudn.ru/oauth/login_callback?code=abc123',
+        ),
+        isFalse,
+      );
+
+      expect(
+        canReadSessionCookie(
+          isFinishingLogin: false,
+          hasPopped: false,
+          callbackUrl:
+              'https://seasons.rudn.ru/oauth/login_callback?code=abc123',
+          committedUrl:
+              'https://seasons.rudn.ru/oauth/login_callback?code=abc123',
+        ),
+        isFalse,
+      );
+    });
+
+    test('isTrustedPostCallbackCookieReadUrl allows only seasons https pages',
+        () {
+      expect(
+        isTrustedPostCallbackCookieReadUrl('https://seasons.rudn.ru/'),
+        isTrue,
+      );
+      expect(
+        isTrustedPostCallbackCookieReadUrl(
+          'https://seasons.rudn.ru/votings?lang=ru',
+        ),
+        isTrue,
+      );
+      expect(
+        isTrustedPostCallbackCookieReadUrl('https://id.rudn.ru/sign-in'),
+        isFalse,
+      );
+      expect(
+        isTrustedPostCallbackCookieReadUrl('http://seasons.rudn.ru/votings'),
+        isFalse,
+      );
+    });
+
     test(
         'resolveWebViewNavigationAction marks callback as finish-login and allows navigation',
         () {

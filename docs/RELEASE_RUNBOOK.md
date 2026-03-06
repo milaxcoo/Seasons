@@ -24,6 +24,7 @@ This runbook is the operational guide for a release candidate (RC) build and sto
 Run from repository root:
 
 ```bash
+bash tool/pre_release_safety_checks.sh
 dart format --set-exit-if-changed .
 flutter analyze --fatal-infos --fatal-warnings
 flutter test --coverage
@@ -39,17 +40,24 @@ The Android Gradle config requires these environment variables for release tasks
 - `KEY_ALIAS`
 - `KEY_PASSWORD`
 
-Example flow:
+Do not keep these values in plaintext files (for example `.secrets`, `.env`, `.local_signing/android-signing.env`).
+Use macOS Keychain + secure injection script instead.
+
+One-time keychain setup on the release workstation:
 
 ```bash
-export KEYSTORE_PATH="/absolute/path/to/upload-keystore.jks"
-export KEYSTORE_PASSWORD="<redacted>"
-export KEY_ALIAS="<redacted>"
-export KEY_PASSWORD="<redacted>"
+security add-generic-password -a "$USER" -s "votepfurapp_keystore_path" -w "/absolute/path/to/upload-keystore.jks" -U
+security add-generic-password -a "$USER" -s "votepfurapp_keystore_password" -w "<redacted>" -U
+security add-generic-password -a "$USER" -s "votepfurapp_key_alias" -w "<redacted>" -U
+security add-generic-password -a "$USER" -s "votepfurapp_key_password" -w "<redacted>" -U
+```
 
+Build flow:
+
+```bash
 flutter pub get
-flutter build apk --release --dart-define=ENABLE_ERROR_REPORTING=true --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
-flutter build appbundle --release --dart-define=ENABLE_ERROR_REPORTING=true --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
+bash tool/with_release_env.sh flutter build apk --release --dart-define=ENABLE_ERROR_REPORTING=false --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
+bash tool/with_release_env.sh flutter build appbundle --release --dart-define=ENABLE_ERROR_REPORTING=false --dart-define=ENABLE_DIAGNOSTIC_EVENTS=false
 ```
 
 Expected outputs:
@@ -100,6 +108,7 @@ Proven by repo automation:
 - Android signed release build viability in CI (when secrets are configured)
 - iOS release compile without codesign
 - CodeQL for Java/Kotlin only
+- Release defaults keep production telemetry disabled unless secure relay is explicitly configured
 
 Not proven by repo automation:
 - Swift/native iOS CodeQL scanning
