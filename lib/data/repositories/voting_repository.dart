@@ -1,7 +1,7 @@
 import 'package:seasons/data/models/voting_event.dart';
 import 'package:seasons/data/models/user_profile.dart';
 
-enum SessionValidationFailureType { transientNetwork, responseFormat }
+enum SessionValidationFailureType { transientNetwork }
 
 class SessionValidationException implements Exception {
   final SessionValidationFailureType type;
@@ -13,11 +13,6 @@ class SessionValidationException implements Exception {
       : type = SessionValidationFailureType.transientNetwork,
         message =
             message ?? 'Transient network failure during session validation';
-
-  const SessionValidationException.responseFormat([String? message])
-      : type = SessionValidationFailureType.responseFormat,
-        message = message ??
-            'Unexpected authenticated response format during session validation';
 
   @override
   String toString() {
