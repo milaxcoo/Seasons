@@ -149,14 +149,14 @@ String authScreenKeyForState(AuthState state) {
 }
 
 @visibleForTesting
-  Widget authScreenForState(AuthState state) {
-    final authScreenKey = ValueKey(authScreenKeyForState(state));
-    if (state is AuthInitial || state is AuthChecking) {
-      return Scaffold(
-        key: authScreenKey,
-        body: const Center(child: SeasonsLoader()),
-      );
-    }
+Widget authScreenForState(AuthState state) {
+  final authScreenKey = ValueKey(authScreenKeyForState(state));
+  if (state is AuthInitial || state is AuthChecking) {
+    return Scaffold(
+      key: authScreenKey,
+      body: const Center(child: SeasonsLoader()),
+    );
+  }
   if (state is AuthAuthenticated) {
     return HomeScreen(key: authScreenKey);
   }
