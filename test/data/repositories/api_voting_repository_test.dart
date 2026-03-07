@@ -438,7 +438,8 @@ void main() {
       expect(login, 'Ivanov I.I.');
     });
 
-    test('getUserLogin tolerates account link attributes and nested tags', () async {
+    test('getUserLogin tolerates account link attributes and nested tags',
+        () async {
       when(
         () => client.get(
           Uri.parse('https://seasons.rudn.ru/'),

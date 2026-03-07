@@ -16,8 +16,8 @@ class SessionValidationException implements Exception {
 
   const SessionValidationException.responseFormat([String? message])
       : type = SessionValidationFailureType.responseFormat,
-        message =
-            message ?? 'Unexpected authenticated response format during session validation';
+        message = message ??
+            'Unexpected authenticated response format during session validation';
 
   @override
   String toString() {

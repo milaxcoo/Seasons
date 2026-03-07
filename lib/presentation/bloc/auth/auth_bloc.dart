@@ -29,7 +29,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     DraftService? draftService,
     WebViewSessionService? webViewSessionService,
   })  : _draftService = draftService ?? DraftService(),
-        _webViewSessionService = webViewSessionService ?? WebViewSessionService(),
+        _webViewSessionService =
+            webViewSessionService ?? WebViewSessionService(),
         _votingRepository = votingRepository,
         super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);

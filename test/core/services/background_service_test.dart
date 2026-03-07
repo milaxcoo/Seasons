@@ -385,7 +385,8 @@ void main() {
       );
     });
 
-    test('resolveBackgroundAuthFromCookie invalidates only on absent cookie', () {
+    test('resolveBackgroundAuthFromCookie invalidates only on absent cookie',
+        () {
       expect(
         resolveBackgroundAuthFromCookie(const CookieAccessResult.absent()),
         BackgroundAuthResolution.invalidateAuth,

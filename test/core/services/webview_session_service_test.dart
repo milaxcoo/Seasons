@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seasons/core/services/webview_session_service.dart';
 
-class FakeWebViewSessionController implements WebViewSessionControllerInterface {
+class FakeWebViewSessionController
+    implements WebViewSessionControllerInterface {
   int clearCacheCalls = 0;
   int clearLocalStorageCalls = 0;
   bool failCache;
