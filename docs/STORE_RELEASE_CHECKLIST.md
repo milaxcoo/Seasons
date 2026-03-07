@@ -27,7 +27,7 @@ This file is a release-readiness snapshot. For step-by-step execution, use:
 
 ## Platform metadata checks
 
-- [x] Android package: `lebedev.seasons`
+- [x] Android package: `com.lebedev.seasons`
 - [x] Android version: `1.1.0` (`versionCode=9`)
 - [x] Android `targetSdkVersion=36` (verified from merged release manifest)
 - [x] iOS bundle id: `com.lebedev.seasons`

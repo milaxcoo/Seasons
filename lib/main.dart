@@ -149,6 +149,18 @@ String authScreenKeyForState(AuthState state) {
 }
 
 @visibleForTesting
+Widget authScreenForState(AuthState state) {
+  final authScreenKey = ValueKey(authScreenKeyForState(state));
+  if (state is AuthInitial || state is AuthChecking) {
+    return Scaffold(key: authScreenKey, body: Center(child: SeasonsLoader()));
+  }
+  if (state is AuthAuthenticated) {
+    return HomeScreen(key: authScreenKey);
+  }
+  return LoginScreen(key: authScreenKey);
+}
+
+@visibleForTesting
 bool shouldStartBackgroundServiceForState(AuthState state) {
   return state is AuthAuthenticated;
 }
@@ -239,20 +251,7 @@ class SeasonsApp extends StatelessWidget {
                 },
                 child: BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    final authScreenKey = ValueKey(
-                      authScreenKeyForState(state),
-                    );
-                    final Widget targetScreen;
-                    if (state is AuthInitial || state is AuthChecking) {
-                      targetScreen = Scaffold(
-                        key: authScreenKey,
-                        body: Center(child: SeasonsLoader()),
-                      );
-                    } else if (state is AuthAuthenticated) {
-                      targetScreen = HomeScreen(key: authScreenKey);
-                    } else {
-                      targetScreen = LoginScreen(key: authScreenKey);
-                    }
+                    final targetScreen = authScreenForState(state);
 
                     return AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),

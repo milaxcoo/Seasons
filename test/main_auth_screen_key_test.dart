@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seasons/main.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
+import 'package:seasons/presentation/screens/home_screen.dart';
+import 'package:seasons/presentation/screens/login_screen.dart';
 
 void main() {
   test('authScreenKeyForState maps checking states to loader key', () {
@@ -18,6 +21,26 @@ void main() {
   test('authScreenKeyForState maps unauthenticated state to login key', () {
     expect(authScreenKeyForState(AuthUnauthenticated()), 'auth-login');
   });
+
+  test(
+    'authScreenForState maps authenticated state to HomeScreen with auth-home key',
+    () {
+      final widget = authScreenForState(
+        const AuthAuthenticated(userLogin: 'test'),
+      );
+      expect(widget, isA<HomeScreen>());
+      expect(widget.key, const ValueKey('auth-home'));
+    },
+  );
+
+  test(
+    'authScreenForState maps unauthenticated state to LoginScreen with auth-login key',
+    () {
+      final widget = authScreenForState(AuthUnauthenticated());
+      expect(widget, isA<LoginScreen>());
+      expect(widget.key, const ValueKey('auth-login'));
+    },
+  );
 
   test(
     'shouldStartBackgroundServiceForState only starts for authenticated',

@@ -271,15 +271,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    if (logoutInvocationFailed) {
-      emit(
-        const AuthFailure(
-          error: 'Logout did not complete cleanly. Please try again.',
-        ),
-      );
-      return;
-    }
-
     try {
       await _webViewSessionService.clearOnLogout();
     } catch (_) {
@@ -290,6 +281,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _draftService.clearAllDrafts();
     } catch (_) {
       // Draft cleanup should not block logout transitions.
+    }
+
+    if (logoutInvocationFailed) {
+      emit(
+        const AuthFailure(
+          error: 'Logout did not complete cleanly. Please try again.',
+        ),
+      );
+      return;
     }
     emit(AuthUnauthenticated());
   }
