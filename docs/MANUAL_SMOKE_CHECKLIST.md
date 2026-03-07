@@ -1,8 +1,14 @@
 # Manual Smoke Checklist
 
-Last reviewed: 2026-02-26
+Last reviewed: 2026-03-07
 
 Use this checklist for RC validation on real devices before store submission.
+
+Detailed release gates:
+- [Android release validation gate](ANDROID_RELEASE_VALIDATION_GATE.md)
+- [iOS release readiness gate](IOS_RELEASE_READINESS_GATE.md)
+
+Use the platform-specific gate docs as the source of truth for release blocking checks.
 
 ## Test matrix
 

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
+import 'package:seasons/core/services/webview_session_service.dart';
 import 'package:seasons/core/utils/safe_log.dart';
+import 'package:seasons/core/utils/user_agent_policy.dart';
 import 'package:seasons/l10n/app_localizations.dart';
 import 'package:seasons/presentation/widgets/seasons_loader.dart';
 
@@ -23,7 +25,7 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   static const Duration _cookiePollStep = Duration(milliseconds: 100);
 
   late final WebViewController _controller;
-  final WebViewCookieManager _cookieManager = WebViewCookieManager();
+  final WebViewSessionService _webViewSessionService = WebViewSessionService();
   bool _isLoading = true;
   WebViewFinalizationState _finalizationState =
       const WebViewFinalizationState.initial();
@@ -161,18 +163,14 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
   }
 
   Future<void> _initWebView() async {
-    try {
-      // Only clear cookies to ensure fresh login, but KEEP CACHE for speed
-      await _cookieManager.clearCookies();
-    } catch (e) {
-      // Error ignored
-    }
-
     if (!mounted) return;
 
-    // Set a standard User Agent to avoid being blocked/looping
-    const userAgent =
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
+    await _webViewSessionService.clearForFreshLogin(
+      controller: WebViewSessionControllerAdapter(_controller),
+    );
+
+    // Keep an explicit mobile UA to avoid server-side desktop/login-loop paths.
+    final userAgent = mobileUserAgentForPlatform();
     await _controller.setUserAgent(userAgent);
 
     _logForcedNavigation(

@@ -10,6 +10,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:http/http.dart' as http;
 import 'package:seasons/core/services/rudn_auth_service.dart';
 import 'package:seasons/core/utils/safe_log.dart';
+import 'package:seasons/core/utils/user_agent_policy.dart';
 
 /// Background Service for maintaining WebSocket connection 24/7 on Android.
 /// On iOS, standard behavior applies (connection only while app is active).
@@ -196,6 +197,11 @@ class BackgroundService {
   Future<bool> get isRunning => _service.isRunning();
 }
 
+enum BackgroundAuthResolution { proceed, retryLater, invalidateAuth }
+
+int _nextNotificationIdSeed =
+    DateTime.now().microsecondsSinceEpoch & 0x7fffffff;
+
 // ============================================================================
 // TOP-LEVEL FUNCTIONS (Required for background isolate)
 // ============================================================================
@@ -322,10 +328,23 @@ void onStart(ServiceInstance service) async {
       }
 
       // Get auth cookie from secure storage (need to access it differently in isolate)
-      final cookie = await RudnAuthService().getCookie();
+      final cookieResult = await RudnAuthService().getCookieAccessResult();
       if (isStopped) return;
 
-      if (shouldStopReconnectForAuth(cookie: cookie)) {
+      final cookieResolution = resolveBackgroundAuthFromCookie(cookieResult);
+      if (cookieResolution == BackgroundAuthResolution.retryLater) {
+        emitConnectionAction(
+          BackgroundService.actionConnectionWaitingForNetwork,
+          payload: {'reason': 'cookie_read_failure'},
+        );
+        reconnectTimer = _scheduleReconnect(reconnectTimer, () {
+          if (isStopped) return;
+          unawaited(connect());
+        }, attempts: reconnectAttempts++);
+        return;
+      }
+
+      if (cookieResolution == BackgroundAuthResolution.invalidateAuth) {
         if (kDebugMode) {
           debugPrint(
             'BackgroundService: Missing auth cookie; stopping reconnect loop',
@@ -337,11 +356,11 @@ void onStart(ServiceInstance service) async {
         );
         return;
       }
+      final cookie = cookieResult.cookie!;
 
       final headers = {
         'Cookie': 'session=$cookie',
-        'User-Agent':
-            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        'User-Agent': mobileUserAgentForPlatform(operatingSystem: 'android'),
       };
 
       if (kDebugMode) {
@@ -353,9 +372,10 @@ void onStart(ServiceInstance service) async {
           .get(Uri.parse(BackgroundService._wsNegotiateUrl), headers: headers)
           .timeout(const Duration(seconds: 10));
 
-      if (shouldStopReconnectForAuth(
-        negotiateStatusCode: response.statusCode,
-      )) {
+      final negotiateResolution = resolveBackgroundAuthFromStatusCode(
+        response.statusCode,
+      );
+      if (negotiateResolution == BackgroundAuthResolution.invalidateAuth) {
         if (kDebugMode) {
           debugPrint(
             'BackgroundService: Auth invalid during WS negotiation '
@@ -634,7 +654,7 @@ Future<void> _showAlertNotification(
   }
 
   await plugin.show(
-    id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    id: nextNotificationId(),
     title: title,
     body: body,
     notificationDetails: const NotificationDetails(
@@ -680,11 +700,34 @@ bool canAttemptBackgroundConnect({
 }
 
 @visibleForTesting
-bool shouldStopReconnectForAuth({String? cookie, int? negotiateStatusCode}) {
-  if (cookie != null && cookie.isEmpty) return true;
-  if (cookie == null && negotiateStatusCode == null) return true;
-  if (negotiateStatusCode == 401 || negotiateStatusCode == 403) return true;
-  return false;
+BackgroundAuthResolution resolveBackgroundAuthFromCookie(
+  CookieAccessResult result,
+) {
+  switch (result.status) {
+    case CookieAccessStatus.present:
+      return BackgroundAuthResolution.proceed;
+    case CookieAccessStatus.absent:
+      return BackgroundAuthResolution.invalidateAuth;
+    case CookieAccessStatus.transientFailure:
+      return BackgroundAuthResolution.retryLater;
+  }
+}
+
+@visibleForTesting
+BackgroundAuthResolution resolveBackgroundAuthFromStatusCode(int statusCode) {
+  if (statusCode == 401 || statusCode == 403) {
+    return BackgroundAuthResolution.invalidateAuth;
+  }
+  return BackgroundAuthResolution.proceed;
+}
+
+@visibleForTesting
+int nextNotificationId() {
+  _nextNotificationIdSeed = (_nextNotificationIdSeed + 1) & 0x7fffffff;
+  if (_nextNotificationIdSeed == 0) {
+    _nextNotificationIdSeed = 1;
+  }
+  return _nextNotificationIdSeed;
 }
 
 @visibleForTesting

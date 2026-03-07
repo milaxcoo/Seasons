@@ -3,6 +3,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/core/services/draft_service.dart';
+import 'package:seasons/core/services/webview_session_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
 
@@ -10,19 +11,31 @@ class MockVotingRepository extends Mock implements VotingRepository {}
 
 class MockDraftService extends Mock implements DraftService {}
 
+class MockWebViewSessionService extends Mock implements WebViewSessionService {}
+
 void main() {
   group('AuthBloc', () {
     late VotingRepository mockVotingRepository;
     late DraftService mockDraftService;
+    late WebViewSessionService mockWebViewSessionService;
     late AuthBloc authBloc;
 
     setUp(() {
       mockVotingRepository = MockVotingRepository();
       mockDraftService = MockDraftService();
+      mockWebViewSessionService = MockWebViewSessionService();
       when(() => mockDraftService.clearAllDrafts()).thenAnswer((_) async {});
+      when(() => mockWebViewSessionService.clearOnLogout()).thenAnswer(
+        (_) async => const WebViewSessionCleanupResult(
+          cookiesCleared: true,
+          cacheCleared: true,
+          localStorageCleared: true,
+        ),
+      );
       authBloc = AuthBloc(
         votingRepository: mockVotingRepository,
         draftService: mockDraftService,
+        webViewSessionService: mockWebViewSessionService,
       );
     });
 
@@ -81,6 +94,7 @@ void main() {
         expect: () => [AuthChecking(), AuthUnauthenticated()],
         verify: (_) {
           verify(() => mockVotingRepository.logout()).called(1);
+          verify(() => mockWebViewSessionService.clearOnLogout()).called(1);
           verify(() => mockDraftService.clearAllDrafts()).called(1);
         },
       );
@@ -194,6 +208,7 @@ void main() {
         ],
         verify: (_) {
           verify(() => mockVotingRepository.logout()).called(1);
+          verify(() => mockWebViewSessionService.clearOnLogout()).called(1);
           verify(() => mockDraftService.clearAllDrafts()).called(1);
         },
       );
@@ -237,6 +252,7 @@ void main() {
         expect: () => [AuthUnauthenticated()],
         verify: (_) {
           verify(() => mockVotingRepository.getAuthToken()).called(1);
+          verify(() => mockWebViewSessionService.clearOnLogout()).called(1);
           verify(() => mockDraftService.clearAllDrafts()).called(1);
         },
       );

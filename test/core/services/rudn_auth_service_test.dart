@@ -79,6 +79,16 @@ void main() {
       expect(result, isNull);
     });
 
+    test('getCookieAccessResult returns transientFailure on timeout', () async {
+      final slowStorage = MockSlowStorage(delay: const Duration(seconds: 3));
+      final service = RudnAuthService.withStorage(slowStorage);
+
+      final result = await service.getCookieAccessResult();
+
+      expect(result.status, CookieAccessStatus.transientFailure);
+      expect(result.cookie, isNull);
+    });
+
     test('getCookie returns value when fast', () async {
       final fastStorage = MockSlowStorage(
         delay: const Duration(milliseconds: 100),
@@ -92,12 +102,44 @@ void main() {
       expect(result, equals('test_cookie'));
     });
 
+    test('getCookieAccessResult distinguishes absent cookie', () async {
+      final storage = MockSlowStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      final result = await service.getCookieAccessResult();
+
+      expect(result.status, CookieAccessStatus.absent);
+      expect(result.cookie, isNull);
+    });
+
+    test('getCookieAccessResult distinguishes present cookie', () async {
+      final storage = MockSlowStorage();
+      final service = RudnAuthService.withStorage(storage);
+
+      expect(await service.saveCookie('test_cookie'), isTrue);
+
+      final result = await service.getCookieAccessResult();
+
+      expect(result.status, CookieAccessStatus.present);
+      expect(result.cookie, 'test_cookie');
+    });
+
     test('getCookie returns null on error', () async {
       final errorStorage = MockSlowStorage(throwError: true);
       final service = RudnAuthService.withStorage(errorStorage);
 
       final result = await service.getCookie();
       expect(result, isNull);
+    });
+
+    test('getCookieAccessResult returns transientFailure on error', () async {
+      final errorStorage = MockSlowStorage(throwError: true);
+      final service = RudnAuthService.withStorage(errorStorage);
+
+      final result = await service.getCookieAccessResult();
+
+      expect(result.status, CookieAccessStatus.transientFailure);
+      expect(result.cookie, isNull);
     });
 
     test('saveCookie returns false on storage error', () async {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:seasons/core/services/draft_service.dart';
+import 'package:seasons/core/services/webview_session_service.dart';
 import 'package:seasons/data/repositories/voting_repository.dart';
 import 'package:seasons/core/services/error_reporting_service.dart';
 
@@ -21,11 +22,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   final VotingRepository _votingRepository;
   final DraftService _draftService;
+  final WebViewSessionService _webViewSessionService;
 
   AuthBloc({
     required VotingRepository votingRepository,
     DraftService? draftService,
+    WebViewSessionService? webViewSessionService,
   })  : _draftService = draftService ?? DraftService(),
+        _webViewSessionService = webViewSessionService ?? WebViewSessionService(),
         _votingRepository = votingRepository,
         super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
@@ -127,6 +131,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _votingRepository.logout();
     } catch (_) {
       // If backend/local logout cleanup fails, state must still be unauthenticated.
+    }
+
+    try {
+      await _webViewSessionService.clearOnLogout();
+    } catch (_) {
+      // WebView session cleanup should not block invalidation transitions.
     }
 
     try {
@@ -267,6 +277,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
       return;
+    }
+
+    try {
+      await _webViewSessionService.clearOnLogout();
+    } catch (_) {
+      // WebView session cleanup should not block logout transitions.
     }
 
     try {

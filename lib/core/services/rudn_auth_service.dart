@@ -1,5 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+enum CookieAccessStatus { present, absent, transientFailure }
+
+class CookieAccessResult {
+  final CookieAccessStatus status;
+  final String? cookie;
+
+  const CookieAccessResult._({required this.status, this.cookie});
+
+  const CookieAccessResult.present(String cookie)
+      : this._(status: CookieAccessStatus.present, cookie: cookie);
+
+  const CookieAccessResult.absent()
+      : this._(status: CookieAccessStatus.absent, cookie: null);
+
+  const CookieAccessResult.transientFailure()
+      : this._(status: CookieAccessStatus.transientFailure, cookie: null);
+
+  bool get isPresent => status == CookieAccessStatus.present;
+  bool get isAbsent => status == CookieAccessStatus.absent;
+  bool get isTransientFailure => status == CookieAccessStatus.transientFailure;
+}
 
 /// Abstract interface for secure storage operations.
 /// This allows for easy mocking in tests.
@@ -88,22 +112,35 @@ class RudnAuthService {
 
   /// Retrieves the stored session cookie with a timeout.
   Future<String?> getCookie() async {
+    final result = await getCookieAccessResult();
+    return result.cookie;
+  }
+
+  /// Retrieves the stored session cookie while preserving the difference
+  /// between an absent cookie and transient secure-storage failures.
+  Future<CookieAccessResult> getCookieAccessResult() async {
     try {
       // Add timeout to prevent hanging if KeyStore is corrupted/slow
-      return await _storage.read(key: _cookieKey).timeout(
+      final cookie = await _storage.read(key: _cookieKey).timeout(
         _storageTimeout,
         onTimeout: () {
           if (kDebugMode) {
             debugPrint('Storage read timed out');
           }
-          return null;
+          throw TimeoutException('Storage read timed out');
         },
       );
+      if (cookie == null || cookie.isEmpty) {
+        return const CookieAccessResult.absent();
+      }
+      return CookieAccessResult.present(cookie);
+    } on TimeoutException {
+      return const CookieAccessResult.transientFailure();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error reading cookie: $e');
       }
-      return null;
+      return const CookieAccessResult.transientFailure();
     }
   }
 
@@ -137,8 +174,7 @@ class RudnAuthService {
 
   /// Checks if a valid session likely exists (simple check).
   Future<bool> isAuthenticated() async {
-    final cookie = await getCookie();
-    return cookie != null && cookie.isNotEmpty;
+    return (await getCookieAccessResult()).isPresent;
   }
 
   /// Removes all secure auth/session data.

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:seasons/core/services/background_service.dart';
+import 'package:seasons/core/services/rudn_auth_service.dart';
 
 class MockFlutterBackgroundService extends Mock
     implements FlutterBackgroundService {}
@@ -375,17 +376,51 @@ void main() {
       expect(isLikelyNetworkIssue(Exception('Unauthorized 403')), isFalse);
     });
 
-    test(
-      'shouldStopReconnectForAuth stops on missing cookie or auth status',
-      () {
-        expect(shouldStopReconnectForAuth(cookie: null), isTrue);
-        expect(shouldStopReconnectForAuth(cookie: ''), isTrue);
-        expect(shouldStopReconnectForAuth(negotiateStatusCode: 401), isTrue);
-        expect(shouldStopReconnectForAuth(negotiateStatusCode: 403), isTrue);
-        expect(shouldStopReconnectForAuth(cookie: 'session-token'), isFalse);
-        expect(shouldStopReconnectForAuth(negotiateStatusCode: 500), isFalse);
-      },
-    );
+    test('resolveBackgroundAuthFromCookie retries on transient failure', () {
+      expect(
+        resolveBackgroundAuthFromCookie(
+          const CookieAccessResult.transientFailure(),
+        ),
+        BackgroundAuthResolution.retryLater,
+      );
+    });
+
+    test('resolveBackgroundAuthFromCookie invalidates only on absent cookie', () {
+      expect(
+        resolveBackgroundAuthFromCookie(const CookieAccessResult.absent()),
+        BackgroundAuthResolution.invalidateAuth,
+      );
+      expect(
+        resolveBackgroundAuthFromCookie(
+          const CookieAccessResult.present('session-token'),
+        ),
+        BackgroundAuthResolution.proceed,
+      );
+    });
+
+    test('resolveBackgroundAuthFromStatusCode invalidates only on 401/403', () {
+      expect(
+        resolveBackgroundAuthFromStatusCode(401),
+        BackgroundAuthResolution.invalidateAuth,
+      );
+      expect(
+        resolveBackgroundAuthFromStatusCode(403),
+        BackgroundAuthResolution.invalidateAuth,
+      );
+      expect(
+        resolveBackgroundAuthFromStatusCode(500),
+        BackgroundAuthResolution.proceed,
+      );
+    });
+
+    test('nextNotificationId returns distinct ids for burst notifications', () {
+      final first = nextNotificationId();
+      final second = nextNotificationId();
+      final third = nextNotificationId();
+
+      expect(second, isNot(first));
+      expect(third, isNot(second));
+    });
 
     test('onIosBackground returns true', () async {
       expect(await onIosBackground(mockInstance), isTrue);

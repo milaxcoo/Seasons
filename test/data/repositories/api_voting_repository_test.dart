@@ -438,6 +438,93 @@ void main() {
       expect(login, 'Ivanov I.I.');
     });
 
+    test('getUserLogin tolerates account link attributes and nested tags', () async {
+      when(
+        () => client.get(
+          Uri.parse('https://seasons.rudn.ru/'),
+          headers: any(named: 'headers'),
+        ),
+      ).thenAnswer(
+        (_) async => http.Response(
+          '''
+          <html>
+            <body>
+              <nav>
+                <a class="account-link primary" data-role="profile" href="/account?lang=ru">
+                  <span>Petrova</span> <strong>Anna</strong> <em>Sergeevna</em>
+                </a>
+              </nav>
+            </body>
+          </html>
+          ''',
+          200,
+        ),
+      );
+
+      final login = await repository.getUserLogin();
+
+      expect(login, 'Petrova A.S.');
+    });
+
+    test(
+      'getUserLogin falls back to bounded authenticated label when account markup changes',
+      () async {
+        when(
+          () => client.get(
+            Uri.parse('https://seasons.rudn.ru/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '''
+            <html>
+              <body>
+                <header>
+                  <a href="/account"><img src="/avatar.png" alt="avatar"></a>
+                  <a href="/logout">Logout</a>
+                </header>
+              </body>
+            </html>
+            ''',
+            200,
+          ),
+        );
+
+        final login = await repository.getUserLogin();
+
+        expect(login, 'RUDN user');
+      },
+    );
+
+    test(
+      'getUserLogin does not treat generic logout text without account link as authenticated',
+      () async {
+        when(
+          () => client.get(
+            Uri.parse('https://seasons.rudn.ru/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '''
+            <html>
+              <body>
+                <main>
+                  <p>Logout temporarily unavailable. Please sign in again.</p>
+                </main>
+              </body>
+            </html>
+            ''',
+            200,
+          ),
+        );
+
+        final login = await repository.getUserLogin();
+
+        expect(login, isNull);
+      },
+    );
+
     test(
       'getUserLogin classifies timeout as transient validation failure',
       () async {

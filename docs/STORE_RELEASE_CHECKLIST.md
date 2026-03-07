@@ -1,11 +1,13 @@
 # Store Release Checklist (Google Play + Apple App Store)
 
-Last verified: 2026-02-26
+Last verified: 2026-03-07
 
 This file is a release-readiness snapshot. For step-by-step execution, use:
 - [Release runbook](RELEASE_RUNBOOK.md)
 - [Signing and distribution setup](SIGNING_AND_DISTRIBUTION_SETUP.md)
 - [Manual smoke checklist](MANUAL_SMOKE_CHECKLIST.md)
+- [Android release validation gate](ANDROID_RELEASE_VALIDATION_GATE.md)
+- [iOS release readiness gate](IOS_RELEASE_READINESS_GATE.md)
 
 ## Automated quality gates
 

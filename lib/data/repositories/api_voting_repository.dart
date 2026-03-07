@@ -11,6 +11,7 @@ import 'package:seasons/data/models/user_profile.dart';
 import 'package:seasons/core/services/rudn_auth_service.dart';
 
 class ApiVotingRepository implements VotingRepository {
+  static const String _fallbackAuthenticatedUserLabel = 'RUDN user';
   final Uri _baseUri;
   final http.Client _httpClient;
   final RudnAuthService _authService;
@@ -320,21 +321,18 @@ class ApiVotingRepository implements VotingRepository {
       }
 
       if (response.statusCode == 200) {
-        // Regex to find <a href="/account">Name</a>
-        // We use a flexible regex to handle potential attributes or whitespace
-        // dotAll: true allows '.' to match newlines
-        final RegExp nameRegExp = RegExp(
-          r'<a\s+href="/account"[^>]*>([\s\S]+?)</a>',
-          caseSensitive: false,
-          dotAll: true,
-        );
-        final match = nameRegExp.firstMatch(response.body);
+        final fullName = _extractAuthenticatedUserName(response.body);
+        if (fullName != null && fullName.isNotEmpty) {
+          return _formatFio(fullName);
+        }
 
-        if (match != null) {
-          final fullName = match.group(1)?.trim() ?? "";
-          if (fullName.isNotEmpty) {
-            return _formatFio(fullName);
+        if (_hasAuthenticatedAccountLink(response.body)) {
+          if (kDebugMode) {
+            debugPrint(
+              'Session validation detected authenticated markup but could not parse user name at ${sanitizeUriForLog(url)}; using fallback identity.',
+            );
           }
+          return _fallbackAuthenticatedUserLabel;
         }
       }
     } on TimeoutException catch (e) {
@@ -495,6 +493,64 @@ class ApiVotingRepository implements VotingRepository {
 
     // Just return as is if specific format logic doesn't apply
     return fullName;
+  }
+
+  String? _extractAuthenticatedUserName(String html) {
+    final patterns = <RegExp>[
+      RegExp(
+        r"""<a\s+[^>]*href=(?:"|')/account(?:"|')[^>]*>([\s\S]+?)</a>""",
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      RegExp(
+        r"""<a\s+[^>]*href=(?:"|')[^"']*/account[^"']*(?:"|')[^>]*>([\s\S]+?)</a>""",
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      RegExp(
+        r"""<[^>]+class=(?:"|')[^"']*(?:user|account|profile)[^"']*(?:"|')[^>]*>([\s\S]+?)</[^>]+>""",
+        caseSensitive: false,
+        dotAll: true,
+      ),
+    ];
+
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(html);
+      final candidate = _normalizeHtmlText(match?.group(1));
+      if (candidate != null) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  String? _normalizeHtmlText(String? rawValue) {
+    if (rawValue == null) return null;
+    var value = rawValue
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (value.isEmpty) return null;
+    if (value.length < 2) return null;
+    return value;
+  }
+
+  bool _hasAuthenticatedAccountLink(String html) {
+    final accountLinkPatterns = <RegExp>[
+      RegExp(
+        r"""<a\s+[^>]*href=(?:"|')/account(?:"|')[^>]*>""",
+        caseSensitive: false,
+      ),
+      RegExp(
+        r"""<a\s+[^>]*href=(?:"|')[^"']*/account(?:[/?#][^"']*)?(?:"|')[^>]*>""",
+        caseSensitive: false,
+      ),
+    ];
+
+    return accountLinkPatterns.any((pattern) => pattern.hasMatch(html));
   }
 
   // --- Push Notifications ---
