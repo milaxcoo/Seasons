@@ -6,9 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:seasons/data/models/voting_event.dart' as model;
 import 'package:seasons/core/services/monthly_theme_service.dart';
 import 'package:seasons/presentation/bloc/auth/auth_bloc.dart';
-import 'package:seasons/presentation/bloc/voting/voting_bloc.dart';
 import 'package:seasons/presentation/bloc/voting/voting_event.dart';
-import 'package:seasons/presentation/bloc/voting/voting_state.dart';
 import 'package:seasons/presentation/screens/login_screen.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -19,11 +17,9 @@ import '../../mocks.dart';
 
 void main() {
   late MockAuthBloc mockAuthBloc;
-  late MockVotingBloc mockVotingBloc;
 
   setUp(() {
     mockAuthBloc = MockAuthBloc();
-    mockVotingBloc = MockVotingBloc();
   });
 
   setUpAll(() {
@@ -74,35 +70,6 @@ void main() {
     );
   }
 
-  Widget createTestWidgetWithNavigation() {
-    return MultiRepositoryProvider(
-      providers: [
-        RepositoryProvider<MonthlyThemeService>(
-          create: (_) => MonthlyThemeService(
-            currentDateProvider: () => DateTime(2026, 2, 22),
-          ),
-        ),
-      ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<AuthBloc>.value(value: mockAuthBloc),
-          BlocProvider<VotingBloc>.value(value: MockVotingBloc()),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: [Locale('ru'), Locale('en')],
-          locale: Locale('ru'),
-          home: LoginScreen(),
-        ),
-      ),
-    );
-  }
-
   group('LoginScreen', () {
     testWidgets('renders main UI components correctly', (tester) async {
       // Arrange
@@ -119,45 +86,6 @@ void main() {
       expect(find.text('© RUDN University 2026'), findsOneWidget);
       expect(find.text('seasons-helpdesk@rudn.ru'), findsOneWidget);
     });
-
-    testWidgets(
-      'navigates to HomeScreen when AuthAuthenticated',
-      (tester) async {
-        // Arrange
-        when(() => mockAuthBloc.state).thenReturn(AuthInitial());
-        when(() => mockVotingBloc.state).thenReturn(VotingInitial());
-        when(
-          () => mockVotingBloc.stream,
-        ).thenAnswer((_) => const Stream.empty());
-        when(() => mockVotingBloc.add(any())).thenAnswer((_) async {});
-
-        // Create a broadcast stream controller to emit states
-        final stateController = StreamController<AuthState>.broadcast();
-        when(
-          () => mockAuthBloc.stream,
-        ).thenAnswer((_) => stateController.stream);
-        when(() => mockAuthBloc.add(any())).thenAnswer((_) async {});
-
-        // Act
-        await tester.pumpWidget(createTestWidgetWithNavigation());
-        await tester.pump();
-
-        // Emit AuthAuthenticated state to trigger navigation
-        stateController.add(const AuthAuthenticated(userLogin: 'testuser'));
-
-        // Wait for navigation animation to start
-        // Note: HomeScreen has complex dependencies that cause build errors in tests
-        // This test verifies navigation is attempted by checking LoginScreen disappears
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
-
-        // Assert: Login button disappears (navigation away from LoginScreen started)
-        expect(find.text('Войти'), findsNothing);
-
-        stateController.close();
-      },
-      skip: true,
-    ); // HomeScreen dependencies cause build errors in widget tests - navigation logic works in integration tests
 
     testWidgets('shows loading state when AuthLoading', (tester) async {
       // Arrange

@@ -282,6 +282,30 @@ void main() {
       );
 
       blocTest<AuthBloc, AuthState>(
+        'emits [AuthFailure] and still clears local residue when logout throws but token is absent',
+        build: () {
+          when(
+            () => mockVotingRepository.logout(),
+          ).thenThrow(Exception('Logout error'));
+          when(
+            () => mockVotingRepository.getAuthToken(),
+          ).thenAnswer((_) async => null);
+          return authBloc;
+        },
+        act: (bloc) => bloc.add(LoggedOut()),
+        expect: () => const [
+          AuthFailure(
+            error: 'Logout did not complete cleanly. Please try again.',
+          ),
+        ],
+        verify: (_) {
+          verify(() => mockVotingRepository.getAuthToken()).called(1);
+          verify(() => mockWebViewSessionService.clearOnLogout()).called(1);
+          verify(() => mockDraftService.clearAllDrafts()).called(1);
+        },
+      );
+
+      blocTest<AuthBloc, AuthState>(
         'emits [AuthFailure] when logout succeeds but token remains',
         build: () {
           when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
