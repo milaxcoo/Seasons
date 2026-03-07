@@ -170,13 +170,12 @@ void main() {
     );
 
     test(
-      'Error handling: failed user-name lookup invalidates local auth',
+      'Error handling: failed user-name lookup keeps local auth state intact',
       () async {
         // Arrange
         when(
           () => mockRepository.getUserLogin(),
         ).thenThrow(Exception('Lookup failed'));
-        when(() => mockRepository.logout()).thenAnswer((_) async {});
 
         // Act
         authBloc.add(const LoggedIn());
@@ -185,7 +184,7 @@ void main() {
         // Verify
         expect(authBloc.state, isA<AuthFailure>());
         verify(() => mockRepository.getUserLogin()).called(2);
-        verify(() => mockRepository.logout()).called(1);
+        verifyNever(() => mockRepository.logout());
         verifyNever(() => mockRepository.login(any(), any()));
       },
     );

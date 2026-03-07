@@ -86,7 +86,7 @@ void main() {
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthChecking, AuthUnauthenticated] when getUserLogin times out and does not call logout',
+        'emits [AuthChecking, AuthFailure] when getUserLogin times out and does not clear a valid session',
         build: () {
           when(
             () => mockVotingRepository.getAuthToken(),
@@ -99,7 +99,12 @@ void main() {
         },
         act: (bloc) => bloc.add(AppStarted()),
         wait: const Duration(milliseconds: 300),
-        expect: () => [AuthChecking(), AuthUnauthenticated()],
+        expect: () => [
+          AuthChecking(),
+          const AuthFailure(
+            error: 'Unable to restore session. Check connection and try again.',
+          ),
+        ],
         verify: (_) {
           verifyNever(() => mockVotingRepository.logout());
           verifyNever(() => mockDraftService.clearAllDrafts());
@@ -108,7 +113,7 @@ void main() {
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthChecking, AuthUnauthenticated] when transient validation fails repeatedly',
+        'emits [AuthChecking, AuthFailure] when transient startup validation fails repeatedly without clearing session',
         build: () {
           when(
             () => mockVotingRepository.getAuthToken(),
@@ -120,7 +125,12 @@ void main() {
         },
         act: (bloc) => bloc.add(AppStarted()),
         wait: const Duration(milliseconds: 300),
-        expect: () => [AuthChecking(), AuthUnauthenticated()],
+        expect: () => [
+          AuthChecking(),
+          const AuthFailure(
+            error: 'Unable to restore session. Check connection and try again.',
+          ),
+        ],
         verify: (_) {
           verifyNever(() => mockVotingRepository.logout());
           verifyNever(() => mockDraftService.clearAllDrafts());
@@ -199,19 +209,17 @@ void main() {
       );
 
       blocTest<AuthBloc, AuthState>(
-        'emits [AuthChecking, AuthUnauthenticated, AuthFailure] when validation throws repeatedly',
+        'emits [AuthChecking, AuthFailure] when validation throws repeatedly without wiping a fresh session',
         build: () {
           when(
             () => mockVotingRepository.getUserLogin(),
-          ).thenThrow(Exception('Lookup failed'));
-          when(() => mockVotingRepository.logout()).thenAnswer((_) async {});
+          ).thenThrow(const SessionValidationException.transientNetwork());
           return authBloc;
         },
         act: (bloc) => bloc.add(const LoggedIn()),
         wait: const Duration(milliseconds: 300),
         expect: () => [
           AuthChecking(),
-          AuthUnauthenticated(),
           const AuthFailure(
             error:
                 'Unable to validate login session. Check connection and try again.',
@@ -219,6 +227,8 @@ void main() {
         ],
         verify: (_) {
           verify(() => mockVotingRepository.getUserLogin()).called(2);
+          verifyNever(() => mockVotingRepository.logout());
+          verifyNever(() => mockDraftService.clearAllDrafts());
         },
       );
     });

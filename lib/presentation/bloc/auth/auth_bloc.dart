@@ -115,9 +115,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     }
 
-    // On repeated transient failures, keep cookie untouched but require explicit login.
-    emit(AuthUnauthenticated());
-    ErrorReportingService().reportEvent('app_start_validation_fallback_unauth');
+    // Keep the stored session intact on transient validation failures so the
+    // user can retry without destroying a potentially valid cookie.
+    emit(
+      const AuthFailure(
+        error: 'Unable to restore session. Check connection and try again.',
+      ),
+    );
+    ErrorReportingService().reportEvent(
+      'app_start_validation_fallback_preserved_session',
+    );
   }
 
   Future<void> _clearSessionAndEmitUnauthenticated(
@@ -222,14 +229,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     }
 
-    await _clearSessionAndEmitUnauthenticated(emit);
     emit(
       const AuthFailure(
         error:
             'Unable to validate login session. Check connection and try again.',
       ),
     );
-    ErrorReportingService().reportEvent('auth_bloc_validation_fallback_unauth');
+    ErrorReportingService().reportEvent(
+      'auth_bloc_validation_fallback_preserved_session',
+    );
   }
 
   Future<void> _onLoggedOut(LoggedOut event, Emitter<AuthState> emit) async {

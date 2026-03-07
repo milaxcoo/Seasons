@@ -37,8 +37,11 @@ class ErrorReportingService {
   /// Named constructor for testing: creates a non-singleton instance with an
   /// injectable [http.Client] so network calls can be stubbed in unit tests.
   @visibleForTesting
-  ErrorReportingService.withHttpClient(http.Client httpClient)
-      : _httpClient = httpClient;
+  ErrorReportingService.withHttpClient(
+    http.Client httpClient, {
+    ErrorReportTransport? reportTransport,
+  })  : _httpClient = httpClient,
+        _reportTransport = reportTransport;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CONFIGURATION
@@ -123,7 +126,7 @@ class ErrorReportingService {
     if (_isInitialized) return;
 
     _appVersion = appVersion;
-    _reportTransport = _buildTransport();
+    _reportTransport ??= _buildTransport();
     _isInitialized = true;
 
     if (kDebugMode) {
@@ -155,7 +158,11 @@ class ErrorReportingService {
     );
 
     try {
-      await _sendViaTransport(testReport);
+      final transport = _reportTransport ?? _buildTransport();
+      if (transport is DisabledErrorReportTransport) {
+        return false;
+      }
+      await transport.send(testReport);
       return true;
     } catch (e) {
       return false;

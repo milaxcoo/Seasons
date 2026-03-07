@@ -6,6 +6,22 @@ import 'package:seasons/core/services/error_reporting_service.dart';
 
 import '../../mocks.dart';
 
+class RecordingTransport implements ErrorReportTransport {
+  int sendCalls = 0;
+
+  @override
+  Future<void> send(ErrorReport report) async {
+    sendCalls += 1;
+  }
+}
+
+class ThrowingTransport implements ErrorReportTransport {
+  @override
+  Future<void> send(ErrorReport report) {
+    throw Exception('transport failed');
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(Uri.parse('https://example.com'));
@@ -209,19 +225,18 @@ void main() {
   // ─────────────────────────────────────────────────────────────────────────
   group('sendTestMessage', () {
     test(
-      'returns true when Telegram is not configured (no error thrown)',
+      'returns false when the active transport is disabled',
       () async {
-        // Default env has empty TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID,
-        // so _sendToTelegram returns without calling the HTTP client.
         final mockClient = MockHttpClient();
-        final service = ErrorReportingService.withHttpClient(mockClient);
+        final service = ErrorReportingService.withHttpClient(
+          mockClient,
+          reportTransport:
+              const DisabledErrorReportTransport(reason: 'test_disabled'),
+        );
         await service.initialize(appVersion: '1.0.0');
 
         final result = await service.sendTestMessage();
 
-        // sendTestMessage wraps _sendToTelegram in a try/catch and always
-        // returns true on no-throw, but _sendToTelegram returns early when
-        // unconfigured – so no HTTP call is made.
         verifyNever(
           () => mockClient.post(
             any(),
@@ -229,8 +244,52 @@ void main() {
             body: any(named: 'body'),
           ),
         );
-        // The service does not throw, so result is true (early return, no error)
-        expect(result, isTrue);
+        expect(result, isFalse);
+      },
+    );
+
+    test('returns true when the active transport sends successfully', () async {
+      final mockClient = MockHttpClient();
+      final transport = RecordingTransport();
+      final service = ErrorReportingService.withHttpClient(
+        mockClient,
+        reportTransport: transport,
+      );
+      await service.initialize(appVersion: '1.0.0');
+
+      final result = await service.sendTestMessage();
+
+      expect(result, isTrue);
+      expect(transport.sendCalls, 1);
+      verifyNever(
+        () => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      );
+    });
+
+    test(
+      'returns false when the active transport throws',
+      () async {
+        final mockClient = MockHttpClient();
+        final service = ErrorReportingService.withHttpClient(
+          mockClient,
+          reportTransport: ThrowingTransport(),
+        );
+        await service.initialize(appVersion: '1.0.0');
+
+        final result = await service.sendTestMessage();
+
+        expect(result, isFalse);
+        verifyNever(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        );
       },
     );
   });
