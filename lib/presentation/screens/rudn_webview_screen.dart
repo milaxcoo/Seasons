@@ -169,6 +169,8 @@ class _RudnWebviewScreenState extends State<RudnWebviewScreen> {
       controller: WebViewSessionControllerAdapter(_controller),
     );
 
+    if (!mounted) return;
+
     // Keep an explicit mobile UA to avoid server-side desktop/login-loop paths.
     final userAgent = mobileUserAgentForPlatform();
     await _controller.setUserAgent(userAgent);
