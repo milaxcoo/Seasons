@@ -34,7 +34,7 @@ jobs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@89a39a4e59826350b863aa6b6252a07ad50cf83e
+      uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225
       with:
         languages: ${{ matrix.language }}
         build-mode: manual
@@ -58,6 +58,6 @@ jobs:
       run: flutter build apk --debug
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@89a39a4e59826350b863aa6b6252a07ad50cf83e
+      uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225
       with:
         category: "/language:${{matrix.language}}"
