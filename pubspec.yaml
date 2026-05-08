@@ -25,7 +25,7 @@ dependencies:
   intl: ^0.20.2
 
   # Secure Storage
-  flutter_secure_storage: ^10.0.0
+  flutter_secure_storage: ^10.1.0
 
   web_socket_channel: ^3.0.0
   flutter_svg: ^2.2.2
